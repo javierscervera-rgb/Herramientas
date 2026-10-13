@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel DAFO colaborativo</title>
+<style>
+  :root { --ink:#172033; --line:#d6dbe5; --paper:#f5f7fb; --accent:#167d8d; --sticky-font-size:15px; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; width:100%; height:100%; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); }
+  body { display:flex; flex-direction:column; overflow:hidden; }
+  .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 14px; background:#fff; border-bottom:1px solid var(--line); z-index:20; box-shadow:0 2px 8px #17203312; }
+  .brand { font-weight:750; margin-right:8px; }
+  button, select, input[type="color"] { font:inherit; border:1px solid #cbd2df; border-radius:9px; padding:8px 11px; background:white; color:var(--ink); cursor:pointer; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:white; font-weight:650; }
+  button.active { outline:2px solid var(--accent); outline-offset:1px; }
+  .hint { font-size:12px; color:#687386; margin-left:auto; }
+  #board { position:relative; flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:8px; padding:8px; }
+  .quadrant { position:relative; min-width:0; min-height:0; border:2px solid; border-radius:12px; overflow:hidden; background:#fff; }
+  .quadrant h2 { position:absolute; z-index:1; top:10px; left:13px; margin:0; font-size:clamp(14px,2vw,21px); letter-spacing:.04em; text-transform:uppercase; pointer-events:none; }
+  .quadrant .sub { position:absolute; top:39px; left:14px; color:#778195; font-size:12px; pointer-events:none; }
+  #amenazas { border-color:#e6a2a2; background:#fff8f7; }
+  #amenazas h2 { color:#a93e3e; }
+  #desafios { border-color:#e8c56e; background:#fffdf4; }
+  #desafios h2 { color:#906a09; }
+  #oportunidades { border-color:#7ec7a4; background:#f5fff9; }
+  #oportunidades h2 { color:#17764b; }
+  #debilidades { border-color:#9bb9ed; background:#f6f9ff; }
+  #debilidades h2 { color:#315fa9; }
+  .sticky { position:absolute; z-index:5; min-width:76px; max-width:min(260px,42vw); padding:10px 25px 10px 13px; border:1px solid #d9c45b; border-radius:999px; background:#fff2a8; box-shadow:0 3px 9px #15213a20; cursor:grab; touch-action:none; user-select:none; white-space:pre-wrap; overflow-wrap:anywhere; font-size:var(--sticky-font-size); }
+  .sticky:active { cursor:grabbing; }
+  .sticky.selected { outline:2px solid var(--accent); }
+  .sticky .remove { position:absolute; right:3px; top:1px; border:0; padding:0 4px; background:transparent; font-size:17px; line-height:20px; color:#5d5635; cursor:pointer; }
+  #drawLayer { position:absolute; inset:8px; width:calc(100% - 16px); height:calc(100% - 16px); z-index:10; pointer-events:none; touch-action:none; }
+  #board.drawing #drawLayer { pointer-events:auto; cursor:crosshair; }
+  .tool-group { display:flex; align-items:center; gap:6px; }
+  .tool-label { font-size:13px; color:#596579; }
+  #entry { display:none; position:fixed; inset:0; z-index:50; background:#10182877; align-items:center; justify-content:center; padding:18px; }
+  #entry.show { display:flex; }
+  .dialog { width:min(440px,100%); background:white; border-radius:16px; padding:20px; box-shadow:0 18px 60px #0003; }
+  .dialog h2 { margin:0 0 12px; font-size:20px; }
+  .dialog textarea { width:100%; min-height:100px; resize:vertical; font:inherit; padding:11px; border:1px solid #cbd2df; border-radius:10px; }
+  .dialog .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+  .foot { font-size:12px; color:#697386; padding:5px 12px; background:white; border-top:1px solid var(--line); }
+  @media (max-width:650px) {
+    .toolbar { gap:6px; padding:8px; }
+    .brand { width:100%; }
+    button,select { padding:7px 9px; font-size:13px; }
+    .hint { display:none; }
+    #board { gap:5px; padding:5px; }
+    .quadrant { border-radius:8px; }
+    .quadrant h2 { top:8px; left:8px; font-size:13px; }
+    .quadrant .sub { top:29px; left:9px; font-size:10px; }
+    .sticky { padding:9px 25px 9px 10px; }
+  }
+</style>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand">Panel de ideas · DAFO</div>
+    <button class="primary" id="addBtn">＋ Añadir idea</button>
+    <div class="tool-group">
+      <button id="drawBtn" title="Dibujar libremente">✎ Dibujar</button>
+      <label class="tool-label" for="penColor">Color</label><input id="penColor" type="color" value="#172033" aria-label="Color del lápiz">
+      <label class="tool-label" for="penSize">Grosor</label>
+      <select id="penSize" aria-label="Grosor del lápiz"><option value="2">Fino</option><option value="4" selected>Medio</option><option value="8">Grueso</option></select>
+      <button id="eraserBtn" title="Borrar trazos dibujados">⌫ Borrador</button>
+      <button id="clearDrawBtn" title="Borrar todos los trazos">Limpiar dibujo</button>
+    </div>
+    <div class="tool-group" aria-label="Tamaño de letra de las pastillas">
+      <button id="fontDownBtn" title="Reducir tamaño de letra">A−</button>
+      <button id="fontUpBtn" title="Aumentar tamaño de letra">A+</button>
+    </div>
+    <button id="clearIdeasBtn">Borrar ideas</button>
+    <div class="hint">Arrastra las notas · Puedes dibujar con ratón o dedo</div>
+  </header>
+
+  <main id="board" aria-label="Panel de cuatro cuadrantes">
+    <section class="quadrant" id="amenazas"><h2>Amenazas</h2><div class="sub">Factores externos que pueden perjudicar</div></section>
+    <section class="quadrant" id="desafios"><h2>Desafíos</h2><div class="sub">Retos que tenemos por delante</div></section>
+    <section class="quadrant" id="oportunidades"><h2>Oportunidades</h2><div class="sub">Factores externos que podemos aprovechar</div></section>
+    <section class="quadrant" id="debilidades"><h2>Debilidades</h2><div class="sub">Aspectos internos que mejorar</div></section>
+    <canvas id="drawLayer"></canvas>
+  </main>
+  <footer class="foot">Consejo: pulsa «Añadir idea», escribe una o varias palabras y después mueve la nota al cuadrante que quieras. Las notas y los dibujos se mantienen mientras esta página esté abierta.</footer>
+
+  <div id="entry" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+    <div class="dialog">
+      <h2 id="dialogTitle">Añadir una idea</h2>
+      <textarea id="ideaText" placeholder="Escribe una expresión por línea…"></textarea>
+      <p style="margin:7px 0 0;color:#687386;font-size:12px">Cada línea se convertirá en una pastilla flotante independiente.</p>
+      <div class="actions"><button id="cancelBtn">Cancelar</button><button class="primary" id="createBtn">Crear nota</button></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const board = document.getElementById('board');
+  const canvas = document.getElementById('drawLayer');
+  const ctx = canvas.getContext('2d');
+  const entry = document.getElementById('entry');
+  const ideaText = document.getElementById('ideaText');
+  const drawBtn = document.getElementById('drawBtn');
+  const eraserBtn = document.getElementById('eraserBtn');
+  let drawing = false, erasing = false, activePointer = null, lastPoint = null;
+  let selectedNote = null, dragData = null;
+  let stickyFontSize = 15;
+
+  // Aumenta o reduce el tamaño de letra de todas las pastillas.
+  function updateStickyFontSize() {
+    document.documentElement.style.setProperty('--sticky-font-size', stickyFontSize + 'px');
+  }
+  document.getElementById('fontUpBtn').addEventListener('click', () => {
+    stickyFontSize = Math.min(30, stickyFontSize + 2);
+    updateStickyFontSize();
+  });
+  document.getElementById('fontDownBtn').addEventListener('click', () => {
+    stickyFontSize = Math.max(9, stickyFontSize - 2);
+    updateStickyFontSize();
+  });
+
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const old = document.createElement('canvas');
+    old.width = canvas.width; old.height = canvas.height;
+    old.getContext('2d').drawImage(canvas, 0, 0);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (old.width && old.height) ctx.drawImage(old, 0, 0, old.width, old.height, 0, 0, rect.width, rect.height);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function openDialog() {
+    entry.classList.add('show'); ideaText.value = ''; ideaText.focus();
+  }
+  function closeDialog() { entry.classList.remove('show'); }
+  document.getElementById('addBtn').addEventListener('click', openDialog);
+  document.getElementById('cancelBtn').addEventListener('click', closeDialog);
+  entry.addEventListener('click', e => { if (e.target === entry) closeDialog(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDialog();
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && entry.classList.contains('show')) createNote();
+  });
+
+  function createNote() {
+    const lines = ideaText.value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (!lines.length) { ideaText.focus(); return; }
+    const startX = Math.max(10, board.clientWidth / 2 - 70);
+    const startY = Math.max(75, board.clientHeight / 2 - 30);
+    lines.forEach((text, index) => {
+      const note = document.createElement('div');
+      note.className = 'sticky';
+      // Add the text exactly once, separate from the delete button.
+      const label = document.createTextNode(text);
+      note.appendChild(label);
+      note.style.left = Math.min(Math.max(0, board.clientWidth - 150), startX + (index % 3) * 18) + 'px';
+      note.style.top = Math.min(Math.max(0, board.clientHeight - 55), startY + index * 58) + 'px';
+      const remove = document.createElement('button');
+      remove.className = 'remove'; remove.type = 'button'; remove.textContent = '×';
+      remove.title = 'Eliminar esta nota'; remove.setAttribute('aria-label', 'Eliminar nota');
+      remove.addEventListener('pointerdown', e => e.stopPropagation());
+      remove.addEventListener('click', e => { e.stopPropagation(); note.remove(); });
+      note.appendChild(remove);
+      note.addEventListener('pointerdown', startDrag);
+      note.addEventListener('click', () => {
+        document.querySelectorAll('.sticky').forEach(n => n.classList.remove('selected'));
+        note.classList.add('selected'); selectedNote = note;
+      });
+      board.appendChild(note);
+    });
+    closeDialog();
+  }
+  document.getElementById('createBtn').addEventListener('click', createNote);
+  // Enter adds a new line; use Ctrl/Cmd+Enter or the button to create the batch.
+
+  function startDrag(e) {
+    if (e.target.classList.contains('remove') || board.classList.contains('drawing')) return;
+    const note = e.currentTarget;
+    e.preventDefault();
+    document.querySelectorAll('.sticky').forEach(n => n.classList.remove('selected'));
+    note.classList.add('selected'); selectedNote = note;
+    const noteRect = note.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+    dragData = { note, dx: e.clientX - noteRect.left, dy: e.clientY - noteRect.top, boardRect };
+    note.setPointerCapture?.(e.pointerId);
+    note.style.zIndex = String(6 + Date.now() % 100000);
+    note.addEventListener('pointermove', moveDrag);
+    note.addEventListener('pointerup', stopDrag, { once:true });
+    note.addEventListener('pointercancel', stopDrag, { once:true });
+  }
+  function moveDrag(e) {
+    if (!dragData) return;
+    const {note, dx, dy, boardRect} = dragData;
+    const x = Math.max(0, Math.min(board.clientWidth - note.offsetWidth, e.clientX - boardRect.left - dx));
+    const y = Math.max(0, Math.min(board.clientHeight - note.offsetHeight, e.clientY - boardRect.top - dy));
+    note.style.left = x + 'px'; note.style.top = y + 'px';
+  }
+  function stopDrag(e) {
+    if (!dragData) return;
+    dragData.note.removeEventListener('pointermove', moveDrag);
+    dragData = null;
+  }
+
+  function setDrawing(on) {
+    board.classList.toggle('drawing', on);
+    drawBtn.classList.toggle('active', on && !erasing);
+    eraserBtn.classList.toggle('active', on && erasing);
+    drawBtn.textContent = on && !erasing ? '✓ Dibujando (terminar)' : '✎ Dibujar';
+    canvas.style.cursor = on ? (erasing ? 'cell' : 'crosshair') : 'default';
+  }
+  drawBtn.addEventListener('click', () => {
+    if (board.classList.contains('drawing') && !erasing) setDrawing(false);
+    else { erasing = false; setDrawing(true); }
+  });
+  eraserBtn.addEventListener('click', () => {
+    erasing = true;
+    if (!board.classList.contains('drawing')) setDrawing(true); else setDrawing(true);
+  });
+
+  function pointFromEvent(e) {
+    const r = canvas.getBoundingClientRect();
+    return {x:e.clientX-r.left, y:e.clientY-r.top};
+  }
+  canvas.addEventListener('pointerdown', e => {
+    if (!board.classList.contains('drawing')) return;
+    drawing = true; activePointer = e.pointerId; lastPoint = pointFromEvent(e);
+    canvas.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.moveTo(lastPoint.x, lastPoint.y);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.lineWidth = erasing ? 22 : Number(document.getElementById('penSize').value);
+    ctx.globalCompositeOperation = erasing ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = document.getElementById('penColor').value;
+    ctx.fillStyle = document.getElementById('penColor').value;
+    if (!erasing) { ctx.beginPath(); ctx.arc(lastPoint.x,lastPoint.y,ctx.lineWidth/2,0,Math.PI*2); ctx.fill(); }
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!drawing || e.pointerId !== activePointer) return;
+    const p = pointFromEvent(e);
+    ctx.lineTo(p.x,p.y); ctx.stroke();
+    lastPoint = p; e.preventDefault();
+  });
+  function finishDraw(e) {
+    if (e.pointerId !== activePointer) return;
+    drawing = false; activePointer = null; lastPoint = null; ctx.beginPath();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  canvas.addEventListener('pointerup', finishDraw);
+  canvas.addEventListener('pointercancel', finishDraw);
+
+  document.getElementById('clearDrawBtn').addEventListener('click', () => {
+    if (confirm('¿Borrar todos los trazos del dibujo?')) ctx.clearRect(0,0,canvas.width,canvas.height);
+  });
+  document.getElementById('clearIdeasBtn').addEventListener('click', () => {
+    if (confirm('¿Eliminar todas las notas?')) {
+      document.querySelectorAll('.sticky').forEach(n => n.remove());
+      selectedNote = null;
+    }
+  });
+})();
+</script>
+</body>
+</html>
