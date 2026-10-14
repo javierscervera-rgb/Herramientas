@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tierra Santa · Ministerio de Jesús</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root { --bg:#f4f4f2; --panel:#fff; --text:#222; --muted:#777; --line:#e6e6e6; --hover:#f5f5f5; --active:#fdeceA; --accent:#e8412c; --btn:#fafafa; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#1b1b1a; --panel:#262625; --text:#eee; --muted:#aaa; --line:#3a3a38; --hover:#303030; --active:#4a2a25; --btn:#303030; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--text); }
+  .app { display: flex; height: 100%; }
+  aside { width: 280px; min-width: 260px; background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+  aside h1 { font-size: 18px; padding: 14px 16px 8px; }
+  .tools { display: flex; gap: 8px; padding: 6px 16px 12px; border-bottom: 1px solid var(--line); }
+  .tools input { flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--btn); color: var(--text); font-size: 14px; }
+  .tools button { padding: 8px 10px; border: 1px solid var(--line); background: var(--btn); color: var(--text); border-radius: 8px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+  ul { list-style: none; overflow-y: auto; flex: 1; }
+  li { padding: 11px 16px; border-bottom: 1px solid var(--line); cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  li:hover { background: var(--hover); }
+  li.active { background: var(--active); font-weight: 600; }
+  li .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; flex: none; }
+  li.active .dot { background: var(--accent); }
+  main { flex: 1; overflow: hidden; position: relative; padding-top: env(safe-area-inset-top, 0px); }
+  .mapa { position: relative; width: 100%; line-height: 0; }
+  .mapa img { width: 100%; height: auto; display: block; user-select: none; -webkit-user-drag: none; }
+  .marker { position: absolute; transform: translate(-50%, -100%); pointer-events: none; animation: caer .35s ease-out; }
+  .marker svg { width: 36px; height: 36px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); display:block; }
+  .marker span { position: absolute; left: 50%; top: -24px; transform: translateX(-50%); background: #222; color: #fff;
+    font-size: 13px; line-height: 1; padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+  @keyframes caer { from { transform: translate(-50%, -140%); opacity: 0; } to { transform: translate(-50%, -100%); opacity: 1; } }
+
+  .app { flex-direction: column; }
+  .cols { display: flex; flex: 1; min-height: 0; }
+  .rueda { background: var(--panel); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .info { padding: 8px 16px 2px; font-size: 14px; min-height: 58px; }
+  .info b { color: #1a73e8; }
+  .info small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .wrap { position: relative; }
+  .wrap::before { content: ""; position: absolute; left: 50%; top: 4px; bottom: 4px; width: 78px; margin-left: -39px; border: 2px solid #1a73e8; border-radius: 12px; pointer-events: none; z-index: 2; }
+  .track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 8px 0; }
+  .track::-webkit-scrollbar { display: none; }
+  .sp { flex: none; }
+  .mes { flex: none; width: 84px; scroll-snap-align: center; text-align: center; cursor: pointer; padding: 4px 0; opacity: .45; transition: opacity .15s, transform .15s; }
+  .mes.sel { opacity: 1; transform: scale(1.08); }
+  .mes .m { font-size: 15px; font-weight: 600; }
+  .mes .a { font-size: 11px; color: var(--muted); }
+  .mes.ini { border-left: 1px dashed var(--line); }
+
+  .mapwrap { flex: 1; position: relative; min-width: 0; min-height: 0; display: flex; }
+  .mapwrap main { flex: 1; min-width: 0; }
+  .card { position: absolute; left: 12px; bottom: 12px; z-index: 5; width: min(340px, calc(100% - 24px)); max-height: 60%; overflow-y: auto;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-left: 4px solid #1a73e8; border-radius: 12px;
+    padding: 12px 34px 12px 14px; box-shadow: 0 4px 16px rgba(0,0,0,.25); font-size: 13.5px; line-height: 1.4; }
+  .card[hidden] { display: none; }
+  .card h3 { font-size: 14px; margin-bottom: 4px; }
+  .card .sub { font-weight: 600; margin-bottom: 4px; }
+  .card .cita { margin-top: 6px; color: #1a73e8; font-weight: 600; }
+  .card .x { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+  @media (max-width: 700px) {
+    .cols { flex-direction: column; }
+    aside { width: 100%; height: 34%; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { flex: 1; min-height: 0; padding-top: 0; }
+    .mapa { width: 160%; }
+  }
+  #map { width: 100%; height: 100%; background: #aad3df; }
+  .leaflet-tooltip.nom { background: #222; color: #fff; border: 0; font-size: 13px; padding: 4px 8px; box-shadow: none; }
+  .leaflet-tooltip.nom::before { display: none; }
+  .pinicon { background: none; border: 0; }
+  .pinicon svg { width: 36px; height: 36px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+  .card, .leaflet-top, .leaflet-bottom { z-index: 1000; }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="cols">
+  <aside>
+    <h1>Tierra Santa</h1>
+    <div class="tools">
+      <input id="buscar" type="search" placeholder="Buscar lugar…">
+      <button id="btnLimpiar">Limpiar</button>
+    </div>
+    <ul id="lista"></ul>
+  </aside>
+  <div class="mapwrap">
+  <main id="main">
+    <div id="map"></div>
+  </main>
+  <div class="card" id="card" hidden>
+    <button class="x" id="cerrar" aria-label="Cerrar">×</button>
+    <h3 id="ct"></h3><div class="sub" id="cs"></div><div id="cp"></div><div class="cita" id="cc"></div>
+  </div>
+  </div>
+</div>
+<footer class="rueda">
+  <div class="info" id="info"></div>
+  <div class="wrap"><div class="track" id="track"></div></div>
+</footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  const PL = [["Tiro",33.2705,35.2038],["Panias",33.2480,35.6942],["Monfort",33.0494,35.2272],["Katzrin",32.9900,35.6911],["Safed",32.9646,35.4960],
+["Corazín",32.9096,35.5517],["Cafarnaum",32.8805,35.5750],["Tabgha",32.8728,35.5483],["Betsaida",32.9097,35.6306],["Acre",32.9234,35.0818],
+["Magdala",32.8261,35.5169],["Gergesa",32.8244,35.6580],["Haifa",32.7940,34.9896],["Cuernos Hattin",32.8029,35.4453],["Tiberías",32.7922,35.5312],
+["Hippus",32.7792,35.6592],["Hamat Tiberías",32.7650,35.5360],["Seforis",32.7536,35.2793],["Caná",32.7467,35.3405],["Atlit",32.6892,34.9422],
+["Rafana",32.7050,35.8740],["Monte Carmelo",32.7253,35.0475],["Nazaret",32.7019,35.2978],["Gadara",32.6547,35.6853],["Monte Tabor",32.6869,35.3906],
+["Naín",32.6358,35.3503],["Belvior",32.5983,35.5311],["Beit Alfa",32.5167,35.4261],["Escitópolis",32.5040,35.4960],["Cesárea",32.5000,34.8917],
+["Jenin",32.4600,35.3000],["Samaria",32.2766,35.1922],["Gerasa",32.2808,35.8993],["Sicar",32.2178,35.2878],["Monte Gerizim",32.2000,35.2700],
+["Tel Aviv - Yafo",32.0536,34.7516],["Lod",31.9514,34.8953],["Efraín",31.9467,35.2833],["Monte Tentación",31.8765,35.4280],["Jericó",31.8700,35.4440],
+["Arimatea",31.8550,35.2400],["Betabará",31.8372,35.5497],["Emaus",31.8394,34.9892],["San Jorge",31.8317,35.3939],["Betfagé",31.7795,35.2452],
+["Betania",31.7710,35.2610],["Jerusalén",31.7780,35.2354],["Belén",31.7040,35.2065],["San Teodosio",31.7255,35.3250],["Campo Pastores",31.7066,35.2300],
+["Mar Saba",31.7081,35.3340],["Ascalón",31.6667,34.5538],["Guvrin-Maresha",31.6061,34.8981]];
+  const LUGARES = PL.map(([nombre, lat, lng]) => ({ nombre, lat, lng })).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  // ===== Mapa (Leaflet + capas actuales) =====
+  const map = L.map('map').setView([32.1, 35.3], 8);
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
+  const sat = L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imágenes &copy; Esri' }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+  ]);
+  osm.addTo(map);
+  L.control.layers({ 'Mapa actual': osm, 'Satélite actual': sat }, null, { position: 'topright' }).addTo(map);
+
+  const pinSVG = c => '<svg viewBox="0 0 24 24"><path fill="' + c + '" stroke="#fff" stroke-width="1.2" d="M12 2C8 2 5 5 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.8" fill="#fff"/></svg>';
+  function crearPin(l, color) {
+    const m = L.marker([l.lat, l.lng], { icon: L.divIcon({ className: 'pinicon', html: pinSVG(color), iconSize: [36, 36], iconAnchor: [18, 34] }) });
+    m.bindTooltip(l.nombre, { permanent: true, direction: 'top', offset: [0, -30], className: 'nom' });
+    return m.addTo(map);
+  }
+
+  map.createPane('lineas').style.zIndex = 410;
+  map.createPane('puntos').style.zIndex = 420;
+  const TOP15 = ["Jerusalén","Belén","Nazaret","Cafarnaum","Betania","Betabará","Caná","Jericó","Sicar","Naín","Emaus","Monte Tabor","Panias","Betsaida","Magdala"];
+  TOP15.forEach(n => {
+    const l = LUGARES.find(x => x.nombre === n);
+    L.circleMarker([l.lat, l.lng], { pane: 'puntos', radius: 5, color: '#fff', weight: 1.5, fillColor: '#d00000', fillOpacity: 1, interactive: false }).addTo(map);
+  });
+
+  const lista = document.getElementById('lista');
+  const buscar = document.getElementById('buscar');
+  const activos = new Map();
+
+  function pintarLista() {
+    const q = buscar.value.trim().toLowerCase();
+    lista.innerHTML = '';
+    LUGARES.forEach((l, i) => {
+      if (q && !l.nombre.toLowerCase().includes(q)) return;
+      const li = document.createElement('li');
+      li.innerHTML = '<span class="dot"></span><span></span>';
+      li.lastChild.textContent = l.nombre;
+      if (activos.has(i)) li.classList.add('active');
+      li.onclick = () => alternar(i);
+      lista.appendChild(li);
+    });
+  }
+  function alternar(i) {
+    const yaActivo = activos.has(i);
+    activos.forEach(m => m.remove()); activos.clear();
+    if (!yaActivo) {
+      const l = LUGARES[i];
+      activos.set(i, crearPin(l, '#e8412c'));
+      map.flyTo([l.lat, l.lng], 14);
+    }
+    pintarLista();
+  }
+  document.getElementById('btnLimpiar').onclick = () => {
+    activos.forEach(m => m.remove()); activos.clear(); pintarLista();
+  };
+  buscar.oninput = pintarLista;
+  pintarLista();
+
+  // ===== Rueda del ministerio público: 36 meses (Pascuas en los meses 10, 22 y 34) =====
+  const MESES = ["Jul","Ago","Sep","Oct","Nov","Dic","Ene","Feb","Mar","Abr","May","Jun"];
+  const M = [
+    // Año 1
+    [["Betabará"],"Bautismo en el Jordán"],
+    [["Monte Tentación"],"Cuarenta días de ayuno en el desierto"],
+    [["Betabará"],"Juan lo señala como el Cordero; primeros discípulos"],
+    [["Caná"],"Bodas de Caná"],
+    [["Cafarnaum"],"Se establece en Cafarnaum"],
+    [["Nazaret"],"Visita a su familia en Nazaret"],
+    [["Cafarnaum"],"Enseñanza junto al lago"],
+    [["Tabgha"],"Predicación a orillas del lago"],
+    [["Jericó"],"Camino hacia Jerusalén por el valle del Jordán"],
+    [["Jerusalén"],"Primera Pascua: purificación del Templo"],
+    [["Jerusalén"],"Diálogo con Nicodemo"],
+    [["Betabará"],"Ministerio en Judea junto al Jordán"],
+    // Año 2
+    [["Betabará"],"Ministerio en Judea; arresto de Juan"],
+    [["Sicar","Monte Gerizim"],"La samaritana junto al pozo de Jacob"],
+    [["Caná"],"Curación del hijo del funcionario real"],
+    [["Nazaret"],"Rechazo en la sinagoga de Nazaret"],
+    [["Cafarnaum","Tabgha"],"Llamada de los pescadores; curaciones"],
+    [["Cafarnaum"],"Curaciones y enseñanza en la sinagoga"],
+    [["Cuernos Hattin"],"Sermón de la montaña y elección de los Doce"],
+    [["Naín"],"Resurrección del hijo de la viuda"],
+    [["Magdala","Gergesa"],"Mujeres que le siguen; el endemoniado de Gergesa"],
+    [["Betsaida"],"Segunda Pascua: multiplicación de los panes"],
+    [["Cafarnaum"],"Discurso del Pan de Vida"],
+    [["Tiro"],"Retiro por la región de Tiro y Sidón"],
+    // Año 3
+    [["Hippus"],"Decápolis: curación del sordomudo"],
+    [["Panias"],"Confesión de Pedro en Cesarea de Filipo"],
+    [["Monte Tabor"],"Transfiguración"],
+    [["Jerusalén"],"Fiesta de los Tabernáculos"],
+    [["Cafarnaum"],"Enseñanza a los discípulos"],
+    [["Jerusalén"],"Fiesta de la Dedicación"],
+    [["Betabará"],"Retiro al otro lado del Jordán"],
+    [["Betania"],"Resurrección de Lázaro"],
+    [["Efraín","Jericó"],"Retiro en Efraín; Zaqueo en Jericó"],
+    [["Betania","Betfagé","Jerusalén"],"Tercera Pascua: entrada en Jerusalén, Pasión y muerte"],
+    [["Emaus","Jerusalén","Tabgha"],"Resurrección y apariciones; Ascensión"],
+    [["Jerusalén"],"Pentecostés"]
+  ];
+  const D = [["Jesús llega desde Nazaret al Jordán y es bautizado por Juan; el Espíritu desciende sobre él y se le proclama Hijo amado.", "Mt 3,13-17; Jn 1,28"], ["Tras el bautismo el Espíritu lo lleva al desierto, donde ayuna y es tentado. La tradición lo sitúa en el monte cercano a Jericó.", "Mt 4,1-11; Mc 1,12-13"], ["Vuelve al Jordán, donde Juan lo señala como «el Cordero de Dios» y los primeros discípulos (Andrés, Juan, Pedro) empiezan a seguirlo.", "Jn 1,29-42"], ["Asiste a una boda en Caná de Galilea con su madre y sus discípulos; convierte el agua en vino, primer signo de su gloria.", "Jn 2,1-11"], ["Baja a Cafarnaum con su madre, sus hermanos y sus discípulos, y se queda allí unos días. Será su base en Galilea.", "Jn 2,12"], ["Probable visita a su familia y a su pueblo de infancia antes de subir a Jerusalén. Es una reconstrucción sin cita directa.", "Sin cita directa; cf. Mc 6,3"], ["Enseña en la sinagoga de Cafarnaum y la gente se admira de que hable con autoridad.", "Mc 1,21-22"], ["La multitud se agolpa a la orilla del lago y Jesús enseña desde una barca. La tradición recuerda Tabgha como este lugar junto al lago.", "Lc 5,1-3"], ["Camino de Galilea a Jerusalén por el valle del Jordán, ruta habitual de los peregrinos judíos. Es una reconstrucción sin cita directa.", "Sin cita directa; cf. Jn 2,13"], ["Sube a Jerusalén para la Pascua, expulsa del Templo a los vendedores y anuncia el templo de su cuerpo.", "Jn 2,13-22"], ["Nicodemo, fariseo y jefe de los judíos, lo visita de noche; Jesús le habla del nuevo nacimiento y del amor de Dios.", "Jn 3,1-21"], ["Se queda con sus discípulos en tierra de Judea y bautizan, mientras Juan sigue bautizando cerca de allí.", "Jn 3,22-23"], ["Continúa el ministerio en Judea hasta que Juan es encarcelado; entonces Jesús se retira a Galilea.", "Jn 3,22-24; Mt 4,12"], ["De paso por Samaria, cansado junto al pozo de Jacob, habla con una mujer samaritana y le revela que es el Mesías.", "Jn 4,4-42"], ["De nuevo en Caná, un funcionario real le pide que cure a su hijo enfermo en Cafarnaum y Jesús lo sana a distancia.", "Jn 4,46-54"], ["En la sinagoga de su pueblo lee a Isaías y dice que se cumple en él; sus vecinos lo rechazan.", "Lc 4,16-30"], ["Junto al lago llama a Simón, Andrés, Santiago y Juan para hacerlos pescadores de hombres.", "Mc 1,16-20; Lc 5,1-11"], ["Un sábado enseña en la sinagoga, expulsa a un espíritu impuro y cura a la suegra de Pedro y a muchos enfermos.", "Mc 1,21-34; Lc 4,31-41"], ["Tras orar en el monte elige a los Doce y pronuncia el Sermón de la montaña. La tradición lo sitúa en los Cuernos de Hattin.", "Mt 5–7; Lc 6,12-49"], ["A las puertas de Naín devuelve a la vida al hijo único de una viuda, y la gente glorifica a Dios.", "Lc 7,11-17"], ["Recorre pueblos acompañado de los Doce y de mujeres, entre ellas María Magdalena. Cruza el lago y libera a un endemoniado en el país de los gerasenos.", "Lc 8,1-3; Mc 5,1-20"], ["Cerca de la Pascua se retira a un lugar solitario junto a Betsaida y da de comer a cinco mil hombres con cinco panes y dos peces.", "Jn 6,1-15; Lc 9,10-17"], ["En la sinagoga de Cafarnaum habla del pan del cielo y se presenta como «el pan de vida»; muchos discípulos se marchan.", "Jn 6,22-59"], ["Se retira a la región de Tiro y Sidón, donde cura a la hija de una mujer sirofenicia por su fe.", "Mc 7,24-30; Mt 15,21-28"], ["En territorio de la Decápolis cura a un sordomudo y la multitud queda admirada.", "Mc 7,31-37"], ["En Cesarea de Filipo, cerca de Panias, pregunta quién dicen que es y Pedro lo confiesa Mesías; anuncia su Pasión.", "Mt 16,13-20; Mc 8,27-30"], ["Sube a un monte alto con Pedro, Santiago y Juan y se transfigura ante ellos. La tradición señala el Tabor; otros prefieren el Hermón.", "Mt 17,1-9; Lc 9,28-36"], ["Sube a Jerusalén a la fiesta de las Tiendas y enseña en el Templo; proclama que quien tenga sed venga a él.", "Jn 7,2-37"], ["De vuelta en Cafarnaum instruye a los discípulos sobre el impuesto del Templo y sobre la vida de la comunidad.", "Mt 17,24-27; Mt 18"], ["Durante la fiesta de la Dedicación declara en el Templo: «yo y el Padre somos uno». Intentan apedrearlo.", "Jn 10,22-39"], ["Se retira al otro lado del Jordán, donde Juan había bautizado, y mucha gente cree en él.", "Jn 10,40-42"], ["Recibe en Betania el aviso de la enfermedad de su amigo Lázaro y lo resucita después de cuatro días en el sepulcro.", "Jn 11,1-44"], ["Se retira a Efraín con sus discípulos. De camino a Jerusalén pasa por Jericó, cura a un ciego y se hospeda en casa de Zaqueo.", "Jn 11,54; Mc 10,46-52; Lc 19,1-10"], ["Entra en Jerusalén desde Betfagé, es ungido en Betania, celebra la Cena, es entregado, crucificado y sepultado.", "Mt 21,1-11; Jn 12,1-8; Mc 14–15"], ["Resucita al tercer día y se aparece a los suyos: a los de Emaús, en Jerusalén y junto al lago. La Ascensión tiene lugar en el monte de los Olivos, cerca de Betania.", "Lc 24,13-51; Jn 21; Hch 1,9-12"], ["Cincuenta días después de la Pascua el Espíritu Santo desciende sobre los discípulos reunidos en Jerusalén.", "Hch 2,1-13"]];
+  const porNombre = Object.fromEntries(LUGARES.map(l => [l.nombre, l]));
+  const track = document.getElementById('track');
+  const info = document.getElementById('info');
+  const IW = 84;
+  let marcasMes = [], actual = -1;
+
+  // Itinerario plano (sin repetir lugares consecutivos) y posición final de cada mes
+  const F = [], fin = [];
+  M.forEach(([lugares]) => {
+    lugares.forEach(n => { if (!F.length || F[F.length - 1] !== n) F.push(n); });
+    fin.push(F.length - 1);
+  });
+  const capaLinea = L.layerGroup().addTo(map);
+  function dibujarLinea(i) {
+    capaLinea.clearLayers();
+    const e = fin[i];
+    const pts = F.slice(Math.max(0, e - 5), e + 1).map(n => porNombre[n]); // antiguo -> actual
+    const legs = pts.length - 1, N = 24;
+    for (let k = 0; k < legs; k++) {
+      const a = pts[k], b = pts[k + 1];
+      for (let j = 0; j < N; j++) {
+        const t0 = j / N, t1 = (j + 1) / N;
+        const u = (legs - k) - (t0 + t1) / 2;      // lugares de distancia al actual (0 = actual, 5 = el más antiguo)
+        L.polyline([
+          [a.lat + (b.lat - a.lat) * t0, a.lng + (b.lng - a.lng) * t0],
+          [a.lat + (b.lat - a.lat) * t1, a.lng + (b.lng - a.lng) * t1]
+        ], { pane: 'lineas', color: '#e00000', weight: 4, opacity: Math.max(0, 1 - u / 5), lineCap: 'butt', interactive: false }).addTo(capaLinea);
+      }
+    }
+  }
+
+  function sp() { const d = document.createElement('div'); d.className = 'sp'; return d; }
+  const spL = sp(), spR = sp();
+  track.appendChild(spL);
+  M.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'mes' + (i % 12 === 0 ? ' ini' : '');
+    d.innerHTML = '<div class="m">' + MESES[i % 12] + '</div><div class="a">Año ' + (Math.floor(i / 12) + 1) + '</div>';
+    d.onclick = () => track.scrollTo({ left: i * IW, behavior: 'smooth' });
+    track.appendChild(d);
+  });
+  track.appendChild(spR);
+  function ajustar() { const w = Math.max(0, (track.clientWidth - IW) / 2); spL.style.width = spR.style.width = w + 'px'; map.invalidateSize(); }
+
+  function seleccionar(i) {
+    if (i === actual) return;
+    actual = i;
+    track.querySelectorAll('.mes').forEach((e, k) => e.classList.toggle('sel', k === i));
+    marcasMes.forEach(m => m.remove()); marcasMes = [];
+    const [lugares, texto] = M[i];
+    const pts = [];
+    lugares.forEach(n => {
+      const l = porNombre[n]; if (!l) return;
+      marcasMes.push(crearPin(l, '#1a73e8'));
+      pts.push([l.lat, l.lng]);
+    });
+    dibujarLinea(i);
+    const e = fin[i];
+    const todos = F.slice(Math.max(0, e - 5), e + 1).map(n => [porNombre[n].lat, porNombre[n].lng]).concat(pts);
+    if (todos.length === 1) map.flyTo(todos[0], 13);
+    else map.flyToBounds(L.latLngBounds(todos), { padding: [70, 70], maxZoom: 13 });
+    const tit = 'Año ' + (Math.floor(i / 12) + 1) + ' · ' + MESES[i % 12];
+    info.innerHTML = '<b>' + tit + '</b> — ' + lugares.join(', ') + '<small>Reconstrucción aproximada según los Evangelios</small>';
+    document.getElementById('ct').textContent = tit + ' — ' + lugares.join(', ');
+    document.getElementById('cs').textContent = texto;
+    document.getElementById('cp').textContent = D[i][0];
+    document.getElementById('cc').textContent = '📖 ' + D[i][1];
+    document.getElementById('card').hidden = false;
+  }
+  document.getElementById('cerrar').onclick = () => { document.getElementById('card').hidden = true; };
+  let tick = false;
+  track.addEventListener('scroll', () => {
+    if (tick) return; tick = true;
+    requestAnimationFrame(() => { tick = false;
+      seleccionar(Math.min(M.length - 1, Math.max(0, Math.round(track.scrollLeft / IW)))); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target === buscar) return;
+    if (e.key === 'ArrowRight') track.scrollTo({ left: Math.min(M.length - 1, actual + 1) * IW, behavior: 'smooth' });
+    if (e.key === 'ArrowLeft') track.scrollTo({ left: Math.max(0, actual - 1) * IW, behavior: 'smooth' });
+  });
+  window.addEventListener('resize', ajustar);
+  ajustar(); seleccionar(0);
+</script>
+</body>
+</html>
