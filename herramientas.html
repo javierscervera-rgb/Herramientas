@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Herramientas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1614;
+    --surface: #201c19;
+    --chip: #2a2521;
+    --line: #3a322d;
+    --ink: #f0e6d8;
+    --muted: #a89a8a;
+    --accent: #d9806c;
+    --accent-ink: #1a1614;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.5;
+    padding: max(2rem, env(safe-area-inset-top, 0px)) 1.25rem max(2rem, env(safe-area-inset-bottom, 0px));
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  header { text-align: center; margin: 0.5rem 0 2rem; }
+  h1 {
+    font-family: "Fraunces", var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.2rem, 8vw, 3rem);
+    color: var(--accent);
+    margin: 0 0 0.6rem;
+    line-height: 1.1;
+  }
+  .sub { font-style: italic; color: var(--muted); margin: 0; }
+  nav { display: grid; gap: 0.8rem; }
+  a.tool {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0.95rem 1.1rem;
+    transition: background .15s, border-color .15s;
+  }
+  .code {
+    flex: none;
+    width: 3.4rem;
+    text-align: center;
+    background: var(--chip);
+    color: var(--muted);
+    font: 600 0.75rem/1 var(--sans);
+    letter-spacing: 0.04em;
+    padding: 0.5rem 0;
+    border-radius: 6px;
+  }
+  .name { flex: 1; font-size: 1.15rem; }
+  .desc { font: 0.8rem var(--sans); color: var(--muted); text-align: right; }
+  @media (max-width: 480px) { .desc { display: none; } }
+  a.tool:hover { background: var(--chip); border-color: var(--accent); }
+  a.tool:hover .code { background: var(--accent); color: var(--accent-ink); }
+  a.tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  @media (prefers-reduced-motion: reduce) { a.tool { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Herramientas</h1>
+    <p class="sub">Elige la herramienta que quieres abrir</p>
+  </header>
+  <nav>
+    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/Biblia.html">
+      <span class="code">BI</span><span class="name">Biblia</span><span class="desc">Biblia de Jerusalén</span>
+    </a>
+    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/index.html">
+      <span class="code">EP</span><span class="name">Epacta</span><span class="desc">Calendario y epacta</span>
+    </a>
+    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/mapaTSinteractivo.html">
+      <span class="code">TS</span><span class="name">Mapa Tierra Santa</span><span class="desc">Mapa interactivo</span>
+    </a>
+    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/Lector.html">
+      <span class="code">LE</span><span class="name">Lector editor</span><span class="desc">Lee y edita textos</span>
+    </a>
+    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/DAFOiPad.html">
+      <span class="code">DA</span><span class="name">DAFO interactivo</span><span class="desc">Análisis DAFO</span>
+    </a>
+  </nav>
+</main>
+</body>
+</html>
