@@ -46,7 +46,8 @@ h2{font-family:Georgia,serif;color:var(--salmon);font-size:clamp(34px,7vw,46px);
 
   <main id="home">
     <h1>Catena Aurea</h1>
-    <p class="sub">Santo Tomás de Aquino · Evangelio según San Mateo</p>
+    <p class="sub" id="sub"></p>
+    <div class="tabs" id="books"></div>
     <div class="tabs"><button id="t1" class="on">Capítulos</button><button id="t2">Ir a…</button></div>
     <div id="list"></div>
     <div id="goto" class="goto hide">
@@ -57,7 +58,7 @@ h2{font-family:Georgia,serif;color:var(--salmon);font-size:clamp(34px,7vw,46px);
   </main>
 
   <main id="read" class="hide">
-    <div class="kick">Mateo</div>
+    <div class="kick" id="kick"></div>
     <h2 id="title"></h2>
     <select id="sSec" class="vsel" aria-label="Ir a sección"></select>
     <div id="text"></div>
@@ -68,44 +69,54 @@ h2{font-family:Georgia,serif;color:var(--salmon);font-size:clamp(34px,7vw,46px);
 <script type="module">
 import { Catena } from './catena.js';
 const $ = (i) => document.getElementById(i), P = new URLSearchParams(location.search);
-let IDX, cap = 0, fs = 19;
+let IDX, bk = 'mt', cap = 0, capBk = '', fs = 19;
 try { fs = +localStorage.getItem('cat-fs') || 19; } catch (e) {}
 const setFs = (v) => { fs = Math.max(14, Math.min(34, v)); document.documentElement.style.setProperty('--fs', fs + 'px'); try { localStorage.setItem('cat-fs', fs); } catch (e) {} };
 setFs(fs); $('aMin').onclick = () => setFs(fs - 2); $('aMax').onclick = () => setFs(fs + 2);
 const opt = (v, t) => Object.assign(document.createElement('option'), { value: v, textContent: t });
-const capName = (n) => `Capítulo ${n}`;
+const B = () => IDX.books.find(b => b.id === bk), CH = () => B().chapters, capName = (n) => `Capítulo ${n}`;
+const H = (n, sec) => (bk === 'mt' ? '' : bk + '.') + n + (sec ? '.' + sec : '');
+const sid = (n, sec) => 's-' + (bk === 'mt' ? '' : bk + '_') + n + '_' + sec.replace(/[^\w-]/g, '_');
 
 async function boot() {
   IDX = await Catena.index();
-  // Modo embebido: ?ref=5.3-12#... → solo el fragmento, sin navegación
   if (P.has('ref')) { document.body.innerHTML = '<div id="e" style="padding:12px"></div>'; document.body.style.background = P.get('bg') || 'transparent'; Catena.render(document.getElementById('e'), P.get('ref'), { ids: false, verse: P.get('verse') !== '0', notes: P.get('notes') !== '0' }); return; }
-  $('list').replaceChildren(...IDX.chapters.map(c => { const b = document.createElement('button'); b.className = 'row'; b.innerHTML = `<span class="tag">CAP ${c.n}</span><span>${capName(c.n)}</span><small>${c.sections.length} sec. ▾</small>`; b.onclick = () => (location.hash = c.n); return b; }));
-  for (const s of [$('sCap'), $('gCap')]) s.replaceChildren(...IDX.chapters.map(c => opt(c.n, 'Cap. ' + c.n)));
   $('t1').onclick = () => tab(1); $('t2').onclick = () => tab(2);
-  $('gCap').onchange = () => fillSec($('gSec'), +$('gCap').value, 'Sección…'); fillSec($('gSec'), 1, 'Sección…');
-  $('go').onclick = () => (location.hash = $('gCap').value + ($('gSec').value ? '.' + $('gSec').value : ''));
-  $('bIdx').onclick = () => (location.hash = ''); $('sCap').onchange = () => (location.hash = $('sCap').value);
-  $('prev').onclick = () => (location.hash = cap - 1); $('next').onclick = () => (location.hash = cap + 1);
-  $('sSec').onchange = () => { const e = document.getElementById('s-' + cap + '_' + $('sSec').value.replace(/[^\w-]/g, '_')); e?.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('sSec').selectedIndex = 0; };
+  $('gCap').onchange = () => fillSec($('gSec'), +$('gCap').value, 'Sección…');
+  $('go').onclick = () => (location.hash = H($('gCap').value, $('gSec').value));
+  $('bIdx').onclick = () => (location.hash = ''); $('sCap').onchange = () => (location.hash = H($('sCap').value));
+  $('prev').onclick = () => (location.hash = H(cap - 1)); $('next').onclick = () => (location.hash = H(cap + 1));
+  $('sSec').onchange = () => { document.getElementById(sid(cap, $('sSec').value))?.scrollIntoView({ behavior: 'smooth', block: 'start' }); $('sSec').selectedIndex = 0; };
   addEventListener('hashchange', route); route();
 }
+function setBook(id) {
+  bk = id; const b = B();
+  $('sub').textContent = `Santo Tomás de Aquino · Evangelio según San ${b.name}`;
+  $('books').replaceChildren(...IDX.books.map(x => { const e = document.createElement('button'); e.textContent = x.name; e.className = x.id === id ? 'on' : ''; e.onclick = () => { setBook(x.id); try { localStorage.setItem('cat-bk', x.id); } catch (_) {} }; return e; }));
+  $('list').replaceChildren(...CH().map(c => { const r = document.createElement('button'); r.className = 'row'; r.innerHTML = `<span class="tag">CAP ${c.n}</span><span>${capName(c.n)}</span><small>${c.sections.length} sec. ▾</small>`; r.onclick = () => (location.hash = H(c.n)); return r; }));
+  for (const s of [$('sCap'), $('gCap')]) s.replaceChildren(...CH().map(c => opt(c.n, 'Cap. ' + c.n)));
+  fillSec($('gSec'), 1, 'Sección…');
+}
 const tab = (n) => { $('t1').classList.toggle('on', n == 1); $('t2').classList.toggle('on', n == 2); $('list').classList.toggle('hide', n != 1); $('goto').classList.toggle('hide', n != 2); };
-function fillSec(sel, n, first) { const c = IDX.chapters.find(c => c.n == n); sel.replaceChildren(opt('', first), ...c.sections.map(s => opt(s.ref, s.label))); }
+function fillSec(sel, n, first) { const c = CH().find(c => c.n == n); sel.replaceChildren(opt('', first), ...c.sections.map(s => opt(s.ref, s.label))); }
 
 async function route() {
-  const m = location.hash.slice(1).match(/^(\d+)(?:\.(.+))?$/), home = !m || +m[1] < 1 || +m[1] > 28;
-  $('home').classList.toggle('hide', !home); $('read').classList.toggle('hide', home); $('nav').classList.toggle('hide', home);
+  const m = location.hash.slice(1).match(/^(?:(mt|mc|lc|jn)\.)?(\d+)(?:\.(.+))?$/);
+  let id = m && m[1] || (m ? 'mt' : '');
+  if (!id) { try { id = localStorage.getItem('cat-bk') || 'mt'; } catch (_) { id = 'mt'; } }
+  if (id !== bk || !$('books').children.length) setBook(IDX.books.some(x => x.id === id) ? id : 'mt');
+  const n = m ? +m[2] : 0, home = !m || !CH().some(c => c.n === n);
+  $('home').classList.toggle('hide', !home); $('read').classList.toggle('hide', home);
   $('nav').style.display = home ? 'none' : 'contents';
-  if (home) { document.title = 'Catena Aurea · Evangelio según San Mateo'; return; }
-  const n = +m[1];
-  if (n !== cap) {
-    cap = n; $('sCap').value = n; $('title').textContent = capName(n); document.title = `Mateo ${n} · Catena Aurea`;
-    const c = IDX.chapters.find(c => c.n == n);
+  if (home) { document.title = 'Catena Aurea · Evangelio según San ' + B().name; return; }
+  if (n !== cap || bk !== capBk) {
+    cap = n; capBk = bk; $('sCap').value = n; $('kick').textContent = B().name; $('title').textContent = capName(n); document.title = `${B().name} ${n} · Catena Aurea`;
+    const c = CH().find(c => c.n == n);
     $('sSec').replaceChildren(opt('', `Ir a sección (${c.sections.length})`), ...c.sections.map(s => opt(s.ref, s.label)));
-    $('prev').classList.toggle('hide', n == 1); $('next').classList.toggle('hide', n == 28);
-    await Catena.render($('text'), String(n), { ids: true }); scrollTo(0, 0);
+    $('prev').classList.toggle('hide', n == 1); $('next').classList.toggle('hide', n == CH().length);
+    await Catena.render($('text'), H(n), { ids: true }); scrollTo(0, 0);
   }
-  if (m[2]) document.getElementById('s-' + n + '_' + m[2].replace(/[^\w-]/g, '_'))?.scrollIntoView({ block: 'start' });
+  if (m[3]) document.getElementById(sid(n, m[3]))?.scrollIntoView({ block: 'start' });
 }
 boot();
 </script>

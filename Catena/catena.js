@@ -1,46 +1,47 @@
-/* Catena Aurea · Santo Tomás de Aquino — Evangelio según San Mateo
+/* Catena Aurea · Santo Tomás de Aquino — Evangelios de San Mateo (mt), San Marcos (mc), San Lucas (lc) y San Juan (jn)
    Librería de consulta y embebido. Uso desde cualquier página:
      <script type="module" src="https://javierscervera-rgb.github.io/Herramientas/catena/catena.js"></script>
      <catena-fragment ref="5.3-12#2"></catena-fragment>
    o bien:  import { Catena } from '.../catena.js';  await Catena.render(el, '5.3-12');
-   Referencias (spec):  "5" capítulo · "5.3-12" sección · "5.3-12#2" comentario 2 · "5.3-12#2-4" comentarios 2 a 4
-                        "5.v4" sección que contiene el v. 4 · "5.3-12@Agustín" solo comentarios de ese autor
+   Referencias (spec):  "5" capítulo · "5.3-12" sección · "5.3-12#2" comentario 2  ·  otros evangelios: prefijo "mc." / "lc." / "jn." → "mc.1.4-8#2" · "5.3-12#2-4" comentarios 2 a 4
+                        "5.v4" o "5.4" sección(es) que contienen el v. 4 (si no hay sección exacta) · "5.3-12@Agustín" solo comentarios de ese autor
                         "1.pref" prefacio · "5.3-12#v" solo el texto evangélico */
 const BASE = new URL('./', import.meta.url).href;
 const cache = {};
+const NAMES = { mt: 'Mateo', mc: 'Marcos', lc: 'Lucas', jn: 'Juan' };
 const J = (u) => (cache[u] ??= fetch(BASE + u).then(r => { if (!r.ok) throw new Error(u); return r.json(); }));
 const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 export const Catena = {
   base: BASE,
   index: () => J('data/index.json'),
-  chapter: (n) => J(`data/mt/${String(n).padStart(2, '0')}.json`),
+  chapter: (n, b = 'mt') => J(`data/${b}/${String(n).padStart(2, '0')}.json`),
   parse(spec) {
-    const m = String(spec).trim().match(/^(\d+)(?:\.([^#@]+))?(?:#([\dv-]+))?(?:@(.+))?$/);
+    const m = String(spec).trim().match(/^(?:(mt|mc|lc|jn)\.)?(\d+)(?:\.([^#@]+))?(?:#([\dv-]+))?(?:@(.+))?$/);
     if (!m) throw new Error('Referencia no válida: ' + spec);
-    return { cap: +m[1], sec: m[2], c: m[3], author: m[4] };
+    return { book: m[1] || 'mt', cap: +m[2], sec: m[3], c: m[4], author: m[5] };
   },
   /* Devuelve datos puros: { cap, sections:[{id,ref,label,verse,notes,comments:[{id,n,author,text}]}] } */
   async get(spec) {
     const p = typeof spec === 'string' ? this.parse(spec) : spec;
-    const d = await this.chapter(p.cap);
+    const book = p.book || 'mt', pre = book === 'mt' ? '' : book + '.';
+    const d = await this.chapter(p.cap, book);
     let secs = d.sections;
     if (p.sec) {
-      const v = /^v(\d+)$/.exec(p.sec);
-      secs = secs.filter(s => {
-        if (!v) return s.ref.split('~')[0] === p.sec || s.ref === p.sec;
-        const [a, b = a] = s.ref.split('~')[0].split('-').map(Number);
-        return +v[1] >= a && +v[1] <= b;
-      });
+      const rg = (r) => { const [a, b = a] = r.split('~')[0].replace(/^v/, '').split('-').map(Number); return [a, b]; };
+      const exact = secs.filter(s => s.ref === p.sec || s.ref.split('~')[0] === p.sec);
+      if (exact.length && !p.sec.startsWith('v')) secs = exact;
+      else if (/^v?\d+(-\d+)?$/.test(p.sec)) { const [x, y] = rg(p.sec); secs = secs.filter(s => { if (s.ref === 'pref') return false; const [a, b] = rg(s.ref); return a <= y && b >= x; }); }
+      else secs = exact;
     }
     secs = secs.map(s => {
-      let cs = s.comments.map((c, i) => ({ ...c, n: i + 1, id: `${p.cap}.${s.ref}#${i + 1}` }));
+      let cs = s.comments.map((c, i) => ({ ...c, n: i + 1, id: `${pre}${p.cap}.${s.ref}#${i + 1}` }));
       if (p.author) cs = cs.filter(c => norm(c.author).includes(norm(p.author)));
       if (p.c === 'v') cs = [];
       else if (p.c) { const [a, b = a] = p.c.split('-').map(Number); cs = cs.filter(c => c.n >= a && c.n <= b); }
-      return { ...s, id: `${p.cap}.${s.ref}`, comments: cs };
+      return { ...s, id: `${pre}${p.cap}.${s.ref}`, comments: cs };
     });
-    return { cap: p.cap, spec: p, sections: secs };
+    return { book, name: NAMES[book], cap: p.cap, spec: p, sections: secs };
   },
   /* Texto plano de un fragmento */
   async text(spec) {
@@ -48,13 +49,15 @@ export const Catena = {
     return d.sections.map(s => [s.verse, ...s.comments.map(c => `${c.author}\n${c.text.replace(/\[\^\d+\]/g, '')}`)].filter(Boolean).join('\n\n')).join('\n\n');
   },
   /* Búsqueda simple por texto (carga los 28 capítulos) */
-  async search(q, max = 50) {
-    const out = [], nq = norm(q);
-    for (let n = 1; n <= 28 && out.length < max; n++) {
-      const d = await this.chapter(n);
-      d.sections.forEach(s => s.comments.forEach((c, i) => { if (norm(c.text).includes(nq)) out.push({ id: `${n}.${s.ref}#${i + 1}`, author: c.author, text: c.text }); }));
+  async search(q, book = 'mt', max = 50) {
+    const out = [], nq = norm(q), pre = book === 'mt' ? '' : book + '.';
+    const chs = (await this.index()).books.find(b => b.id === book).chapters;
+    for (const { n } of chs) {
+      if (out.length >= max) break;
+      const d = await this.chapter(n, book);
+      d.sections.forEach(s => s.comments.forEach((c, i) => { if (norm(c.text).includes(nq)) out.push({ id: `${pre}${n}.${s.ref}#${i + 1}`, author: c.author, text: c.text }); }));
     }
-    return out;
+    return out.slice(0, max);
   },
   /* Pinta un fragmento dentro de `el`. opts: {verse, notes, ids, title} */
   async render(el, spec, opts = {}) {
@@ -64,7 +67,7 @@ export const Catena = {
     let d;
     try { d = await this.get(spec); } catch (e) { el.textContent = 'No se pudo cargar el fragmento: ' + spec; return; }
     el.replaceChildren();
-    if (o.title) el.append(h('div', 'cat-h', `Mateo ${d.cap}`));
+    if (o.title) el.append(h('div', 'cat-h', `${d.name} ${d.cap}`));
     for (const s of d.sections) {
       const sec = h('section', 'cat-sec'); sec.id = 's-' + s.id.replace(/[^\w-]/g, '_');
       if (o.verse && s.verse) { const v = h('blockquote', 'cat-verse'); v.append(h('span', 'cat-lab', s.label), rich(s.verse)); sec.append(v); }
