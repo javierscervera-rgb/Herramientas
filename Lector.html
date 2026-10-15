@@ -1,0 +1,961 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lector anotable</title>
+<style>
+  :root {
+    --tabh: 60px;
+    --bg: #171310;        /* fondo principal: negro cálido */
+    --card: #201D18;      /* tarjetas y paneles: marrón carbón */
+    --accent: #CD8B75;    /* acento: salmón / terracota suave */
+    --btn2: #292420;      /* botones secundarios: marrón oscuro */
+    --tx: #F0E8DC;        /* texto principal: marfil cálido */
+    --tx2: #AA9D8F;       /* texto secundario: gris topo cálido */
+    --bd: #37312B;        /* bordes: marrón grisáceo */
+    --accent2: #D88972;   /* salmón alternativo: títulos y botones activos */
+    --danger: #E5806F;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--tx); -webkit-text-size-adjust: 100%; }
+  .hidden { display: none !important; }
+
+  /* ---------- Barra de pestañas ---------- */
+  #tabbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--tabh); z-index: 30;
+    display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+    background: var(--bg); border-bottom: 1px solid var(--bd); -webkit-user-select: none; user-select: none;
+  }
+  #logoBtn { flex: none; display: flex; align-items: center; }
+  .logo {
+    display: block;
+    height: clamp(32px, 5vw, 48px);
+    width: auto;
+    max-width: 200px;
+  }
+  #tabs { flex: 1; min-width: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  #tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; display: flex; align-items: center; gap: 4px; max-width: 210px; height: 34px;
+    padding: 0 4px 0 12px; border-radius: 9px; background: var(--btn2); color: var(--tx2);
+    border: 1px solid var(--bd); cursor: pointer; font-size: .9rem;
+  }
+  .tab.active { background: var(--accent2); color: var(--bg); border-color: var(--accent2); font-weight: 600; }
+  .tab .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab .x { flex: none; width: 26px; height: 26px; border: 0; border-radius: 7px; background: transparent; color: inherit; font-size: 1.2rem; line-height: 1; cursor: pointer; }
+  .tab .x:hover { background: rgba(127,127,127,.3); }
+  #newTab { flex: none; width: 38px; height: 34px; border-radius: 9px; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .tbtn { flex: none; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx); font-size: .9rem; cursor: pointer; }
+
+  /* ---------- Diálogo de guardado y aviso ---------- */
+  #saveDlg { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0,0,0,.6); }
+  #saveDlg .dlg { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--bd); color: var(--tx); border-radius: 16px; padding: 20px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+  #saveDlg h2 { margin: 0 0 14px; font-size: 1.2rem; color: var(--accent2); }
+  #saveDlg label { display: block; font-weight: 600; margin-bottom: 6px; }
+  #saveDlg .nm { display: flex; align-items: center; gap: 8px; }
+  #saveDlg input[type=text] { flex: 1; min-width: 0; height: 46px; font-size: 1rem; padding: 0 10px; border: 1px solid var(--bd); border-radius: 10px; background: var(--bg); color: var(--tx); }
+  #saveDlg .nm span { color: var(--tx2); }
+  #saveMsg { min-height: 1.3em; margin: 10px 0 0; color: var(--danger); font-size: .9rem; }
+  #saveDlg .acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  #saveDlg .acts button { height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx); font-size: 1rem; cursor: pointer; }
+  #saveDlg .acts button.ok { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+  #saveDlg .acts button:disabled { opacity: .5; cursor: not-allowed; }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70; max-width: 90vw; padding: 12px 18px; border-radius: 12px; background: var(--card); border: 1px solid var(--bd); color: var(--tx); font-size: .95rem; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+
+  /* ---------- Página 1 ---------- */
+  #setup { max-width: 760px; margin: 0 auto; padding: calc(var(--tabh) + 24px) 16px 40px; }
+  #setup h1 { font-size: 1.5rem; margin: 0 0 6px; color: var(--accent2); }
+  .hint { color: var(--tx2); font-size: .95rem; margin: 0 0 18px; }
+  .field { margin-bottom: 18px; }
+  .field > label { display: block; font-weight: 600; margin-bottom: 6px; }
+  textarea#inputText { width: 100%; min-height: 220px; padding: 12px; font-size: 1rem; border: 1px solid var(--bd); border-radius: 10px; resize: vertical; font-family: inherit; background: var(--card); color: var(--tx); }
+  textarea#inputText::placeholder { color: var(--tx2); }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .row .field { flex: 1 1 140px; }
+  input[type=color] { width: 100%; height: 44px; border: 1px solid var(--bd); border-radius: 8px; padding: 2px; background: var(--card); }
+  select, input[type=number] { width: 100%; height: 44px; font-size: 1rem; border: 1px solid var(--bd); border-radius: 8px; padding: 0 8px; background: var(--card); color: var(--tx); }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .range-val { font-variant-numeric: tabular-nums; color: var(--tx2); font-size: .9rem; }
+  #preview { border: 1px solid var(--bd); border-radius: 10px; padding: 14px 0; font-size: 1.05rem; line-height: 1.6; max-height: 140px; overflow: hidden; }
+  #preview div { white-space: pre-wrap; }
+  .btn-primary { width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 600; background: var(--accent); color: var(--bg); border: 0; border-radius: 10px; cursor: pointer; }
+  .btn-primary:disabled { background: var(--btn2); color: var(--tx2); cursor: not-allowed; }
+
+  /* ---------- Página 2 ---------- */
+  #toolbar {
+    position: fixed; top: var(--tabh); left: 0; right: 0; z-index: 10;
+    display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+    background: var(--card); color: var(--tx); border-bottom: 1px solid var(--bd); overflow-x: auto; white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,.4);
+    -webkit-user-select: none; user-select: none;
+  }
+  #toolbar button {
+    flex: none; height: 42px; padding: 0 14px; border: 1px solid var(--bd); border-radius: 10px;
+    background: var(--btn2); color: var(--tx); font-size: .95rem; cursor: pointer;
+  }
+  #toolbar button.active { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+  #toolbar button:disabled { opacity: .4; cursor: default; }
+  #toolbar .sep { flex: none; width: 1px; height: 26px; background: var(--bd); margin: 0 4px; }
+  #toolbar input[type=color] { flex: none; width: 42px; height: 42px; padding: 2px; border-radius: 10px; border: 1px solid var(--bd); background: var(--btn2); }
+  #toolbar input[type=range] { flex: none; width: 100px; }
+  #toolbar label { flex: none; font-size: .8rem; color: var(--tx2); }
+  #toolbar .tip { flex: none; font-size: .75rem; color: var(--tx2); }
+
+  #pencilMenu {
+    position: fixed; z-index: 40; display: flex; gap: 6px; padding: 8px;
+    background: var(--card); border: 1px solid var(--bd); border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.55);
+    -webkit-user-select: none; user-select: none; touch-action: none;
+  }
+  #pencilMenu button {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 72px; padding: 10px 8px;
+    border: 1px solid var(--bd); border-radius: 12px; background: var(--btn2); color: var(--tx); font-size: .8rem; cursor: pointer;
+  }
+  #pencilMenu button b { font-size: 1.4rem; font-weight: 400; line-height: 1.2; }
+  #pencilMenu button.active { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+
+  /* ---------- Cajas de texto ---------- */
+  .grp { display: flex; align-items: center; gap: 6px; flex: none; }
+  #boxes { position: absolute; left: 0; top: 0; width: 100%; height: 0; pointer-events: none; }
+  .tbox { position: absolute; pointer-events: none; width: max-content; max-width: 70%; transform-origin: center center; }
+  .tbox .tx {
+    min-width: 60px; min-height: 1.4em; padding: 6px 8px; line-height: 1.3; white-space: pre-wrap; overflow-wrap: anywhere;
+    outline: none; border: 1px dashed transparent; border-radius: 6px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-user-select: text; user-select: text; touch-action: pan-y;
+  }
+  .tbox .hd { display: none; position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); margin-bottom: 6px; gap: 8px; }
+  .tbox .hd button {
+    width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid var(--accent2); background: var(--card); color: var(--accent2);
+    font-size: 1.2rem; line-height: 1; cursor: pointer; touch-action: none; box-shadow: 0 2px 6px rgba(0,0,0,.4);
+    -webkit-user-select: none; user-select: none;
+  }
+  .tbox .hd button.del { color: var(--danger); border-color: var(--danger); }
+  body.mode-text .tbox { pointer-events: auto; }
+  body.mode-text .tbox .tx { border-color: rgba(170,157,143,.55); }
+  body.mode-text .tbox.sel .tx { border-color: var(--accent2); background: rgba(216,137,114,.08); }
+  body.mode-text .tbox.sel .hd { display: flex; }
+  body.mode-erase .tbox { pointer-events: auto; cursor: pointer; }
+  body.mode-erase .tbox .tx { pointer-events: none; }
+  body.mode-erase .tbox:hover { opacity: .35; }
+
+  #reader { padding-top: calc(var(--tabh) + 70px); min-height: 100vh; }
+  #content { position: relative; margin: 0 auto; max-width: 100%; padding-bottom: 80px; touch-action: pan-y pinch-zoom; }
+  #textEl {
+    white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.75; font-size: 1.1rem; padding-top: 16px;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  #overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  body.mode-erase #overlay { pointer-events: auto; }
+  body.mode-erase #overlay .ann { pointer-events: stroke; }
+  body.mode-erase #overlay rect.ann { pointer-events: all; }
+  body.mode-erase #overlay .ann:hover { opacity: .35; }
+</style>
+</head>
+<body>
+
+<!-- ===================== PESTAÑAS ===================== -->
+<div id="tabbar">
+  <a id="logoBtn" href="https://javierscervera-rgb.github.io/Herramientas/herramientas.html" target="_self" title="Ir a Herramientas" aria-label="Ir a Herramientas"><img class="logo" src="https://javierscervera-rgb.github.io/Herramientas/logo.svg" alt="Herramientas"></a>
+  <div id="tabs" role="tablist"></div>
+  <button id="newTab" title="Nueva pestaña" aria-label="Nueva pestaña">+</button>
+  <button id="openBtn" class="tbtn" title="Abrir un archivo guardado">Abrir</button>
+  <button id="saveBtn" class="tbtn" title="Guardar esta pestaña en un archivo">Guardar</button>
+  <input type="file" id="fileIn" accept=".json,application/json" class="hidden">
+</div>
+
+<!-- ===================== DIÁLOGO GUARDAR ===================== -->
+<div id="saveDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="saveTitle">
+  <div class="dlg">
+    <h2 id="saveTitle">Guardar trabajo</h2>
+    <label for="saveName">Nombre del archivo</label>
+    <div class="nm"><input id="saveName" type="text" maxlength="80" autocomplete="off" autocapitalize="off"><span>.json</span></div>
+    <p id="saveMsg"></p>
+    <div class="acts">
+      <button id="saveCancel">Cancelar</button>
+      <button id="saveOk" class="ok">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PÁGINA 1 ===================== -->
+<section id="setup">
+  <h1>Prepara tu texto</h1>
+  <p class="hint">En la lectura: el dedo hace scroll (y, con la herramienta Texto, un toque suyo crea una caja); el Apple Pencil subraya, resalta, dibuja o borra. Si mantienes el Pencil quieto sobre el texto, aparece un menú para cambiar de herramienta.</p>
+
+  <div class="field">
+    <label for="inputText">Texto</label>
+    <textarea id="inputText" placeholder="Pega o escribe aquí tu texto…"></textarea>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="bgColor">Color de fondo</label>
+      <input type="color" id="bgColor" value="#171310">
+    </div>
+    <div class="field">
+      <label for="fgColor">Color de letra</label>
+      <input type="color" id="fgColor" value="#F0E8DC">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="fontSel">Fuente</label>
+      <select id="fontSel">
+        <option value="Georgia, serif">Georgia (serif)</option>
+        <option value="'Times New Roman', Times, serif">Times New Roman</option>
+        <option value="'Palatino Linotype', Palatino, 'Book Antiqua', serif">Palatino</option>
+        <option value="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">Sistema (sans-serif)</option>
+        <option value="Arial, Helvetica, sans-serif">Arial</option>
+        <option value="Verdana, Geneva, sans-serif">Verdana</option>
+        <option value="'Trebuchet MS', sans-serif">Trebuchet</option>
+        <option value="'Courier New', Courier, monospace">Courier (monoespaciada)</option>
+        <option value="'Comic Sans MS', 'Comic Neue', cursive">Comic Sans</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="sizeNum">Tamaño de letra (px)</label>
+      <input type="number" id="sizeNum" value="20" min="10" max="60">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="marginRange">Margen lateral: <span class="range-val" id="marginVal">10%</span></label>
+    <input type="range" id="marginRange" min="0" max="35" step="1" value="10">
+  </div>
+
+  <div class="field">
+    <label>Vista previa</label>
+    <div id="preview"><div id="previewText">Así se verá tu texto.</div></div>
+  </div>
+
+  <button class="btn-primary" id="goBtn" disabled>Continuar →</button>
+</section>
+
+<!-- ===================== PÁGINA 2 ===================== -->
+<section id="reader" class="hidden">
+  <div id="toolbar">
+    <button id="backBtn" title="Volver a la configuración">← Volver</button>
+    <span class="sep"></span>
+    <button data-tool="underline" class="active">U̲ Subrayar</button>
+    <button data-tool="highlight">🖍 Resaltar</button>
+    <button data-tool="draw">✏️ Dibujar</button>
+    <button data-tool="text">🔤 Texto</button>
+    <button data-tool="erase">🧽 Borrar</button>
+    <span class="sep"></span>
+    <input type="color" id="toolColor" title="Color de la herramienta">
+    <label for="toolWidth">Grosor</label>
+    <input type="range" id="toolWidth" min="1" max="20" value="3">
+    <span id="txtOpts" class="grp hidden">
+      <span class="sep"></span>
+      <label for="txtColor">Texto</label>
+      <input type="color" id="txtColor" title="Color del texto">
+      <label for="txtSize">Tamaño</label>
+      <input type="range" id="txtSize" min="10" max="120" value="26">
+      <label id="txtSizeVal" style="min-width:2ch">26</label>
+    </span>
+    <span class="sep"></span>
+    <button id="undoBtn">↶ Deshacer</button>
+    <button id="redoBtn">↷ Rehacer</button>
+    <button id="clearBtn">Borrar todo</button>
+    <span class="tip">Dedo: scroll · Pencil: anotar · Pencil quieto: menú</span>
+  </div>
+
+  <div id="pencilMenu" class="hidden" role="menu">
+    <button data-tool="underline"><b>U̲</b><span>Subrayar</span></button>
+    <button data-tool="highlight"><b>🖍</b><span>Resaltar</span></button>
+    <button data-tool="draw"><b>✏️</b><span>Dibujar</span></button>
+    <button data-tool="text"><b>🔤</b><span>Texto</span></button>
+    <button data-tool="erase"><b>🧽</b><span>Borrar</span></button>
+  </div>
+
+  <div id="content">
+    <div id="textEl"></div>
+    <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="boxes"></div>
+  </div>
+</section>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const setup = $('setup'), reader = $('reader');
+  const inputText = $('inputText'), bgColor = $('bgColor'), fgColor = $('fgColor');
+  const fontSel = $('fontSel'), sizeNum = $('sizeNum'), marginRange = $('marginRange'), marginVal = $('marginVal');
+  const preview = $('preview'), previewText = $('previewText'), goBtn = $('goBtn');
+  const content = $('content'), textEl = $('textEl'), overlay = $('overlay');
+  const toolColor = $('toolColor'), toolWidth = $('toolWidth');
+  const tabsEl = $('tabs');
+
+  /* ---------- Estado ---------- */
+  // Cada pestaña: {id, text, bg, fg, font, size, margin, annotations, view, applied, scrollY}
+  //   annotations: {type, color, width, start,end | pts:[[xRatio,y]]}
+  //   applied: ajustes con los que se creó la lectura (se fijan al pulsar "Continuar")
+  let tabs = [], cur = null, nextId = 1;
+  let annotations = [];       // referencia a las anotaciones de la pestaña activa
+  let tool = 'underline';
+  const toolStyle = {
+    underline: { color: '#D88972', width: 3 },
+    highlight: { color: '#CD8B75', width: 3 },
+    draw:      { color: '#F0E8DC', width: 3 },
+  };
+
+  /* ---------- Pestañas ---------- */
+  function newTabObj() {
+    return { id: nextId++, text: '', bg: '#171310', fg: '#F0E8DC', font: fontSel.options[0].value,
+             size: 20, margin: 10, annotations: [], view: 'setup', applied: null, scrollY: 0 };
+  }
+  function tabTitle(t) {
+    const w = (t.text || '').trim().split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
+    return w || 'Nueva pestaña';
+  }
+  function renderTabs(reveal) {
+    tabsEl.innerHTML = '';
+    tabs.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'tab' + (t === cur ? ' active' : '');
+      d.setAttribute('role', 'tab');
+      d.title = tabTitle(t);
+      const s = document.createElement('span');
+      s.className = 't'; s.textContent = tabTitle(t);
+      const x = document.createElement('button');
+      x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Cerrar pestaña');
+      x.addEventListener('click', e => { e.stopPropagation(); closeTab(t); });
+      d.addEventListener('click', () => switchTo(t));
+      d.append(s, x);
+      tabsEl.appendChild(d);
+    });
+    if (reveal) {
+      const a = tabsEl.querySelector('.tab.active');
+      if (a) tabsEl.scrollLeft = Math.max(0, a.offsetLeft - 40);
+    }
+  }
+  function fillForm(t) {
+    inputText.value = t.text; bgColor.value = t.bg; fgColor.value = t.fg;
+    fontSel.value = t.font; sizeNum.value = t.size; marginRange.value = t.margin;
+    updatePreview();
+  }
+  function readForm(t) {
+    t.text = inputText.value; t.bg = bgColor.value; t.fg = fgColor.value;
+    t.font = fontSel.value; t.size = sizeNum.value; t.margin = marginRange.value;
+  }
+  function loadCur() {
+    fillForm(cur);
+    if (cur.view === 'reader' && cur.applied) showReader(cur); else showSetup();
+    window.scrollTo(0, cur.scrollY || 0);
+  }
+  function switchTo(t) {
+    if (t === cur) return;
+    if (cur) { select(null); readForm(cur); cur.scrollY = window.scrollY; }
+    clearHold(); hideMenu(); active = null; activePointer = null;
+    cur = t; annotations = t.annotations;
+    loadCur();
+    renderTabs(true);
+  }
+  function addTab() { const n = newTabObj(); tabs.push(n); switchTo(n); }
+  function closeTab(t) {
+    if (t.annotations.length && !confirm('Esta pestaña tiene anotaciones que se perderán. ¿Cerrarla?')) return;
+    const i = tabs.indexOf(t);
+    const wasCurrent = (t === cur);
+    tabs.splice(i, 1);
+    if (!wasCurrent) { renderTabs(); return; }
+    cur = null;
+    let next = tabs[i] || tabs[i - 1];
+    if (!next) { next = newTabObj(); tabs.push(next); }
+    switchTo(next);
+  }
+  $('newTab').addEventListener('click', addTab);
+
+  /* ---------- Página 1: vista previa ---------- */
+  function updatePreview() {
+    const m = marginRange.value;
+    marginVal.textContent = m + '%';
+    preview.style.background = bgColor.value;
+    preview.style.color = fgColor.value;
+    preview.style.fontFamily = fontSel.value;
+    preview.style.fontSize = (sizeNum.value || 20) + 'px';
+    preview.style.paddingLeft = preview.style.paddingRight = m + '%';
+    previewText.textContent = inputText.value.trim() ? inputText.value : 'Así se verá tu texto.';
+    goBtn.disabled = !inputText.value.trim();
+  }
+  [inputText, bgColor, fgColor, fontSel, sizeNum, marginRange].forEach(el => el.addEventListener('input', () => {
+    updatePreview();
+    if (cur) { readForm(cur); renderTabs(); }
+  }));
+
+  /* ---------- Navegación entre página 1 y 2 ---------- */
+  function showSetup() {
+    reader.classList.add('hidden');
+    setup.classList.remove('hidden');
+    document.body.style.background = 'var(--bg)';
+  }
+  function showReader(t) {
+    const a = t.applied;
+    document.body.style.background = a.bg;
+    reader.style.background = a.bg;
+    textEl.textContent = a.text;
+    textEl.style.color = a.fg;
+    textEl.style.fontFamily = a.font;
+    textEl.style.fontSize = (a.size || 20) + 'px';
+    textEl.style.paddingLeft = textEl.style.paddingRight = a.margin + '%';
+    setup.classList.add('hidden');
+    reader.classList.remove('hidden');
+    setTool(tool);
+    render();
+  }
+  goBtn.addEventListener('click', () => {
+    const txt = inputText.value;
+    if (cur.applied && annotations.length && txt !== cur.applied.text) {
+      if (!confirm('El texto ha cambiado: se borrarán las anotaciones anteriores. ¿Continuar?')) return;
+      annotations.length = 0;
+    }
+    readForm(cur);
+    cur.applied = { text: cur.text, bg: cur.bg, fg: cur.fg, font: cur.font, size: cur.size, margin: cur.margin };
+    cur.view = 'reader';
+    showReader(cur);
+    window.scrollTo(0, 0);
+  });
+  $('backBtn').addEventListener('click', () => {
+    cur.view = 'setup';
+    showSetup();
+    window.scrollTo(0, 0);
+  });
+
+  /* ---------- Herramientas ---------- */
+  function setTool(t) {
+    tool = t;
+    document.body.className = 'mode-' + t;
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+    const st = toolStyle[t];
+    if (st) { toolColor.value = st.color; toolWidth.value = st.width; }
+    toolColor.disabled = !st;
+    toolWidth.disabled = !st || t === 'highlight';
+    if (t !== 'text' && selected) select(null);
+    updateTextOpts();
+  }
+  document.querySelectorAll('#toolbar [data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+  toolColor.addEventListener('input', () => { if (toolStyle[tool]) toolStyle[tool].color = toolColor.value; });
+  toolWidth.addEventListener('input', () => { if (toolStyle[tool]) toolStyle[tool].width = +toolWidth.value; });
+  // Cada pestaña (cada array de anotaciones) tiene su propia pila de "rehacer"
+  const redoMap = new WeakMap();
+  function getRedo() {
+    let r = redoMap.get(annotations);
+    if (!r) { r = []; redoMap.set(annotations, r); }
+    return r;
+  }
+  function updateUndoState() {
+    $('undoBtn').disabled = !annotations.length;
+    $('redoBtn').disabled = !getRedo().length;
+  }
+  function undo() { const a = annotations.pop(); if (a) getRedo().push(a); render(); }
+  function redo() { const a = getRedo().pop(); if (a) annotations.push(a); render(); }
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+  $('clearBtn').addEventListener('click', () => {
+    if (annotations.length && confirm('¿Borrar todas las anotaciones?')) { annotations.length = 0; getRedo().length = 0; render(); }
+  });
+
+  /* ---------- Entrada: dedo = scroll, Pencil (y ratón) = anotar ---------- */
+  // En iOS el Pencil también desplazaría la página: lo evitamos solo para toques de lápiz.
+  const isStylus = t => t && t.touchType === 'stylus';
+  function blockStylusScroll(e) {
+    if (e.target.closest && e.target.closest('.tbox')) return;   // las cajas de texto se editan con normalidad
+    for (const t of e.changedTouches) if (isStylus(t)) { e.preventDefault(); return; }
+  }
+  content.addEventListener('touchstart', blockStylusScroll, { passive: false });
+  content.addEventListener('touchmove', blockStylusScroll, { passive: false });
+
+  function caretOffset(x, y) {
+    let node, off;
+    if (document.caretPositionFromPoint) {
+      const p = document.caretPositionFromPoint(x, y);
+      if (!p) return null; node = p.offsetNode; off = p.offset;
+    } else if (document.caretRangeFromPoint) {
+      const r = document.caretRangeFromPoint(x, y);
+      if (!r) return null; node = r.startContainer; off = r.startOffset;
+    } else return null;
+    const t = textEl.firstChild;
+    const len = t ? t.length : 0;
+    if (node === t) return off;
+    if (node === textEl) return off > 0 ? len : 0;
+    return null;
+  }
+  function pt(e) {
+    const r = overlay.getBoundingClientRect();
+    return [(e.clientX - r.left) / r.width, e.clientY - r.top];
+  }
+  function eraseAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const a = el && el.closest && el.closest('.ann');
+    if (a) { annotations.splice(+a.dataset.i, 1); render(); }
+  }
+
+  let active = null;   // anotación en curso
+  let anchor = 0;
+  let activePointer = null;
+  let raf = 0;
+  const scheduleRender = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); };
+
+  /* ---------- Menú flotante: mantén pulsado el Pencil sin moverlo ---------- */
+  const pencilMenu = $('pencilMenu');
+  let holdTimer = null, holdX = 0, holdY = 0;
+  function clearHold() { clearTimeout(holdTimer); holdTimer = null; }
+  function hideMenu() { pencilMenu.classList.add('hidden'); }
+  function showMenu(x, y) {
+    pencilMenu.classList.remove('hidden');
+    const w = pencilMenu.offsetWidth, h = pencilMenu.offsetHeight;
+    const left = Math.max(8, Math.min(window.innerWidth - w - 8, x - w / 2));
+    let top = y - h - 24;
+    if (top < 120) top = y + 28;           // si no cabe encima, debajo de la punta
+    pencilMenu.style.left = left + 'px';
+    pencilMenu.style.top = top + 'px';
+  }
+  function startHold(e) {
+    clearHold();
+    holdX = e.clientX; holdY = e.clientY;
+    holdTimer = setTimeout(() => {
+      holdTimer = null; pendingText = null;
+      if (active) { const i = annotations.indexOf(active); if (i >= 0) annotations.splice(i, 1); active = null; }
+      activePointer = null;
+      render();
+      showMenu(holdX, holdY);
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
+    }, 600);
+  }
+  pencilMenu.querySelectorAll('[data-tool]').forEach(b => b.addEventListener('click', () => {
+    setTool(b.dataset.tool); hideMenu();
+  }));
+  document.addEventListener('pointerdown', e => {
+    if (!pencilMenu.classList.contains('hidden') && !pencilMenu.contains(e.target)) hideMenu();
+  }, true);
+
+  content.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') {                // el dedo hace scroll; con la herramienta Texto, un toque crea una caja
+      if (tool === 'text' && !(e.target.closest && e.target.closest('.tbox'))) {
+        activePointer = e.pointerId;
+        pendingText = { x: e.clientX, y: e.clientY, had: !!selected };
+      }
+      return;
+    }
+    if (e.button !== undefined && e.button > 0) return;
+    if (tool !== 'erase' && e.target.closest && e.target.closest('.tbox')) return;   // lo gestiona la propia caja
+    if (e.pointerType === 'pen') startHold(e);
+    activePointer = e.pointerId;
+    try { content.setPointerCapture(e.pointerId); } catch (_) {}
+    if (tool === 'erase') { eraseAt(e.clientX, e.clientY); e.preventDefault(); return; }
+    if (tool === 'text') {
+      // un toque en blanco crea una caja (al levantar); si había una seleccionada, solo la deselecciona
+      pendingText = { x: e.clientX, y: e.clientY, had: !!selected };
+      e.preventDefault(); return;
+    }
+    if (tool === 'draw') {
+      active = { type: 'draw', color: toolStyle.draw.color, width: toolStyle.draw.width, pts: [pt(e)] };
+      annotations.push(active); scheduleRender(); e.preventDefault(); return;
+    }
+    // subrayar / resaltar: se marca el texto por el que desliza el Pencil
+    const o = caretOffset(e.clientX, e.clientY);
+    if (o === null) { activePointer = null; return; }
+    anchor = o;
+    active = { type: tool, color: toolStyle[tool].color, width: toolStyle[tool].width, start: o, end: o };
+    annotations.push(active);
+    e.preventDefault();
+  });
+
+  content.addEventListener('pointermove', e => {
+    if (holdTimer && Math.hypot(e.clientX - holdX, e.clientY - holdY) > 8) clearHold();
+    if (pendingText && Math.hypot(e.clientX - pendingText.x, e.clientY - pendingText.y) > 8) pendingText = null;
+    if (e.pointerId !== activePointer) return;
+    const evs = (e.getCoalescedEvents && e.getCoalescedEvents().length) ? e.getCoalescedEvents() : [e];
+    if (tool === 'erase') { evs.forEach(c => eraseAt(c.clientX, c.clientY)); return; }
+    if (!active) return;
+    if (active.type === 'draw') {
+      evs.forEach(c => active.pts.push(pt(c)));
+    } else {
+      const o = caretOffset(e.clientX, e.clientY);
+      if (o === null) return;
+      active.start = Math.min(anchor, o);
+      active.end = Math.max(anchor, o);
+    }
+    scheduleRender();
+    e.preventDefault();
+  });
+
+  function endStroke(e) {
+    clearHold();
+    if (e.pointerId !== activePointer) return;
+    activePointer = null;
+    if (pendingText) {
+      const p = pendingText; pendingText = null;
+      if (e.type === 'pointerup') { select(null); if (!p.had) createBox(p.x, p.y); }
+    }
+    if (active && active.type !== 'draw' && active.end <= active.start) {
+      const i = annotations.indexOf(active);
+      if (i >= 0) annotations.splice(i, 1);   // toque sin deslizar: no marca nada
+    } else if (active) getRedo().length = 0;   // una anotación nueva invalida el "rehacer"
+    active = null;
+    render();
+  }
+  content.addEventListener('pointerup', endStroke);
+  content.addEventListener('pointercancel', endStroke);
+  content.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* ---------- Render del overlay ---------- */
+  const NS = 'http://www.w3.org/2000/svg';
+  function render() {
+    if (reader.classList.contains('hidden')) return;
+    const cr = content.getBoundingClientRect();
+    const w = cr.width, h = content.scrollHeight;
+    renderBoxes(w);
+    updateUndoState();
+    overlay.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    overlay.style.height = h + 'px';
+    while (overlay.firstChild) overlay.removeChild(overlay.firstChild);
+    const node = textEl.firstChild;
+    annotations.forEach((a, i) => {
+      if (a.type === 'text') return;
+      if (a.type === 'draw') {
+        const p = document.createElementNS(NS, 'path');
+        const d = a.pts.map((q, k) => (k ? 'L' : 'M') + (q[0] * w).toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+        p.setAttribute('d', a.pts.length === 1 ? d + ' l0.1 0' : d);
+        p.setAttribute('fill', 'none');
+        p.setAttribute('stroke', a.color);
+        p.setAttribute('stroke-width', a.width);
+        p.setAttribute('stroke-linecap', 'round');
+        p.setAttribute('stroke-linejoin', 'round');
+        p.setAttribute('class', 'ann'); p.dataset.i = i;
+        overlay.appendChild(p);
+        return;
+      }
+      if (!node || node.nodeType !== 3 || a.end <= a.start) return;
+      const range = document.createRange();
+      const len = node.length;
+      range.setStart(node, Math.min(a.start, len));
+      range.setEnd(node, Math.min(a.end, len));
+      for (const r of range.getClientRects()) {
+        if (r.width < 1) continue;
+        const el = document.createElementNS(NS, 'rect');
+        const x = r.left - cr.left, y = r.top - cr.top;
+        el.setAttribute('x', x);
+        el.setAttribute('class', 'ann'); el.dataset.i = i;
+        el.setAttribute('width', r.width);
+        el.setAttribute('fill', a.color);
+        if (a.type === 'highlight') {
+          el.setAttribute('y', y);
+          el.setAttribute('height', r.height);
+          el.setAttribute('opacity', '0.4');
+        } else {
+          el.setAttribute('y', y + r.height - a.width - 1);
+          el.setAttribute('height', a.width);
+        }
+        overlay.appendChild(el);
+      }
+    });
+  }
+  new ResizeObserver(() => { if (!reader.classList.contains('hidden')) render(); }).observe(content);
+  window.addEventListener('resize', () => { if (!reader.classList.contains('hidden')) render(); });
+
+  /* ---------- Cajas de texto: color, tamaño, giro y movimiento ---------- */
+  const boxesEl = $('boxes');
+  const txtOpts = $('txtOpts'), txtColor = $('txtColor'), txtSize = $('txtSize'), txtSizeVal = $('txtSizeVal');
+  const textDefaults = { color: '#D88972', size: 26 };
+  const boxMap = new Map();          // anotación -> elemento
+  let selected = null, pendingText = null;
+  const PLAIN = (() => {
+    const d = document.createElement('div');
+    try { d.contentEditable = 'plaintext-only'; } catch (_) {}
+    return d.contentEditable === 'plaintext-only';
+  })();
+
+  function updateTextOpts() {
+    txtOpts.classList.toggle('hidden', !(tool === 'text' || selected));
+    const src = selected || textDefaults;
+    txtColor.value = src.color; txtSize.value = src.size; txtSizeVal.textContent = src.size;
+  }
+  function select(a) {
+    const prev = selected;
+    selected = a;
+    if (prev && prev !== a) {                                      // la caja que se deja ya no conserva el foco
+      const pe = boxMap.get(prev);
+      if (pe && document.activeElement === pe._tx) pe._tx.blur();
+    }
+    if (prev && prev !== a && !String(prev.text || '').trim()) {   // una caja vacía no se conserva
+      const i = annotations.indexOf(prev);
+      if (i >= 0) annotations.splice(i, 1);
+    }
+    updateTextOpts();
+    render();
+  }
+  txtColor.addEventListener('input', () => {
+    textDefaults.color = txtColor.value;
+    if (selected) { selected.color = txtColor.value; render(); }
+  });
+  txtSize.addEventListener('input', () => {
+    const v = +txtSize.value;
+    textDefaults.size = v; txtSizeVal.textContent = v;
+    if (selected) { selected.size = v; render(); }
+  });
+
+  function hbtn(txt, title, cls) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = cls; b.textContent = txt; b.title = title; b.setAttribute('aria-label', title);
+    return b;
+  }
+  function dragHandle(h, a, start, move) {
+    h.addEventListener('pointerdown', e => {
+      e.preventDefault(); e.stopPropagation();
+      select(a);
+      try { h.setPointerCapture(e.pointerId); } catch (_) {}
+      const id = e.pointerId, st = start(e);
+      const mv = ev => { if (ev.pointerId === id) { move(ev, st); scheduleRender(); } };
+      const up = ev => {
+        if (ev.pointerId !== id) return;
+        h.removeEventListener('pointermove', mv);
+        h.removeEventListener('pointerup', up);
+        h.removeEventListener('pointercancel', up);
+      };
+      h.addEventListener('pointermove', mv);
+      h.addEventListener('pointerup', up);
+      h.addEventListener('pointercancel', up);
+    });
+  }
+  function makeBox(a) {
+    const el = document.createElement('div');
+    el.className = 'tbox ann';
+    const hd = document.createElement('div'); hd.className = 'hd';
+    const mv = hbtn('✥', 'Mover', 'mv'), rt = hbtn('↻', 'Girar (arrastra)', 'rt'), del = hbtn('×', 'Eliminar', 'del');
+    hd.append(mv, rt, del);
+    const tx = document.createElement('div');
+    tx.className = 'tx';
+    tx.contentEditable = PLAIN ? 'plaintext-only' : 'true';
+    tx.spellcheck = false;
+    tx.textContent = a.text;
+    tx.addEventListener('input', () => { a.text = tx.innerText.replace(/\n$/, ''); });
+    tx.addEventListener('focus', () => { if (tool === 'text' && selected !== a) select(a); });
+    el.addEventListener('pointerdown', () => { if (tool === 'text' && selected !== a) select(a); });
+    el.append(hd, tx);
+    el._tx = tx;
+
+    dragHandle(mv, a,
+      e => ({ px: e.clientX, py: e.clientY, x: a.x, y: a.y, w: content.getBoundingClientRect().width || 1 }),
+      (e, s) => {
+        a.x = Math.min(1, Math.max(-0.3, s.x + (e.clientX - s.px) / s.w));
+        a.y = Math.max(0, s.y + (e.clientY - s.py));
+      });
+    dragHandle(rt, a,
+      e => {
+        const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        return { cx, cy, a0: Math.atan2(e.clientY - cy, e.clientX - cx), r0: a.rot };
+      },
+      (e, s) => {
+        let r = s.r0 + (Math.atan2(e.clientY - s.cy, e.clientX - s.cx) - s.a0) * 180 / Math.PI;
+        const snap = Math.round(r / 15) * 15;
+        if (Math.abs(r - snap) < 4) r = snap;           // se imanta cada 15°
+        a.rot = ((r + 180) % 360 + 360) % 360 - 180;
+      });
+    del.addEventListener('click', e => {
+      e.stopPropagation();
+      const i = annotations.indexOf(a);
+      if (i >= 0) annotations.splice(i, 1);
+      select(null);
+    });
+    return el;
+  }
+  function renderBoxes(w) {
+    const live = new Set();
+    annotations.forEach((a, i) => {
+      if (a.type !== 'text') return;
+      live.add(a);
+      let el = boxMap.get(a);
+      if (!el) { el = makeBox(a); boxMap.set(a, el); boxesEl.appendChild(el); }
+      el.dataset.i = i;
+      el.style.left = (a.x * w) + 'px';
+      el.style.top = a.y + 'px';
+      el.style.transform = 'rotate(' + a.rot + 'deg)';
+      el._tx.style.color = a.color;
+      el._tx.style.fontSize = a.size + 'px';
+      el.classList.toggle('sel', a === selected);
+    });
+    boxMap.forEach((el, a) => {
+      if (live.has(a)) return;
+      el.remove(); boxMap.delete(a);
+      if (selected === a) { selected = null; updateTextOpts(); }
+    });
+  }
+  function createBox(cx, cy) {
+    const cr = content.getBoundingClientRect();
+    const a = {
+      type: 'text', color: textDefaults.color, size: textDefaults.size, rot: 0, text: '',
+      x: Math.max(0, Math.min(1, (cx - cr.left) / (cr.width || 1))),
+      y: Math.max(0, cy - cr.top - textDefaults.size * 0.7)
+    };
+    annotations.push(a);
+    getRedo().length = 0;
+    select(a);
+    const el = boxMap.get(a);
+    if (el) el._tx.focus();
+  }
+
+  /* ---------- Guardar / abrir archivo ---------- */
+  const FORMAT = 'lector-anotable';
+  const HEX = /^#[0-9a-f]{6}$/i;
+  const saveDlg = $('saveDlg'), saveName = $('saveName'), saveMsg = $('saveMsg'), saveOk = $('saveOk');
+  const fileIn = $('fileIn');
+  let toastTimer = null;
+  function toast(msg) {
+    let el = $('toast');
+    if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+    el.textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.remove(), 4000);
+  }
+  const safeName = s => (s || '').replace(/[\\/:*?"<>|\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+
+  function buildPayload() {
+    readForm(cur);
+    // Las anotaciones se guardan solo si siguen correspondiendo al texto actual
+    const same = cur.applied && cur.applied.text === cur.text;
+    return {
+      format: FORMAT, version: 1, savedAt: new Date().toISOString(),
+      text: cur.text,
+      style: { bg: cur.bg, fg: cur.fg, font: cur.font, size: +cur.size || 20, margin: +cur.margin },
+      annotations: same ? cur.annotations.filter(a => a.type !== 'text' || String(a.text || '').trim()) : []
+    };
+  }
+  function openSave() {
+    readForm(cur);
+    const empty = !cur.text.trim();
+    saveName.value = safeName(tabTitle(cur) === 'Nueva pestaña' ? '' : tabTitle(cur));
+    saveMsg.textContent = empty ? 'Escribe un texto antes de guardar.' : '';
+    saveOk.disabled = empty;
+    saveDlg.classList.remove('hidden');
+    if (!empty) setTimeout(() => { saveName.focus(); saveName.select(); }, 50);
+  }
+  function closeSave() { saveDlg.classList.add('hidden'); }
+  async function doSave() {
+    if (saveOk.disabled) return;
+    const name = (safeName(saveName.value) || 'texto').replace(/\.json$/i, '');
+    const filename = name + '.json';
+    const json = JSON.stringify(buildPayload());
+    saveMsg.textContent = '';
+    let dl = null;
+    try { dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; } catch (_) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename, data: json }); closeSave(); toast('Guardado: ' + filename); }
+      catch (err) {
+        if (err && err.code === 'declined') return;
+        saveMsg.textContent = 'No se pudo guardar (' + ((err && err.code) || 'error') + ').';
+      }
+      return;
+    }
+    try {   // alternativa si la página se abre fuera del visor
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      closeSave(); toast('Guardado: ' + filename);
+    } catch (_) { saveMsg.textContent = 'No se pudo guardar el archivo.'; }
+  }
+  $('saveBtn').addEventListener('click', openSave);
+  $('saveCancel').addEventListener('click', closeSave);
+  saveOk.addEventListener('click', doSave);
+  saveDlg.addEventListener('pointerdown', e => { if (e.target === saveDlg) closeSave(); });
+  saveName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doSave(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !saveDlg.classList.contains('hidden')) closeSave(); });
+
+  // Valida y limpia lo que viene del archivo: nada se usa sin comprobar
+  function sanitize(d) {
+    if (!d || d.format !== FORMAT || typeof d.text !== 'string') throw new Error('formato');
+    const s = d.style || {};
+    const fonts = Array.from(fontSel.options).map(o => o.value);
+    const text = d.text;
+    const clamp = (v, a, b, def) => { v = +v; return isFinite(v) ? Math.min(b, Math.max(a, v)) : def; };
+    const anns = [];
+    (Array.isArray(d.annotations) ? d.annotations : []).slice(0, 5000).forEach(a => {
+      if (!a || typeof a.color !== 'string' || !HEX.test(a.color)) return;
+      const width = clamp(a.width, 1, 20, 3);
+      if (a.type === 'draw') {
+        if (!Array.isArray(a.pts)) return;
+        const pts = [];
+        for (const p of a.pts.slice(0, 100000)) {
+          if (Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1])) pts.push([+p[0], +p[1]]);
+        }
+        if (pts.length) anns.push({ type: 'draw', color: a.color, width, pts });
+      } else if (a.type === 'text') {
+        const tx = typeof a.text === 'string' ? a.text.slice(0, 20000) : '';
+        const x = +a.x, y = +a.y;
+        if (!tx.trim() || !isFinite(x) || !isFinite(y)) return;
+        anns.push({ type: 'text', color: a.color, text: tx, x: clamp(x, -1, 2, 0), y: clamp(y, -100, 1e7, 0),
+                    size: Math.round(clamp(a.size, 8, 200, 26)), rot: clamp(a.rot, -360, 360, 0) });
+      } else if (a.type === 'underline' || a.type === 'highlight') {
+        const st = Math.floor(+a.start), en = Math.floor(+a.end);
+        if (isFinite(st) && isFinite(en) && st >= 0 && en > st && en <= text.length)
+          anns.push({ type: a.type, color: a.color, width, start: st, end: en });
+      }
+    });
+    return {
+      text,
+      bg: HEX.test(s.bg) ? s.bg : '#171310',
+      fg: HEX.test(s.fg) ? s.fg : '#F0E8DC',
+      font: fonts.includes(s.font) ? s.font : fonts[0],
+      size: Math.round(clamp(s.size, 10, 60, 20)),
+      margin: Math.round(clamp(s.margin, 0, 35, 10)),
+      annotations: anns
+    };
+  }
+  async function loadFile(file) {
+    try {
+      if (file.size > 20 * 1024 * 1024) throw new Error('grande');
+      const d = sanitize(JSON.parse(await file.text()));
+      readForm(cur);
+      const pristine = !cur.text.trim() && !cur.annotations.length && !cur.applied;
+      const t = pristine ? cur : newTabObj();
+      Object.assign(t, {
+        text: d.text, bg: d.bg, fg: d.fg, font: d.font, size: d.size, margin: d.margin,
+        annotations: d.annotations, view: 'reader', scrollY: 0,
+        applied: { text: d.text, bg: d.bg, fg: d.fg, font: d.font, size: d.size, margin: d.margin }
+      });
+      if (t === cur) { annotations = t.annotations; loadCur(); renderTabs(true); }
+      else { tabs.push(t); switchTo(t); }
+      toast('Abierto: ' + file.name);
+    } catch (_) {
+      toast('No se pudo abrir: el archivo no es un trabajo guardado de este lector.');
+    }
+  }
+  $('openBtn').addEventListener('click', () => { fileIn.value = ''; fileIn.click(); });
+  fileIn.addEventListener('change', () => { const f = fileIn.files && fileIn.files[0]; if (f) loadFile(f); });
+
+  /* ---------- Atajo: Cmd/Ctrl + Z deshace la última anotación ---------- */
+  document.addEventListener('keydown', e => {
+    const k = (e.key || '').toLowerCase();
+    if (!(e.metaKey || e.ctrlKey) || e.altKey || (k !== 'z' && k !== 'y')) return;
+    const redoKey = k === 'y' || (k === 'z' && e.shiftKey);       // Cmd+Shift+Z o Cmd+Y rehacen
+    if (reader.classList.contains('hidden')) return;               // en la pantalla de texto, deshacer normal
+    const tg = e.target && e.target.tagName;
+    if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
+    if (e.target && e.target.isContentEditable) {
+      const se = selected && boxMap.get(selected);
+      if (tool === 'text' && se && se._tx === e.target) return;   // deshacer nativo solo dentro de la caja seleccionada
+      e.target.blur();                                            // si no, el foco se suelta y se deshace la anotación
+    }
+    e.preventDefault();
+    if (active) return;                                            // no deshacer a mitad de un trazo
+    if (redoKey) redo(); else undo();
+  });
+
+  /* ---------- Inicio: una pestaña nueva en la primera pantalla ---------- */
+  const first = newTabObj();
+  tabs.push(first);
+  cur = first;
+  annotations = first.annotations;
+  loadCur();
+  renderTabs();
+})();
+</script>
+</body>
+</html>
+
+</body></html>
