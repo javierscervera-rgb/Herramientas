@@ -39,19 +39,22 @@
   html,body { margin:0; width:100%; height:100%; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); overscroll-behavior:none; touch-action:manipulation; }
   body { display:flex; flex-direction:column; overflow:hidden; height:100dvh; }
 
-  .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 14px; padding-left:max(14px,env(safe-area-inset-left)); padding-right:max(14px,env(safe-area-inset-right)); padding-top:max(10px,env(safe-area-inset-top)); background:var(--surface); border-bottom:1px solid var(--line); z-index:20; box-shadow:0 2px 8px var(--shadow); }
+  .toolbar { display:flex; align-items:center; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; gap:6px; padding:8px 12px; padding-left:max(12px,env(safe-area-inset-left)); padding-right:max(12px,env(safe-area-inset-right)); padding-top:max(8px,env(safe-area-inset-top)); background:var(--surface); border-bottom:1px solid var(--line); z-index:20; box-shadow:0 2px 8px var(--shadow); }
   .logo-btn { display:flex; align-items:center; padding:4px 8px; border:1px solid var(--line); border-radius:10px; background:var(--btn2); }
   .logo { display:block; height:clamp(32px, 5vw, 48px); width:auto; max-width:200px; }
-  .brand { font-weight:750; margin-right:8px; color:var(--accent2); }
-  button, select, input[type="color"] { font:inherit; border:1px solid var(--line); border-radius:10px; padding:8px 12px; min-height:40px; background:var(--btn2); color:var(--ink); cursor:pointer; }
-  input[type="color"] { padding:3px; width:44px; }
+  .toolbar::-webkit-scrollbar { display:none; }
+  .toolbar > * { flex:none; }
+  .brand { display:none; font-weight:750; margin-right:4px; color:var(--accent2); white-space:nowrap; }
+  @media (min-width:1150px) { .brand { display:block; } }
+  button, select, input[type="color"] { font:inherit; border:1px solid var(--line); border-radius:10px; padding:6px 10px; min-height:38px; min-width:38px; background:var(--btn2); color:var(--ink); cursor:pointer; }
+  input[type="color"] { padding:3px; width:40px; }
   button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:650; }
   button.active { background:var(--accent2); border-color:var(--accent2); color:var(--on-accent2); }
   .sw.active, input[type="color"].active { outline:3px solid var(--accent2); outline-offset:2px; }
-  .hint { font-size:12px; color:var(--muted); margin-left:auto; max-width:300px; text-align:right; }
+  .spacer { flex:1 0 0 !important; min-width:0; }
+  .icon-btn { font-size:18px; line-height:1; padding:6px 8px; }
   .tool-group { display:flex; align-items:center; gap:6px; }
-  .tool-label { font-size:13px; color:var(--muted); }
-  .sw { width:34px; min-height:34px; height:34px; padding:0; border-radius:50%; border:2px solid var(--line); }
+    .sw { width:30px; min-width:30px; min-height:30px; height:30px; padding:0; border-radius:50%; border:2px solid var(--line); }
   .sw.auto { background:conic-gradient(#171310 0 50%, #F0E8DC 50% 100%); }
 
   /* Zona de trabajo: el dedo mueve/zoom, el lápiz dibuja */
@@ -75,13 +78,13 @@
   .dialog h2 { margin:0 0 12px; font-size:20px; color:var(--accent2); }
   .dialog textarea { width:100%; min-height:100px; resize:vertical; font:inherit; padding:11px; border:1px solid var(--line); border-radius:10px; background:var(--paper); color:var(--ink); }
   .dialog .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
-  .foot { font-size:12px; color:var(--muted); padding:5px 12px; padding-bottom:max(5px,env(safe-area-inset-bottom)); background:var(--surface); border-top:1px solid var(--line); }
+  #help { display:none; position:fixed; inset:0; z-index:60; background:#000000aa; align-items:center; justify-content:center; padding:18px; }
+  #help.show { display:flex; }
+  #help ul { margin:0; padding-left:20px; line-height:1.55; font-size:15px; }
+  #help li + li { margin-top:6px; }
+  #help b { color:var(--accent2); }
 
   @media (max-width:650px) {
-    .toolbar { gap:6px; padding:8px; }
-    .brand { width:100%; }
-    button,select { padding:7px 9px; font-size:13px; }
-    .hint { display:none; }
     #board { gap:5px; padding:5px; }
     .quadrant { border-radius:8px; }
     .quadrant h2 { top:8px; left:8px; font-size:13px; }
@@ -94,30 +97,29 @@
   <header class="toolbar">
     <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/herramientas.html" target="_self" aria-label="Ir a Herramientas" title="Ir a Herramientas"><img class="logo" src="logo.svg" alt="Herramientas"></a>
     <div class="brand">Panel de ideas · DAFO</div>
-    <button class="primary" id="addBtn">＋ Añadir idea</button>
+    <button class="primary" id="addBtn" title="Añadir idea">＋ Idea</button>
 
     <div class="tool-group" aria-label="Herramientas del Apple Pencil">
-      <button id="penBtn" class="active" aria-pressed="true" title="Lápiz: dibujar con el Apple Pencil">✎ Lápiz</button>
-      <button id="eraserBtn" aria-pressed="false" title="Goma: borrar trazos con el Apple Pencil">⌫ Goma</button>
+      <button id="penBtn" class="icon-btn active" aria-pressed="true" aria-label="Lápiz" title="Lápiz: dibujar con el Apple Pencil">✎</button>
+      <button id="eraserBtn" class="icon-btn" aria-pressed="false" aria-label="Goma" title="Goma: borrar trazos con el Apple Pencil">⌫</button>
       <button class="sw auto active" data-color="auto" title="Tinta automática (se adapta al tema claro/oscuro)" aria-label="Tinta automática"></button>
       <button class="sw" data-color="#e03131" style="background:#e03131" aria-label="Rojo"></button>
       <button class="sw" data-color="#1c7ed6" style="background:#1c7ed6" aria-label="Azul"></button>
       <button class="sw" data-color="#2f9e44" style="background:#2f9e44" aria-label="Verde"></button>
-      <button class="sw" data-color="#f08c00" style="background:#f08c00" aria-label="Naranja"></button>
       <input id="penColor" type="color" value="#7048e8" aria-label="Color personalizado">
-      <label class="tool-label" for="penSize">Grosor</label>
-      <select id="penSize" aria-label="Grosor del lápiz"><option value="2">Fino</option><option value="4" selected>Medio</option><option value="8">Grueso</option></select>
-      <button id="clearDrawBtn" title="Borrar todos los trazos">Limpiar dibujo</button>
+      <select id="penSize" aria-label="Grosor del lápiz" title="Grosor del lápiz"><option value="2">·</option><option value="4" selected>•</option><option value="8">●</option></select>
+      <button id="clearDrawBtn" class="icon-btn" aria-label="Limpiar dibujo" title="Borrar todos los trazos">🧽</button>
     </div>
 
     <div class="tool-group" aria-label="Tamaño de letra de las pastillas">
       <button id="fontDownBtn" title="Reducir tamaño de letra">A−</button>
       <button id="fontUpBtn" title="Aumentar tamaño de letra">A+</button>
     </div>
-    <button id="zoomBtn" title="Restablecer zoom">🔍 100%</button>
-    <button id="clearIdeasBtn">Borrar ideas</button>
-    <button id="themeBtn" aria-pressed="false">🌙 Modo oscuro</button>
-    <div class="hint">Lápiz: dibuja o borra · Dedo: mueve notas, desplaza y pellizca para zoom<br>(En ordenador: Mayús + ratón para dibujar)</div>
+    <button id="zoomBtn" title="Restablecer zoom">100%</button>
+    <button id="clearIdeasBtn" class="icon-btn" aria-label="Borrar ideas" title="Eliminar todas las notas">🗑</button>
+    <div class="spacer"></div>
+    <button id="themeBtn" class="icon-btn" aria-pressed="false" aria-label="Cambiar tema" title="Modo claro / oscuro">🌙</button>
+    <button id="helpBtn" class="icon-btn" aria-label="Ayuda" title="Ayuda" style="font-weight:700">?</button>
   </header>
 
   <div id="viewport">
@@ -130,7 +132,20 @@
       <canvas class="layer" id="colorLayer"></canvas>
     </main>
   </div>
-  <footer class="foot">Consejo: pulsa «Añadir idea», escribe una o varias palabras y mueve la nota con el dedo al cuadrante que quieras. Con el Apple Pencil solo se dibuja o se borra. Las notas y los dibujos se mantienen mientras esta página esté abierta.</footer>
+
+  <div id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="dialog">
+      <h2 id="helpTitle">Cómo se usa</h2>
+      <ul>
+        <li><b>＋ Idea:</b> escribe una expresión por línea y mueve cada nota al cuadrante que quieras.</li>
+        <li><b>Apple Pencil:</b> solo dibuja (✎) o borra (⌫).</li>
+        <li><b>Dedo:</b> mueve las notas, desplaza el panel y hace zoom pellizcando con dos dedos. El botón de porcentaje vuelve a 100&nbsp;%.</li>
+        <li><b>Persistencia:</b> las notas y los dibujos se mantienen mientras esta página esté abierta.</li>
+        <li><b>En ordenador:</b> Mayús + ratón dibuja; Ctrl + rueda hace zoom.</li>
+      </ul>
+      <div class="actions"><button class="primary" id="helpCloseBtn">Entendido</button></div>
+    </div>
+  </div>
 
   <div id="entry" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
     <div class="dialog">
@@ -154,7 +169,8 @@
   /* ───────── Modo oscuro ───────── */
   function applyTheme(t) {
     root.dataset.theme = t;
-    themeBtn.textContent = t === 'dark' ? '☀️ Modo claro' : '🌙 Modo oscuro';
+    themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+    themeBtn.title = t === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
     themeBtn.setAttribute('aria-pressed', String(t === 'dark'));
   }
   let savedTheme = null;
@@ -201,7 +217,7 @@
     view.x = clamp(view.x, w - w * view.s, 0);
     view.y = clamp(view.y, h - h * view.s, 0);
     board.style.transform = `translate(${view.x}px,${view.y}px) scale(${view.s})`;
-    zoomBtn.textContent = '🔍 ' + Math.round(view.s * 100) + '%';
+    zoomBtn.textContent = Math.round(view.s * 100) + '%';
   }
   function toBoard(cx, cy) {
     const r = vp.getBoundingClientRect();
@@ -243,10 +259,14 @@
   function openDialog() { entry.classList.add('show'); ideaText.value = ''; ideaText.focus(); }
   function closeDialog() { entry.classList.remove('show'); }
   $('addBtn').addEventListener('click', openDialog);
+  const help = $('help');
+  $('helpBtn').addEventListener('click', () => help.classList.add('show'));
+  $('helpCloseBtn').addEventListener('click', () => help.classList.remove('show'));
+  help.addEventListener('click', e => { if (e.target === help) help.classList.remove('show'); });
   $('cancelBtn').addEventListener('click', closeDialog);
   entry.addEventListener('click', e => { if (e.target === entry) closeDialog(); });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeDialog();
+    if (e.key === 'Escape') { closeDialog(); help.classList.remove('show'); }
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && entry.classList.contains('show')) createNote();
   });
 
