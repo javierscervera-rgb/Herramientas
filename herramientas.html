@@ -42,7 +42,7 @@
   .logo { height: 1.1em; width: 1.1em; vertical-align: -0.3em; margin-right: 0.04em; }
   .sub { font-style: italic; color: var(--muted); margin: 0; }
   nav { display: grid; gap: 0.8rem; }
-  a.tool {
+  .tool {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -68,10 +68,16 @@
   .name { flex: 1; font-size: 1.15rem; }
   .desc { font: 0.8rem var(--sans); color: var(--muted); text-align: right; }
   @media (max-width: 480px) { .desc { display: none; } }
-  a.tool:hover { background: var(--chip); border-color: var(--accent); }
-  a.tool:hover .code { background: var(--accent); color: var(--accent-ink); }
-  a.tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  @media (prefers-reduced-motion: reduce) { a.tool { transition: none; } }
+  .tool:hover { background: var(--chip); border-color: var(--accent); }
+  .tool:hover .code { background: var(--accent); color: var(--accent-ink); }
+  .tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  summary.tool { cursor: pointer; list-style: none; }
+  summary.tool::-webkit-details-marker { display: none; }
+  .chev { flex: none; width: 1.1rem; height: 1.1rem; color: var(--muted); transition: transform .2s; }
+  details.more[open] .chev { transform: rotate(180deg); }
+  details.more[open] summary.tool { border-color: var(--accent); }
+  .more-list { display: grid; gap: 0.8rem; margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid var(--line); }
+  @media (prefers-reduced-motion: reduce) { .tool, .chev { transition: none; } }
 </style>
 </head>
 <body>
@@ -96,12 +102,20 @@
     <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/mapaTSinteractivo.html">
       <span class="code">TS</span><span class="name">Mapa Tierra Santa</span><span class="desc">Mapa interactivo</span>
     </a>
-    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/Lector.html">
-      <span class="code">LE</span><span class="name">Lector editor</span><span class="desc">Lee y edita textos</span>
-    </a>
-    <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/DAFOiPad.html">
-      <span class="code">DA</span><span class="name">DAFO interactivo</span><span class="desc">Análisis DAFO</span>
-    </a>
+    <details class="more">
+      <summary class="tool">
+        <span class="code">+</span><span class="name">Otros</span><span class="desc">Más herramientas</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <div class="more-list">
+      <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/Lector.html">
+        <span class="code">LE</span><span class="name">Lector editor</span><span class="desc">Lee y edita textos</span>
+      </a>
+      <a class="tool" href="https://javierscervera-rgb.github.io/Herramientas/DAFOiPad.html">
+        <span class="code">DA</span><span class="name">DAFO interactivo</span><span class="desc">Análisis DAFO</span>
+      </a>
+      </div>
+    </details>
   </nav>
 </main>
 </body>
