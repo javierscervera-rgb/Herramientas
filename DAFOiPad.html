@@ -5,70 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#171310">
 <title>Panel DAFO colaborativo</title>
 <style>
   :root {
-    --ink:#172033; --line:#d6dbe5; --paper:#f5f7fb; --accent:#167d8d; --surface:#fff;
-    --btn-border:#cbd2df; --muted:#687386; --muted-2:#778195; --shadow:#17203312;
-    --a-bg:#fff8f7; --a-bd:#e6a2a2; --a-tx:#a93e3e;   /* amenazas */
-    --d-bg:#fffdf4; --d-bd:#e8c56e; --d-tx:#906a09;   /* desafíos */
-    --o-bg:#f5fff9; --o-bd:#7ec7a4; --o-tx:#17764b;   /* oportunidades */
-    --w-bg:#f6f9ff; --w-bd:#9bb9ed; --w-tx:#315fa9;   /* debilidades */
-    --sticky-bg:#fff2a8; --sticky-bd:#d9c45b;
+    /* Paleta del proyecto (tema oscuro por defecto) */
+    --paper:#171310;      /* fondo principal */
+    --surface:#201D18;    /* tarjetas y paneles */
+    --btn2:#292420;       /* botones secundarios */
+    --ink:#F0E8DC;        /* texto principal */
+    --muted:#AA9D8F;      /* texto secundario */
+    --line:#37312B;       /* bordes */
+    --accent:#CD8B75;     /* acento */
+    --accent2:#D88972;    /* títulos y botones activos */
+    --on-accent:#171310;
+    --on-accent2:#171310;
+    --sticky-bg:#CD8B75; --sticky-bd:#D88972; --sticky-tx:#171310;
+    --shadow:#00000066;
+    --ink-filter:invert(1);
     --sticky-font-size:15px;
-    color-scheme: light;
-  }
-  [data-theme="dark"] {
-    --ink:#e8ecf4; --line:#2e3748; --paper:#0d121c; --accent:#2aa3b6; --surface:#171d2b;
-    --btn-border:#3a4560; --muted:#9aa5ba; --muted-2:#8b97ad; --shadow:#00000066;
-    --a-bg:#2a1a1e; --a-bd:#8a4a4f; --a-tx:#ff9b9b;
-    --d-bg:#2a2415; --d-bd:#8a7430; --d-tx:#f0cb6a;
-    --o-bg:#14271f; --o-bd:#3f8a66; --o-tx:#6fdba5;
-    --w-bg:#161f33; --w-bd:#4a6fb0; --w-tx:#8fb4f5;
-    --sticky-bg:#e9d36a; --sticky-bd:#b9a548;
     color-scheme: dark;
+  }
+  [data-theme="light"] {
+    --paper:#F6F0E7; --surface:#FFFBF5; --btn2:#EFE6DA; --ink:#2A241D; --muted:#7A6E60; --line:#DDD2C3;
+    --accent:#CD8B75; --accent2:#B5604A; --on-accent:#171310; --on-accent2:#FFFFFF;
+    --sticky-bg:#EDB9A6; --sticky-bd:#CD8B75; --sticky-tx:#2A1A12;
+    --shadow:#2a241d22;
+    --ink-filter:none;
+    color-scheme: light;
   }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; width:100%; height:100%; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:var(--paper); overscroll-behavior:none; touch-action:manipulation; }
   body { display:flex; flex-direction:column; overflow:hidden; height:100dvh; }
 
   .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 14px; padding-left:max(14px,env(safe-area-inset-left)); padding-right:max(14px,env(safe-area-inset-right)); padding-top:max(10px,env(safe-area-inset-top)); background:var(--surface); border-bottom:1px solid var(--line); z-index:20; box-shadow:0 2px 8px var(--shadow); }
-  .brand { font-weight:750; margin-right:8px; }
-  button, select, input[type="color"] { font:inherit; border:1px solid var(--btn-border); border-radius:10px; padding:8px 12px; min-height:40px; background:var(--surface); color:var(--ink); cursor:pointer; }
+  .logo-btn { display:flex; align-items:center; padding:4px 8px; border:1px solid var(--line); border-radius:10px; background:var(--btn2); }
+  .logo { display:block; height:clamp(32px, 5vw, 48px); width:auto; max-width:200px; }
+  .brand { font-weight:750; margin-right:8px; color:var(--accent2); }
+  button, select, input[type="color"] { font:inherit; border:1px solid var(--line); border-radius:10px; padding:8px 12px; min-height:40px; background:var(--btn2); color:var(--ink); cursor:pointer; }
   input[type="color"] { padding:3px; width:44px; }
-  button.primary { background:var(--accent); border-color:var(--accent); color:white; font-weight:650; }
-  button.active, input[type="color"].active { outline:2px solid var(--accent); outline-offset:1px; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:650; }
+  button.active { background:var(--accent2); border-color:var(--accent2); color:var(--on-accent2); }
+  .sw.active, input[type="color"].active { outline:3px solid var(--accent2); outline-offset:2px; }
   .hint { font-size:12px; color:var(--muted); margin-left:auto; max-width:300px; text-align:right; }
   .tool-group { display:flex; align-items:center; gap:6px; }
   .tool-label { font-size:13px; color:var(--muted); }
-  .sw { width:34px; min-height:34px; height:34px; padding:0; border-radius:50%; border:2px solid var(--btn-border); }
-  .sw.auto { background:conic-gradient(#172033 0 50%, #e8ecf4 50% 100%); }
+  .sw { width:34px; min-height:34px; height:34px; padding:0; border-radius:50%; border:2px solid var(--line); }
+  .sw.auto { background:conic-gradient(#171310 0 50%, #F0E8DC 50% 100%); }
 
   /* Zona de trabajo: el dedo mueve/zoom, el lápiz dibuja */
   #viewport { position:relative; flex:1; min-height:0; overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   #board { position:absolute; left:0; top:0; width:100%; height:100%; transform-origin:0 0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:8px; padding:8px; }
-  .quadrant { position:relative; min-width:0; min-height:0; border:2px solid; border-radius:12px; overflow:hidden; }
-  .quadrant h2 { position:absolute; z-index:1; top:10px; left:13px; margin:0; font-size:clamp(14px,2vw,21px); letter-spacing:.04em; text-transform:uppercase; pointer-events:none; }
-  .quadrant .sub { position:absolute; top:39px; left:14px; color:var(--muted-2); font-size:12px; pointer-events:none; }
-  #amenazas { border-color:var(--a-bd); background:var(--a-bg); } #amenazas h2 { color:var(--a-tx); }
-  #desafios { border-color:var(--d-bd); background:var(--d-bg); } #desafios h2 { color:var(--d-tx); }
-  #oportunidades { border-color:var(--o-bd); background:var(--o-bg); } #oportunidades h2 { color:var(--o-tx); }
-  #debilidades { border-color:var(--w-bd); background:var(--w-bg); } #debilidades h2 { color:var(--w-tx); }
+  .quadrant { position:relative; min-width:0; min-height:0; border:2px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); }
+  .quadrant h2 { position:absolute; z-index:1; top:10px; left:13px; margin:0; font-size:clamp(14px,2vw,21px); letter-spacing:.04em; text-transform:uppercase; pointer-events:none; color:var(--accent2); }
+  .quadrant .sub { position:absolute; top:39px; left:14px; color:var(--muted); font-size:12px; pointer-events:none; }
 
-  .sticky { position:absolute; z-index:5; min-width:76px; max-width:min(260px,42vw); padding:10px 25px 10px 13px; border:1px solid var(--sticky-bd); border-radius:999px; background:var(--sticky-bg); color:#2a2600; box-shadow:0 3px 9px #15213a30; touch-action:none; white-space:pre-wrap; overflow-wrap:anywhere; font-size:var(--sticky-font-size); }
-  .sticky.selected { outline:2px solid var(--accent); }
-  .sticky .remove { position:absolute; right:3px; top:1px; border:0; padding:0 4px; min-height:0; background:transparent; font-size:17px; line-height:20px; color:#5d5635; cursor:pointer; }
+  .sticky { position:absolute; z-index:5; min-width:76px; max-width:min(260px,42vw); padding:10px 25px 10px 13px; border:1px solid var(--sticky-bd); border-radius:999px; background:var(--sticky-bg); color:var(--sticky-tx); box-shadow:0 3px 9px #0000004d; touch-action:none; white-space:pre-wrap; overflow-wrap:anywhere; font-size:var(--sticky-font-size); }
+  .sticky.selected { outline:2px solid var(--ink); }
+  .sticky .remove { position:absolute; right:3px; top:1px; border:0; padding:0 4px; min-height:0; background:transparent; font-size:17px; line-height:20px; color:var(--sticky-tx); opacity:.7; cursor:pointer; }
 
   .layer { position:absolute; left:0; top:0; width:100%; height:100%; z-index:10; pointer-events:none; }
-  /* La tinta "automática" se invierte en modo oscuro para que siga viéndose */
-  [data-theme="dark"] #inkLayer { filter:invert(1) hue-rotate(180deg); }
+  /* La tinta "automática" se invierte en el tema oscuro para que siga viéndose */
+  #inkLayer { filter:var(--ink-filter); }
 
-  #entry { display:none; position:fixed; inset:0; z-index:50; background:#10182877; align-items:center; justify-content:center; padding:18px; }
+  #entry { display:none; position:fixed; inset:0; z-index:50; background:#000000aa; align-items:center; justify-content:center; padding:18px; }
   #entry.show { display:flex; }
-  .dialog { width:min(440px,100%); background:var(--surface); border-radius:16px; padding:20px; box-shadow:0 18px 60px #0005; }
-  .dialog h2 { margin:0 0 12px; font-size:20px; }
-  .dialog textarea { width:100%; min-height:100px; resize:vertical; font:inherit; padding:11px; border:1px solid var(--btn-border); border-radius:10px; background:var(--paper); color:var(--ink); }
+  .dialog { width:min(440px,100%); background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:0 18px 60px #0007; }
+  .dialog h2 { margin:0 0 12px; font-size:20px; color:var(--accent2); }
+  .dialog textarea { width:100%; min-height:100px; resize:vertical; font:inherit; padding:11px; border:1px solid var(--line); border-radius:10px; background:var(--paper); color:var(--ink); }
   .dialog .actions { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
   .foot { font-size:12px; color:var(--muted); padding:5px 12px; padding-bottom:max(5px,env(safe-area-inset-bottom)); background:var(--surface); border-top:1px solid var(--line); }
 
@@ -87,13 +92,14 @@
 </head>
 <body>
   <header class="toolbar">
+    <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/herramientas.html" target="_self" aria-label="Ir a Herramientas" title="Ir a Herramientas"><img class="logo" src="logo.svg" alt="Herramientas"></a>
     <div class="brand">Panel de ideas · DAFO</div>
     <button class="primary" id="addBtn">＋ Añadir idea</button>
 
     <div class="tool-group" aria-label="Herramientas del Apple Pencil">
       <button id="penBtn" class="active" aria-pressed="true" title="Lápiz: dibujar con el Apple Pencil">✎ Lápiz</button>
       <button id="eraserBtn" aria-pressed="false" title="Goma: borrar trazos con el Apple Pencil">⌫ Goma</button>
-      <button class="sw auto active" data-color="auto" title="Tinta automática (se adapta al modo claro/oscuro)" aria-label="Tinta automática"></button>
+      <button class="sw auto active" data-color="auto" title="Tinta automática (se adapta al tema claro/oscuro)" aria-label="Tinta automática"></button>
       <button class="sw" data-color="#e03131" style="background:#e03131" aria-label="Rojo"></button>
       <button class="sw" data-color="#1c7ed6" style="background:#1c7ed6" aria-label="Azul"></button>
       <button class="sw" data-color="#2f9e44" style="background:#2f9e44" aria-label="Verde"></button>
@@ -111,18 +117,21 @@
     <button id="zoomBtn" title="Restablecer zoom">🔍 100%</button>
     <button id="clearIdeasBtn">Borrar ideas</button>
     <button id="themeBtn" aria-pressed="false">🌙 Modo oscuro</button>
-    </header>
+    <div class="hint">Lápiz: dibuja o borra · Dedo: mueve notas, desplaza y pellizca para zoom<br>(En ordenador: Mayús + ratón para dibujar)</div>
+  </header>
 
   <div id="viewport">
     <main id="board" aria-label="Panel de cuatro cuadrantes">
       <section class="quadrant" id="amenazas"><h2>Amenazas</h2><div class="sub">Factores externos que pueden perjudicar</div></section>
-      <section class="quadrant" id="desafios"><h2>Fortalezas</h2><div class="sub">Aspectos internos que nos dan seguridad</div></section>
+      <section class="quadrant" id="desafios"><h2>Desafíos</h2><div class="sub">Retos que tenemos por delante</div></section>
       <section class="quadrant" id="oportunidades"><h2>Oportunidades</h2><div class="sub">Factores externos que podemos aprovechar</div></section>
       <section class="quadrant" id="debilidades"><h2>Debilidades</h2><div class="sub">Aspectos internos que mejorar</div></section>
       <canvas class="layer" id="inkLayer"></canvas>
       <canvas class="layer" id="colorLayer"></canvas>
     </main>
   </div>
+  <footer class="foot">Consejo: pulsa «Añadir idea», escribe una o varias palabras y mueve la nota con el dedo al cuadrante que quieras. Con el Apple Pencil solo se dibuja o se borra. Las notas y los dibujos se mantienen mientras esta página esté abierta.</footer>
+
   <div id="entry" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
     <div class="dialog">
       <h2 id="dialogTitle">Añadir una idea</h2>
@@ -150,7 +159,7 @@
   }
   let savedTheme = null;
   try { savedTheme = localStorage.getItem('dafo-theme'); } catch (_) {}
-  applyTheme(savedTheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  applyTheme(savedTheme === 'light' ? 'light' : 'dark');  // por defecto, la paleta oscura del proyecto
   themeBtn.addEventListener('click', () => {
     const t = root.dataset.theme === 'dark' ? 'light' : 'dark';
     applyTheme(t);
