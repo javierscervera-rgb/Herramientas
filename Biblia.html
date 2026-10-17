@@ -75,7 +75,8 @@ details[open] summary{border-bottom:1px solid var(--line)}
 .hcell b.cp{color:var(--accent);font:700 .8em system-ui,sans-serif;margin-right:.2em}
 @media (max-width:700px){.hcell{font-size:.78rem;padding:6px 4px}.hcols div{font-size:.66rem;letter-spacing:.03em}.hbar .btn{padding:8px}}
 .hero{position:relative}
-.hero .logo-link{position:absolute;left:0;top:10px}
+.hl1{position:relative;display:flex;align-items:center;justify-content:center}
+.hl1 .logo-link{position:absolute;left:0;top:50%;transform:translateY(-50%)}
 .bar .logo-link,.hbar .logo-link{flex:none;margin:-4px 0}
 .logo-link{display:inline-block;-webkit-tap-highlight-color:transparent}
 .logo { display: block; height: clamp(32px, 5vw, 48px); width: auto; max-width: 200px; }
@@ -154,7 +155,7 @@ function home(){
 }
 const vnum=v=>{const m=v.match(/^(\d+)/);return m?+m[1]:null};
 const vlist=c=>{const r=[];c.v.forEach(v=>{const n=vnum(v);if(n!==null&&!r.includes(n))r.push(n)});return r};
-function mainTabs(){return `<header class="hero">${logoLink()}<h1>Sagrada Biblia</h1><p>Biblia de Jerusalén</p></header>
+function mainTabs(){return `<header class="hero"><div class="hl1">${logoLink()}<h1>Sagrada Biblia</h1></div><p>Biblia de Jerusalén</p></header>
   <div class="tabs main" role="tablist">${Object.keys(TN).map(k=>`<button role="tab" data-a="${k}" class="${k===tA?'on':''}">${k==='GO'?'Ir a…':TN[k]}</button>`).join('')}</div>`}
 function bindMain(){app.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>{tA=x.dataset.a;tG=0;saveTab();home()})}
 function goHome(){
