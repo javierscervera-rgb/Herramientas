@@ -27,7 +27,7 @@
     color: var(--ink);
     font-family: var(--serif);
     line-height: 1.5;
-    padding: max(2rem, env(safe-area-inset-top, 0px)) 1.25rem max(2rem, env(safe-area-inset-bottom, 0px));
+    padding: max(2rem, env(safe-area-inset-top, 0px)) 1.25rem max(4.5rem, calc(env(safe-area-inset-bottom, 0px) + 3.5rem));
   }
   main { max-width: 46rem; margin: 0 auto; }
   header { text-align: center; margin: 0.5rem 0 2rem; }
@@ -77,6 +77,16 @@
   details.more[open] .chev { transform: rotate(180deg); }
   details.more[open] summary.tool { border-color: var(--accent); }
   .more-list { display: grid; gap: 0.8rem; margin-top: 0.8rem; padding-left: 1rem; border-left: 2px solid var(--line); }
+  .firma {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right, 0px));
+    bottom: max(0.8rem, env(safe-area-inset-bottom, 0px));
+    padding: 0.35rem 0.6rem;
+    font: 0.8rem var(--sans);
+    color: var(--muted);
+    z-index: 5;
+  }
+  .firma:hover { color: var(--ink); }
   @media (prefers-reduced-motion: reduce) { .tool, .chev { transition: none; } }
 </style>
 </head>
@@ -118,5 +128,6 @@
     </details>
   </nav>
 </main>
+<a class="tool firma" href="mailto:javierscervera@gmail.com">Javier S-C©</a>
 </body>
 </html>
