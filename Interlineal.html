@@ -183,8 +183,8 @@ const DATA = [{"id":"MT","name":"Mateo","ch":[[{"n":1,"w":[["βιβλος","Libr
 const $ = id => document.getElementById(id);
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
 const store = {
-  get(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
-  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  get(k,d){ try{ const v=localStorage.getItem('bibint:'+k); return v===null?d:JSON.parse(v);}catch(e){return d;} },
+  set(k,v){ try{ localStorage.setItem('bibint:'+k,JSON.stringify(v)); }catch(e){} }
 };
 const GROUPS = [
   {key:'ev', label:'Evangelios y Hechos', ids:['MT','MC','LC','JN','HCH']},
@@ -242,15 +242,16 @@ async function bjChapter(id, ch){
 /* ===== Estado ===== */
 let cur = {b:null, c:null};
 const fsKey='fs', glossKey='gloss';
+const getFs = ()=>{ const n=Number(store.get(fsKey,19)); return (n>=14 && n<=30) ? n : 19; };
 function applyPrefs(){
-  document.documentElement.style.setProperty('--fs', store.get(fsKey,19)+'px');
-  const m = store.get('mode', store.get(glossKey,false) ? 'below' : 'plain');
+  document.documentElement.style.setProperty('--fs', getFs()+'px');
+  const m0 = store.get('mode','plain'); const m = ['plain','below','pdf'].includes(m0) ? m0 : 'plain';
   document.body.classList.toggle('gloss', m==='below');
   document.body.classList.toggle('pdf', m==='pdf');
   [['btn-gloss','below'],['btn-pdf','pdf']].forEach(([id,k])=>{ $(id).classList.toggle('on', m===k); $(id).setAttribute('aria-pressed', m===k); });
 }
-$('fs-').onclick = ()=>{ store.set(fsKey, Math.max(14, store.get(fsKey,19)-1)); applyPrefs(); };
-$('fs+').onclick = ()=>{ store.set(fsKey, Math.min(30, store.get(fsKey,19)+1)); applyPrefs(); };
+$('fs-').onclick = ()=>{ store.set(fsKey, Math.max(14, getFs()-1)); applyPrefs(); };
+$('fs+').onclick = ()=>{ store.set(fsKey, Math.min(30, getFs()+1)); applyPrefs(); };
 const setMode = k => { store.set('mode', store.get('mode','plain')===k ? 'plain' : k); applyPrefs(); };
 $('btn-gloss').onclick = ()=>setMode('below');
 $('btn-pdf').onclick = ()=>setMode('pdf');
