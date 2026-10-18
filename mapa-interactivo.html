@@ -198,7 +198,7 @@
 
   map.createPane('lineas').style.zIndex = 410;
   map.createPane('puntos').style.zIndex = 420;
-  const TOP15 = ["Jerusalén","Belén","Nazaret","Cafarnaum","Betania","Betabará","Caná","Jericó","Sicar","Naín","Emaus","Monte Tabor","Panias","Betsaida","Magdala"];
+  const TOP15 = Object.keys(RES);   // todos los lugares con importancia en el Nuevo Testamento (34)
   TOP15.forEach(n => {
     const l = LUGARES.find(x => x.nombre === n);
     const abrir = () => abrirLugar(n);
