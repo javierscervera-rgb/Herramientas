@@ -132,14 +132,25 @@ body.mapoff .mapi{display:none}
 #mapfb iframe{width:100%;height:100%;border:0;display:block}
 #mapfb button{position:absolute;top:8px;right:8px;z-index:1;font:500 .9rem system-ui,sans-serif;color:var(--text);background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer}
 @media (max-width:440px){.bar .lbl{display:none}}
-#dicm{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
-#dicm .card{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;max-width:680px;width:100%;max-height:min(100%,760px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5)}
-#dicm .ch{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-family:system-ui,sans-serif}
-#dicm .ch .tt{flex:1;min-width:0}
-#dicm .ch .k{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-#dicm .ch .r{font-size:1.05rem;font-weight:600;color:var(--accent2);font-family:Georgia,serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#dicm .ch button{font:500 .85rem system-ui,sans-serif;color:var(--text);background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer}
-#dicm .cb{overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 20px;overscroll-behavior:contain}
+.hl1 .help-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--accent2);font:700 1.05rem/1 system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hl1 .help-btn:hover{border-color:var(--accent)}
+#helpm .cb h3{margin:16px 0 4px;font-size:1.08rem;color:var(--accent2);font-weight:600}
+#helpm .cb h3:first-child{margin-top:8px}
+#helpm .cb p{margin:0 0 .6em;line-height:1.6}
+#helpm .ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-.25em;min-width:1.7em;height:1.6em;padding:0 .3em;border:1px solid var(--line);border-radius:7px;background:var(--chip);color:var(--accent2);font:600 .8rem system-ui,sans-serif}
+#helpm .ico svg{width:1em;height:1em}
+#helpm .num{display:inline-block;font:700 .8rem system-ui,sans-serif;color:var(--bg);background:var(--accent2);border-radius:999px;padding:.05em .55em}
+#helpm .und{text-decoration:underline dotted rgba(205,139,117,.75);text-underline-offset:.24em}
+#helpm .pin{color:var(--accent)}#helpm .pin svg{width:.95em;height:.95em;vertical-align:-.1em}
+#helpm .note{font:.85rem/1.5 system-ui,sans-serif;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:14px}
+#dicm,#helpm{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+#dicm .card,#helpm .card{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;max-width:680px;width:100%;max-height:min(100%,760px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+#dicm .ch,#helpm .ch{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);font-family:system-ui,sans-serif}
+#dicm .ch .tt,#helpm .ch .tt{flex:1;min-width:0}
+#dicm .ch .k,#helpm .ch .k{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#dicm .ch .r,#helpm .ch .r{font-size:1.05rem;font-weight:600;color:var(--accent2);font-family:Georgia,serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dicm .ch button,#helpm .ch button{font:500 .85rem system-ui,sans-serif;color:var(--text);background:var(--chip);border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer}
+#dicm .cb,#helpm .cb{overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 20px;overscroll-behavior:contain}
 #dicm .ds{border-top:1px solid var(--line);padding-top:6px;margin-top:10px}
 #dicm .ds:first-child,#dicm .dsee+.ds{border-top:0;margin-top:0}
 #dicm h3{margin:10px 0 4px;font-size:1.15rem;color:var(--accent2);font-weight:600}
@@ -190,7 +201,7 @@ function home(){
 }
 const vnum=v=>{const m=v.match(/^(\d+)/);return m?+m[1]:null};
 const vlist=c=>{const r=[];c.v.forEach(v=>{const n=vnum(v);if(n!==null&&!r.includes(n))r.push(n)});return r};
-function mainTabs(){return `<header class="hero"><div class="hl1">${logoLink()}<h1>Sagrada Biblia</h1></div><p>Biblia de Jerusalén</p></header>
+function mainTabs(){return `<header class="hero"><div class="hl1">${logoLink()}<h1>Sagrada Biblia</h1><button class="help-btn" id="helpb" aria-label="Ayuda: qué encontrarás en esta web" title="Ayuda">?</button></div><p>Biblia de Jerusalén</p></header>
   <div class="tabs main" role="tablist">${Object.keys(TN).map(k=>`<button role="tab" data-a="${k}" class="${k===tA?'on':''}">${k==='GO'?'Ir a…':TN[k]}</button>`).join('')}</div>`}
 function bindMain(){app.querySelectorAll('[data-a]').forEach(x=>x.onclick=()=>{tA=x.dataset.a;tG=0;saveTab();home()})}
 function goHome(){
@@ -760,8 +771,19 @@ function dicToggle(){
     const tx=w.textContent;dicOpen(w.dataset.d.split(',').map(Number),tx.charAt(0).toUpperCase()+tx.slice(1),false);
   });
 })();
+/* ===== Ayuda ===== */
+(function helpInit(){
+  document.body.insertAdjacentHTML('beforeend','<div id="helpm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Ayuda"><div class="ch"><div class="tt"><div class="k">Ayuda</div><div class="r">Qué encontrarás en esta web</div></div><button id="helpx" aria-label="Cerrar">✕</button></div><div class="cb">'+"<h3>La Biblia de Jerusalén</h3>\n<p>Elige un libro en el <b>Antiguo</b> o el <b>Nuevo Testamento</b> y pulsa el número del capítulo. Con <b>Ir a…</b> llegas directamente a cualquier versículo. Mientras lees, los botones <b>‹ Anterior</b> y <b>Siguiente ›</b> te llevan de un capítulo a otro, y <b>A−</b> / <b>A+</b> cambian el tamaño de la letra.</p>\n<h3>Evangelios en paralelo</h3>\n<p>En el Nuevo Testamento, el botón <b>Evangelios en paralelo</b> muestra los cuatro evangelios en columnas, uno junto a otro, para comparar cómo cuenta cada uno el mismo episodio.</p>\n<h3>Catena Aurea</h3>\n<p>En los evangelios, algunos números de versículo aparecen dentro de un círculo de color, así: <span class=\"num\">7</span>. Al pulsarlo se abren los comentarios de los Padres de la Iglesia reunidos por santo Tomás de Aquino en la <i>Catena Aurea</i>.</p>\n<h3>Diccionario bíblico</h3>\n<p>Algunas palabras del texto tienen un <span class=\"und\">subrayado de puntos</span>: son personas, lugares o términos que aparecen en el diccionario bíblico. Púlsalas para leer su explicación.</p>\n<h3>Lugares de los Evangelios</h3>\n<p>Junto al nombre de los principales lugares de la vida de Jesús verás una pequeña chincheta <span class=\"pin\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z\"/></svg></span>. Púlsala para ver en un mapa dónde está ese lugar.</p>\n<h3>Activar y desactivar</h3>\n<p>Si prefieres leer el texto limpio, puedes ocultar estas ayudas con los botones de la barra superior:</p>\n<p><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19\"/><path d=\"M9 7h6M9 10.5h4\"/></svg></span> muestra u oculta los subrayados del diccionario.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5L9 4z\"/><path d=\"M9 4v13M15 6.5v13\"/></svg></span> muestra u oculta las chinchetas del mapa.</p>\n<p>Cuando el botón está iluminado, esa opción está activada; púlsalo otra vez para desactivarla. La página recuerda tu elección para la próxima vez.</p>\n<p class=\"note\">Las ventanas de comentarios, diccionario y mapa se cierran con la ✕, con la tecla Esc o pulsando fuera de ellas.</p>"+'</div></div></div>');
+  const m=document.getElementById('helpm');
+  const close=()=>{if(!m.hidden){m.hidden=true;document.body.style.overflow=''}};
+  window.helpClose=close;
+  document.getElementById('helpx').onclick=close;
+  m.addEventListener('click',e=>{if(e.target===m)close()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+  document.addEventListener('click',e=>{if(e.target.closest('#helpb')){m.hidden=false;m.querySelector('.cb').scrollTop=0;document.body.style.overflow='hidden'}});
+})();
 function route(){
-  catClose();dicClose();
+  catClose();dicClose();helpClose();
   window.onscroll=null;window.onresize=null;
   const hp=location.hash.startsWith('#/paralelo');
   app.classList.toggle('wide',hp);
