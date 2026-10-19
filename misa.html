@@ -195,6 +195,7 @@ const saveLib = () => store.set("misa.lib", LIB);
 /* ---------- Catálogo de textos de la biblioteca ---------- */
 const ORD = [
  ["ord.senal","Señal de la cruz"],["ord.saludo1","Saludo inicial 1"],["ord.saludo2","Saludo inicial 2"],["ord.saludo3","Saludo inicial 3"],
+["ord.oremos_colecta","«Oremos» antes de la colecta"],["ord.oremos_post","«Oremos» antes de la oración después de la comunión"],
  ["ord.ap_inv","Invitación al acto penitencial"],["ord.ap1","Acto penitencial, forma 1 (Yo confieso)"],["ord.ap2","Acto penitencial, forma 2"],
  ["ord.ap3","Acto penitencial, forma 3 (invocaciones)"],["ord.absol","Absolución del acto penitencial"],["ord.kyrie","Señor, ten piedad"],
  ["ord.gloria","Gloria"],["ord.palabra","Aclamación al final de la lectura"],["ord.ev_secreta","Oración secreta antes del evangelio"],
@@ -218,6 +219,19 @@ const PE = [
  {id:"nin1",n:"Misas con niños I",own:"-"},{id:"nin2",n:"Misas con niños II",own:"-"},{id:"nin3",n:"Misas con niños III",own:"-"}
 ];
 const PEM = Object.fromEntries(PE.map(p => [p.id, p]));
+const DIAS6 = {domingo:"domingos", navidad:"Navidad y su octava", epifania:"Epifanía", pascua:"de la Vigilia al Domingo II de Pascua", ascension:"Ascensión", pentecostes:"Pentecostés"};
+const INTC = {pascua:"Pascua y bautismo de adultos", bautismo:"bautismo de niños", confirmacion:"confirmación", primeracomunion:"primera comunión", matrimonio:"matrimonio", difuntos:"difuntos"};
+const PE_ES = [
+ ["pe.pe2.rec","P. E. II: «Acuérdate, Señor, de tu Iglesia» (ordinario)"],["pe.pe2.c2","P. E. II: del Papa y el obispo hasta «por la caridad»"],["pe.pe2.c3","P. E. II: difuntos y santos hasta la doxología"],
+ ...Object.entries(DIAS6).map(([k,l]) => [`emb.pe2.rec.${k}`, `P. E. II: recuerdo propio (${l})`]),
+ ...Object.entries(INTC).map(([k,l]) => [`emb.pe2.int.${k}`, `P. E. II: intercesión particular (${l})`]),
+ ["pe.pe3.rec","P. E. III: «Atiende los deseos…» (ordinario)"],["pe.pe3.c3","P. E. III: «Reúne en torno a ti…»"],["pe.pe3.dif","P. E. III: «A nuestros hermanos difuntos…»"],["pe.pe3.c4","P. E. III: conclusión"],
+ ...Object.entries(DIAS6).map(([k,l]) => [`emb.pe3.rec.${k}`, `P. E. III: recuerdo propio (${l})`]),
+ ...Object.entries(INTC).filter(([k]) => k !== "difuntos").map(([k,l]) => [`emb.pe3.int.${k}`, `P. E. III: intercesión particular (${l})`]),
+ ["emb.pe3.dif","P. E. III: en las misas de difuntos"],
+ ["pe.pe4.c2","P. E. IV: del pueblo santo hasta la doxología"],
+ ...Object.entries(INTC).filter(([k]) => !["difuntos","bautismo"].includes(k)).map(([k,l]) => [`emb.pe4.int.${k}`, `P. E. IV: intercesión particular (${l})`])
+];
 const EMB = [["emb.comm.domingo","Communicantes propio: domingos"],["emb.comm.navidad","Communicantes propio: Navidad y su octava"],["emb.comm.epifania","Communicantes propio: Epifanía"],
  ["emb.comm.jueves","Communicantes propio: Jueves Santo"],["emb.comm.pascua","Communicantes propio: Pascua (Vigilia al Domingo II)"],
  ["emb.comm.ascension","Communicantes propio: Ascensión"],["emb.comm.pentecostes","Communicantes propio: Pentecostés"],
@@ -260,6 +274,7 @@ function catalog(){
   PE.forEach(p => [["a","desde el Santo hasta la consagración"],["b","relato de la institución"],["c","desde la aclamación hasta la doxología"]]
     .forEach(([s,t]) => c.push({g:"Plegarias eucarísticas",k:`pe.${p.id}.${s}`,l:`${p.n}: ${t}`})));
   EMB.forEach(([k,l]) => c.push({g:"Plegarias eucarísticas",k,l}));
+  PE_ES.forEach(([k,l]) => c.push({g:"Plegarias eucarísticas",k,l}));
   BSOL.forEach((t,i) => c.push({g:"Bendiciones",k:`bend.sol.${i+1}`,l:`Bendición solemne ${i+1}: ${t}`}));
   for(let i=1;i<=28;i++) c.push({g:"Bendiciones",k:`bend.pueblo.${i}`,l:`Oración sobre el pueblo ${i}`});
   RITOS.forEach(([k,l]) => c.push({g:"Ritos especiales",k,l}));
@@ -278,7 +293,7 @@ function labelOf(k){
 /* ---------- Estado de la composición ---------- */
 const DEF = {fid:"", saludo:"1", ap:"1", gloria:null, credo:null, simbolo:"niceno", lect:[], ou:"", pe:"pe2", pref:"", aclam:"1",
   priv:"1", bend:"simple", bendN:9, puebloN:1, desp:"1", pregon:"largo", ninos:false, ramos:"procesion", vigN:7, pentExt:false, comAlt:false,
-  ciclo:"", ouKey:""};
+  ciclo:"", ouKey:"", var:{}, intc:null, recProp:true};
 let S = Object.assign({}, DEF, store.get("misa.actual", {}));
 if(!FM[S.fid]) S.fid = (F.find(f => f.c === "Domingo XXX del tiempo ordinario") || F[0]).id;
 function cicloActual(d = new Date()){
@@ -289,6 +304,26 @@ function cicloActual(d = new Date()){
   return ["C","A","B"][y % 3];
 }
 if(!S.ciclo) S.ciclo = cicloActual();
+if(!S.var) S.var = {};
+/* Fórmulas alternativas («O bien:») dentro de un mismo texto */
+const V = k => ({v: (S.var || {})[k.replace("ord.","")] || 0});
+function variantes(txt){
+  const P = (txt || "").trim().split(/\n\s*\n/), cortes = [];
+  P.forEach((p, i) => { if(/^\*\s*O bien:?\s*$/.test(p.trim())) cortes.push(i); });
+  if(!cortes.length) return null;
+  const trozos = []; let ini = 0;
+  cortes.forEach(c => { trozos.push(P.slice(ini, c)); ini = c + 1; }); trozos.push(P.slice(ini));
+  const lead = []; while(trozos[0].length > 1 && /^\*/.test(trozos[0][0])) lead.push(trozos[0].shift());
+  const ult = trozos[trozos.length - 1], tail = [];
+  while(ult.length > 1 && /^(\*|R\.)/.test(ult[ult.length - 1])) tail.unshift(ult.pop());
+  return {lead, tail, opts: trozos};
+}
+const nVar = k => (variantes(LIB[k]) || {opts:[1]}).opts.length;
+function elegirVariante(txt, i){
+  const v = variantes(txt); if(!v) return txt;
+  const o = v.opts[Math.min(i || 0, v.opts.length - 1)];
+  return [...v.lead, ...o, ...v.tail].join("\n\n");
+}
 /* Oración de los fieles en la biblioteca: ou.<formulario>.<ciclo|T>.<n> y ou.gen.<n> */
 const ouTitulo = k => ((LIB[k] || "").match(/^\*\s*(.+)/) || [,k])[1];
 const ouCuerpo = k => (LIB[k] || "").replace(/^\*[^\n]*\n+/, "");
@@ -349,14 +384,36 @@ function commKey(f){
   if(f.r === "Domingo") return "domingo";
   return "";
 }
-function hancKey(f){
-  const ck = commKey(f);
-  if(ck === "jueves" || ck === "pascua") return ck;
+function intAuto(f){
+  if(f.e === "vigilia") return "pascua";
   if(/bautismo/.test(f.c)) return "bautismo";
   if(/confirmación/.test(f.c)) return "confirmacion";
   if(f.g === "Matrimonio") return "matrimonio";
-  if(/^Exequias/.test(f.c)) return "exequias";
+  if(f.s === "Misas de difuntos" || /fieles difuntos/.test(f.c)) return "difuntos";
   return "";
+}
+const intKey = f => S.intc === null ? intAuto(f) : S.intc;
+function hancKey(f){
+  const ck = commKey(f);
+  if(ck === "jueves" || ck === "pascua") return ck;
+  const ik = intKey(f);
+  if(ik === "difuntos") return /^Exequias/.test(f.c) ? "exequias" : "";
+  return ik && ik !== "pascua" ? ik : "";
+}
+function recKey(f){
+  const ck = commKey(f);
+  if(!ck || ck === "jueves") return "";
+  return ck;
+}
+/* Final de las plegarias II, III y IV con las inserciones del Misal español */
+function segmentosPE(f){
+  const id = S.pe, rk = recKey(f), ik = intKey(f);
+  const rec = p => rk ? [`emb.${p}.rec.${rk}`, "Recuerdo propio del día"] : [`pe.${p}.rec`];
+  const int = p => ik && LABEL[`emb.${p}.int.${ik}`] ? [[`emb.${p}.int.${ik}`, "Intercesión particular"]] : [];
+  if(id === "pe2") return [["pe.pe2.c"], rec("pe2"), ["pe.pe2.c2"], ...int("pe2"), ["pe.pe2.c3"]];
+  if(id === "pe3") return [["pe.pe3.c"], ...int("pe3"), rec("pe3"), ["pe.pe3.c3"], ik === "difuntos" ? ["emb.pe3.dif", "Misa de difuntos"] : ["pe.pe3.dif"], ["pe.pe3.c4"]];
+  if(id === "pe4") return [["pe.pe4.c"], ...int("pe4"), ["pe.pe4.c2"]];
+  return [[`pe.${id}.c`]];
 }
 const R_com6 = f => !["Adviento","Navidad","Cuaresma","Semana Santa","Pascua"].includes(f.g);
 function reglas(){
@@ -387,7 +444,10 @@ function reglas(){
   if(pe.own && pe.own !== "-") notes.push({c:"lock", t:prefLock});
   if(f.pp) notes.push({c:"", t:"P. E. IV no disponible.", s:"Solo puede usarse con su prefacio propio, y esta misa ya tiene uno."});
   if(S.pe === "pe2" && !f.pp && R_com6(f)) notes.push({c:"", t:"La P. E. II tiene prefacio propio (Común VI), pero admite otro.", s:""});
-  const ck = commKey(f);
+  const ck = commKey(f), rk = recKey(f), ik = intKey(f);
+  if(rk && ["pe2","pe3"].includes(S.pe)) notes.push({c:"lock", t:`Se usa el recuerdo propio (${DIAS6[rk]}) en la ${PEM[S.pe].n}.`});
+  if(ik && S.pe !== "pe1" && !LABEL[`emb.${S.pe}.int.${ik}`] && !(S.pe === "pe3" && ik === "difuntos")) notes.push({c:"warn", t:`La ${PEM[S.pe].n} no tiene intercesión particular para ${INTC[ik]}.`});
+  if(ik && (LABEL[`emb.${S.pe}.int.${ik}`] || (S.pe === "pe3" && ik === "difuntos"))) notes.push({c:"lock", t:`Intercesión particular: ${INTC[ik]}.`});
   if(ck) notes.push({c: S.pe === "pe1" ? "lock" : "", t: S.pe === "pe1" ? (ck === "domingo" ? "Puede usarse el Communicantes propio del domingo." : "Se inserta el Communicantes propio del día.") : "Con la P. E. I se usaría un Communicantes propio.", s: hancKey(f) ? "También hay Hanc igitur propio." : ""});
   if(f.e === "jueves" && S.pe !== "pe1") notes.push({c:"warn", t:"Para la Cena del Señor se recomienda la P. E. I, con su relato de la institución propio."});
 
@@ -411,8 +471,10 @@ function buildOrder(){
   const R = reglas(), f = R.f, B = [];
   const sec = t => B.push({t:"sec", x:t});
   const rub = x => B.push({t:"rub", x});
-  const txt = (k, l) => B.push({t:"txt", k, l: l || labelOf(k)});
-  const prop = (tipo, l) => { if(f.x.some(x => x[0] === tipo)) txt(`prop.${f.id}.${tipo}`, l || TIPOS[tipo]); };
+  const txt = (k, l, o = {}) => B.push({t:"txt", k, l: l === undefined || l === null ? labelOf(k) : l, ...o});
+  const AMEN = ["colecta","ofrendas","postcomunion","pueblo"];
+  const prop = (tipo, l) => { if(f.x.some(x => x[0] === tipo)) txt(`prop.${f.id}.${tipo}`, l || TIPOS[tipo], {amen: AMEN.includes(tipo)}); };
+  const sal = () => "ord.saludo" + (["1","2","3"].includes(S.saludo) ? S.saludo : "1");
   const lect = (L) => B.push({t:"lec", L});
 
   if(f.e === "viernes") return viernes(f, B, sec, rub, txt, prop, lect);
@@ -442,17 +504,17 @@ function buildOrder(){
         rub("Si parece oportuno, sigue una homilía breve."); txt("rito.ramos.inv");
         rub("Comienza la procesión hacia la iglesia donde se celebrará la misa, con cantos en honor de Cristo Rey."); txt("rito.ramos.cantos");
         rub("Al llegar al altar, el sacerdote lo venera y va a la sede. Se omiten los demás ritos iniciales y se dice la colecta.");
-      } else { prop("entrada"); txt("ord.senal"); txt("ord.saludo" + S.saludo); txt("ord.ap_inv"); txt("ord.ap" + S.ap); txt("ord.absol"); if(S.ap !== "3") txt("ord.kyrie"); }
+      } else { prop("entrada"); txt("ord.senal"); txt(sal()); txt("ord.ap_inv", null, V("ord.ap_inv")); txt("ord.ap" + S.ap); txt("ord.absol"); if(S.ap !== "3") txt("ord.kyrie"); }
     } else if(f.e === "presentacion"){
       rub("Los fieles se reúnen fuera de la iglesia o en otro lugar adecuado, con las candelas sin encender. Mientras se encienden, se canta una antífona.");
-      txt("ord.senal"); txt("ord.saludo" + S.saludo); txt("rito.cand.mon"); txt("rito.cand.bend");
+      txt("ord.senal"); txt(sal()); txt("rito.cand.mon"); txt("rito.cand.bend");
       rub("Rocía las candelas con agua bendita, sin decir nada, y recibe su candela."); txt("rito.cand.inv"); txt("rito.cand.ant");
       rub("Al llegar al altar, el sacerdote lo venera. Se omite el acto penitencial y se canta el Gloria.");
     } else {
       rub("Reunido el pueblo, el sacerdote va al altar con los ministros mientras se canta el canto de entrada. Si no hay canto, se dice la antífona de entrada.");
       prop("entrada");
       rub("Llegado al altar, hace la reverencia debida y lo besa; si se usa incienso, lo inciensa. Luego va a la sede.");
-      txt("ord.senal"); txt("ord.saludo" + S.saludo);
+      txt("ord.senal"); txt(sal());
       rub("El sacerdote, el diácono u otro ministro puede introducir a los fieles en la misa del día con palabras muy breves.");
       if(f.e === "ceniza") rub("Se omite el acto penitencial, que se sustituye por la imposición de la ceniza.");
       else if(S.ap === "asp"){
@@ -461,7 +523,7 @@ function buildOrder(){
         rub("El sacerdote rocía con el agua bendita a sí mismo, a los ministros y al pueblo, recorriendo la iglesia si conviene. Mientras, se canta.");
         txt("rito.asp.ant"); txt("rito.asp.or");
       } else {
-        txt("ord.ap_inv");
+        txt("ord.ap_inv", null, V("ord.ap_inv"));
         rub("Se hace una breve pausa en silencio.");
         txt("ord.ap" + S.ap); txt("ord.absol");
         if(S.ap !== "3") txt("ord.kyrie");
@@ -473,6 +535,7 @@ function buildOrder(){
       txt("ord.gloria");
     }
     rub("El sacerdote invita a orar y todos oran en silencio unos momentos. Después dice la oración colecta.");
+    txt("ord.oremos_colecta");
     prop("colecta");
     sec("Liturgia de la Palabra");
   }
@@ -594,7 +657,7 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   rub("Si se usa incienso, inciensa las ofrendas, la cruz y el altar. Después, de pie a un lado del altar, se lava las manos diciendo en secreto:");
   txt("ord.lavabo");
   rub("Vuelto al centro del altar, de cara al pueblo, extiende y junta las manos y dice:");
-  txt("ord.orad");
+  txt("ord.orad", null, V("ord.orad"));
   prop("ofrendas");
 
   sec("Plegaria eucarística");
@@ -617,7 +680,7 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   rub("En el relato de la institución, las palabras del Señor se pronuncian con claridad. El sacerdote muestra al pueblo la hostia y luego el cáliz, y hace genuflexión después de cada uno.");
   txt(`pe.${S.pe}.b`, pe.n + ": relato de la institución");
   rub("Después dice:"); txt("ord.aclam" + S.aclam);
-  txt(`pe.${S.pe}.c`, pe.n + ": hasta la doxología");
+  segmentosPE(f).forEach(([k, l], i) => txt(k, i === 0 ? pe.n + ": hasta la doxología" : (l || ""), {cont: !l && i > 0}));
   rub("Toma la patena con la hostia y el cáliz y, elevándolos, dice:");
   txt("ord.doxologia");
 
@@ -649,9 +712,9 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
 
 function comunion(f, R, rub, txt, prop, completo){
   rub("Dejados el cáliz y la patena, el sacerdote, con las manos juntas, introduce la oración dominical.");
-  txt("ord.pn_mon"); txt("ord.padrenuestro"); txt("ord.embolismo");
+  txt("ord.pn_mon", null, V("ord.pn_mon")); txt("ord.padrenuestro"); txt("ord.embolismo");
   if(completo){
-    txt("ord.paz"); txt("ord.paz_inv");
+    txt("ord.paz"); txt("ord.paz_inv", null, V("ord.paz_inv"));
     rub("Todos se dan la paz. El sacerdote parte el pan sobre la patena y deja caer una partícula en el cáliz, diciendo en secreto:");
     txt("ord.conmixtion");
     rub("Mientras tanto, se canta o se dice:"); txt("ord.cordero");
@@ -670,6 +733,7 @@ function comunion(f, R, rub, txt, prop, completo){
     rub("Se puede guardar un rato de silencio o cantar un himno de alabanza.");
   }
   rub("De pie, el sacerdote dice «Oremos» y, si no se ha hecho antes, se ora en silencio. Después dice la oración después de la comunión.");
+  txt("ord.oremos_post");
   prop("postcomunion");
 }
 
@@ -728,8 +792,10 @@ function renderCelebrar(){
     if(b.t === "sec") h += `<h2 class="sec" id="sec${si++}">${esc(b.x)}</h2>`;
     else if(b.t === "rub") h += `<p class="rub">${esc(b.x)}</p>`;
     else if(b.t === "txt" || b.t === "free"){
-      const v = b.t === "free" ? b.x : LIB[b.k];
-      h += `<span class="lbl-t">${esc(b.l)}</span>`;
+      let v = b.t === "free" ? b.x : LIB[b.k];
+      if(v && b.v !== undefined) v = elegirVariante(v, b.v);
+      if(v && b.amen && !/Amén\.?\s*$/.test(v.trim())) v = v.trim() + "\n\nR. Amén.";
+      if(b.l) h += `<span class="lbl-t">${esc(b.l)}</span>`;
       if(v && v.trim()) h += parseTexto(v).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("");
       else h += `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(b.k)}">Añadir texto</button></div>`;
     } else if(b.t === "lec"){
@@ -771,8 +837,6 @@ function renderComponer(){
   const guardadas = store.get("misa.guardadas", []);
   const {faltan, total} = faltantes();
   const esp = f.e;
-  const apDis = {};
-  const apOpts = [["1","Forma 1"],["2","Forma 2"],["3","Forma 3"],["asp","Aspersión"]];
   const L = S.lect;
 
   $("#v-componer").innerHTML = `
@@ -801,7 +865,10 @@ function renderComponer(){
       ${esp === "vigilia" ? `<div class="opt"><span class="lbl">Pregón pascual</span>${segHTML("pregon", [["largo","Forma larga"],["breve","Forma breve"]], S.pregon)}</div>` : ""}
       ${esp === "ramos" ? `<div class="opt"><span class="lbl">Conmemoración de la entrada</span>${segHTML("ramos", [["procesion","Procesión"],["solemne","Entrada solemne"],["simple","Entrada simple"]], S.ramos)}</div>` : ""}
       ${!["vigilia","viernes"].includes(esp) ? `<div class="opt"><span class="lbl">Saludo</span>${segHTML("saludo", [["1","Fórmula 1"],["2","Fórmula 2"],["3","Fórmula 3"]], S.saludo)}</div>` : ""}
-      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Acto penitencial</span>${segHTML("ap", apOpts, S.ap, apDis)}</div>` : ""}
+
+      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Acto penitencial</span>${segHTML("apModo", [["formula","Acto penitencial"],["asp","Aspersión del agua"]], S.ap === "asp" ? "asp" : "formula")}</div>
+      ${S.ap !== "asp" ? `<div class="opt"><span class="lbl">Introducción</span>${segHTML("var.ap_inv", Array.from({length:Math.max(nVar("ord.ap_inv"), 4)}, (_,i) => [i, String(i+1)]), S.var.ap_inv || 0)}</div>
+      <div class="opt"><span class="lbl">Fórmula</span>${segHTML("ap", [["1","I · Yo confieso"],["2","II · Versículos"],["3","III · Invocaciones"]], S.ap)}</div>` : ""}` : ""}
       ${esp !== "viernes" ? `<div class="opt"><span class="lbl">Gloria <span class="auto">${S.gloria === null ? "automático" : "manual"}</span></span>${segHTML("gloria", [["auto","Según rúbricas"],["true","Sí"],["false","No"]], S.gloria === null ? "auto" : S.gloria)}</div>` : ""}
     </div>
 
@@ -845,7 +912,15 @@ function renderComponer(){
         <div class="fld"><label for="c-pref">Prefacio</label><select id="c-pref" ${R.prefOpts.length <= 1 ? "disabled" : ""}>${R.prefOpts.length ? R.prefOpts.map(id => `<option value="${id}" ${id === S.pref ? "selected" : ""}>${esc(PM[id].n)} — ${esc(PM[id].t)}</option>`).join("") : `<option>Integrado en la plegaria</option>`}</select></div>
       </div>
       ${R.prefLock ? `<p class="muted" style="margin:10px 0 0">${esc(R.prefLock)}</p>` : ""}
+      ${nVar("ord.orad") > 1 ? `<div class="opt" style="margin-top:14px"><span class="lbl">«Orad, hermanos»</span>${segHTML("var.orad", Array.from({length:nVar("ord.orad")}, (_,i) => [i, String(i+1)]), S.var.orad || 0)}</div>` : ""}
+      <div class="fld" style="margin-bottom:14px"><label for="c-intc">Intercesión particular</label><select id="c-intc">
+        <option value="auto" ${S.intc === null ? "selected" : ""}>Según la celebración${intAuto(f) ? ` (${esc(INTC[intAuto(f)])})` : " (ninguna)"}</option>
+        <option value="" ${S.intc === "" ? "selected" : ""}>Ninguna</option>
+        ${Object.entries(INTC).map(([k,l]) => `<option value="${k}" ${S.intc === k ? "selected" : ""}>${esc(l[0].toUpperCase() + l.slice(1))}</option>`).join("")}
+      </select></div>
       <div class="opt" style="margin-top:14px"><span class="lbl">Aclamación memorial</span>${segHTML("aclam", [["1","1"],["2","2"],["3","3"]], S.aclam)}</div>
+      ${nVar("ord.pn_mon") > 1 ? `<div class="opt"><span class="lbl">Monición al Padrenuestro</span>${segHTML("var.pn_mon", Array.from({length:nVar("ord.pn_mon")}, (_,i) => [i, String(i+1)]), S.var.pn_mon || 0)}</div>` : ""}
+      ${nVar("ord.paz_inv") > 1 ? `<div class="opt"><span class="lbl">Invitación a darse la paz</span>${segHTML("var.paz_inv", Array.from({length:nVar("ord.paz_inv")}, (_,i) => [i, String(i+1)]), S.var.paz_inv || 0)}</div>` : ""}
       <div class="opt"><span class="lbl">Oración privada antes de comulgar</span>${segHTML("priv", [["1","1"],["2","2"]], S.priv)}</div>
       <div class="opt"><span class="lbl">Misa con niños</span>${segHTML("ninos", [["false","No"],["true","Sí"]], S.ninos)}</div>
     </div>` : ""}
@@ -965,7 +1040,9 @@ vc.addEventListener("click", e => {
   if(b.dataset.set){
     const k = b.dataset.set, v = b.dataset.val;
     if(k === "gloria" || k === "credo") S[k] = v === "auto" ? null : v === "true";
-    else if(["ninos","pentExt"].includes(k)) S[k] = v === "true";
+    else if(["ninos","pentExt","recProp"].includes(k)) S[k] = v === "true";
+    else if(k.startsWith("var.")) S.var[k.slice(4)] = +v;
+    else if(k === "apModo"){ if(v === "asp"){ if(S.ap !== "asp") S.apF = S.ap; S.ap = "asp"; } else S.ap = S.apF || "1"; }
     else if(k === "vigN") S[k] = +v;
     else S[k] = v;
     if(["vigN","pentExt"].includes(k)) rehacerLecturas();
@@ -992,6 +1069,7 @@ vc.addEventListener("change", e => {
   else if(t.id === "c-grp"){ const x = F.find(f => f.s === FM[S.fid].s && f.g === t.value); cambiarCel(x.id); }
   else if(t.id === "c-cel") cambiarCel(t.value);
   else if(t.id === "c-pe"){ S.pe = t.value; S.pref = ""; renderComponer(); }
+  else if(t.id === "c-intc"){ S.intc = t.value === "auto" ? null : t.value; renderComponer(); }
   else if(t.id === "c-ouk"){ S.ouKey = t.value; S.ou = t.value ? ouCuerpo(t.value) : ""; renderComponer(); }
   else if(t.id === "c-pref"){ S.pref = t.value; renderComponer(); }
   else if(t.id === "c-bsol"){ S.bendN = +t.value; saveS(); }
@@ -1004,7 +1082,7 @@ vc.addEventListener("input", e => {
   else if(t.id === "c-busca"){ filtroCel = t.value; clearTimeout(vc._t); vc._t = setTimeout(() => { renderComponer(); const i = $("#c-busca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); }
 });
 function cambiarCel(id){
-  S.fid = id; S.gloria = null; S.credo = null; S.pref = "";
+  S.fid = id; S.gloria = null; S.credo = null; S.pref = ""; S.intc = null; S.recProp = true;
   const f = FM[id];
   S.bend = f.x.some(x => x[0] === "pueblo") && f.g === "Cuaresma" && f.r !== "Domingo" ? "pueblo" : "simple";
   if(S.bend === "pueblo") S.puebloN = "propia";
