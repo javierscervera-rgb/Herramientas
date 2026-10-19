@@ -137,6 +137,25 @@ select:disabled{opacity:.55}
 .help code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--fg)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--acc);color:#171310;border-radius:10px;padding:9px 16px;font-weight:700;z-index:50}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Opciones deslizables */
+.car{min-width:0}
+.car-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 4px;overscroll-behavior-x:contain}
+.car-track::-webkit-scrollbar,.alt-track::-webkit-scrollbar{display:none}
+.car-card{flex:0 0 min(84%,420px);scroll-snap-align:center;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;color:var(--fg)}
+.car-card.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--bg))}
+.car-card:disabled{opacity:.45;cursor:not-allowed}
+.car-t{font-family:var(--f-sc);font-size:13px;letter-spacing:.06em;color:var(--acc2);font-weight:700}
+.car-s{font-family:var(--f-text);font-size:16px;line-height:1.4;color:var(--fg);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.car-card:disabled .car-s{font-family:var(--f-ui);font-size:13px;color:var(--fg2)}
+.dots{display:flex;justify-content:center;gap:8px;margin-top:8px}
+.dot-b{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);transition:background .2s,transform .2s}
+.dot-b.on{background:var(--acc);transform:scale(1.25)}
+#lectura .alt{margin:.2em 0 .9em}
+#lectura .alt-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;transition:height .25s;overscroll-behavior-x:contain}
+#lectura .alt-slide{flex:0 0 100%;scroll-snap-align:start;padding-right:4px;min-width:0}
+#lectura .alt-t{font-family:var(--f-ui);font-size:13px;color:var(--fg2);margin-bottom:.2em}
+#lectura .dots{margin-top:4px}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 
@@ -466,6 +485,89 @@ function reglas(){
   return {f, peOpts, prefOpts, prefLock, gloria, credo, gloriaAuto, credoAuto, notes, sinPE};
 }
 
+/* ---------- Opciones deslizables ---------- */
+const rango = n => Array.from({length:n}, (_, i) => i);
+const OPC = {
+  saludo:{label:"Saludo", get:() => S.saludo, set:v => S.saludo = v, opts:() => ["1","2","3"].map(n => ({val:n, title:`Fórmula ${n}`, k:`ord.saludo${n}`}))},
+  apModo:{label:"Acto penitencial", get:() => S.ap === "asp" ? "asp" : "formula",
+    set:v => { if(v === "asp"){ if(S.ap !== "asp") S.apF = S.ap; S.ap = "asp"; } else S.ap = S.apF || "1"; },
+    opts:() => [{val:"formula", title:"Acto penitencial", k:"ord.ap_inv", v:S.var.ap_inv || 0}, {val:"asp", title:"Aspersión del agua", k:"rito.asp.mon"}]},
+  ap_inv:{label:"Introducción al acto penitencial", get:() => String(S.var.ap_inv || 0), set:v => S.var.ap_inv = +v,
+    opts:() => rango(Math.max(nVar("ord.ap_inv"), 1)).map(i => ({val:String(i), title:`Introducción ${i+1}`, k:"ord.ap_inv", v:i}))},
+  ap:{label:"Acto penitencial", get:() => S.ap, set:v => S.ap = v,
+    opts:() => [["1","Fórmula I · Yo confieso"],["2","Fórmula II · Versículos"],["3","Fórmula III · Invocaciones"]].map(([n,t]) => ({val:n, title:t, k:`ord.ap${n}`}))},
+  pregon:{label:"Pregón pascual", get:() => S.pregon, set:v => S.pregon = v,
+    opts:() => [{val:"largo", title:"Forma larga", k:"rito.vig.pregon_largo"}, {val:"breve", title:"Forma breve", k:"rito.vig.pregon_breve"}]},
+  pe:{label:"Plegaria eucarística", get:() => S.pe, set:v => { S.pe = v; S.pref = ""; },
+    opts:() => reglas().peOpts.map(p => ({val:p.id, title:p.n, k:`pe.${p.id}.a`, dis:p.dis}))},
+  pref:{label:"Prefacio", get:() => S.pref, set:v => S.pref = v,
+    opts:() => reglas().prefOpts.map(id => ({val:id, title:`${PM[id].n} · ${PM[id].t}`, k:`pref.${id}`}))},
+  orad:{label:"Orad, hermanos", get:() => String(S.var.orad || 0), set:v => S.var.orad = +v,
+    opts:() => rango(Math.max(nVar("ord.orad"), 1)).map(i => ({val:String(i), title:`Fórmula ${i+1}`, k:"ord.orad", v:i}))},
+  aclam:{label:"Aclamación memorial", get:() => S.aclam, set:v => S.aclam = v, opts:() => ["1","2","3"].map(n => ({val:n, title:`Aclamación ${n}`, k:`ord.aclam${n}`}))},
+  pn_mon:{label:"Monición al Padrenuestro", get:() => String(S.var.pn_mon || 0), set:v => S.var.pn_mon = +v,
+    opts:() => rango(Math.max(nVar("ord.pn_mon"), 1)).map(i => ({val:String(i), title:`Monición ${i+1}`, k:"ord.pn_mon", v:i}))},
+  paz_inv:{label:"Invitación a darse la paz", get:() => String(S.var.paz_inv || 0), set:v => S.var.paz_inv = +v,
+    opts:() => rango(Math.max(nVar("ord.paz_inv"), 1)).map(i => ({val:String(i), title:`Invitación ${i+1}`, k:"ord.paz_inv", v:i}))},
+  priv:{label:"Oración privada antes de comulgar", get:() => S.priv, set:v => S.priv = v, opts:() => ["1","2"].map(n => ({val:n, title:`Oración ${n}`, k:`ord.priv${n}`}))},
+  bend:{label:"Bendición", get:() => S.bend, set:v => { S.bend = v; if(v === "pueblo" && FM[S.fid].x.some(x => x[0] === "pueblo")) S.puebloN = "propia"; },
+    opts:() => [{val:"simple", title:"Bendición simple", k:"ord.bendicion"}, {val:"solemne", title:"Bendición solemne", k:`bend.sol.${S.bendN}`},
+      {val:"pueblo", title:"Oración sobre el pueblo", k: S.puebloN === "propia" ? `prop.${S.fid}.pueblo` : `bend.pueblo.${S.puebloN}`}]},
+  desp:{label:"Despedida", get:() => S.desp, set:v => S.desp = v,
+    opts:() => ["1","2","3","4","5"].map(n => ({val:n, title: n === "5" ? "Despedida 5 · Pascua" : `Despedida ${n}`, k:`ord.desp${n}`}))}
+};
+function altTxt(txt, id){
+  const o = OPC[id], L = o.opts().filter(x => !x.dis);
+  const x = L.find(y => String(y.val) === String(o.get())) || L[0];
+  if(!x) return;
+  txt(x.k, o.label, {v:x.v, alt: L.length > 1 ? id : undefined});
+}
+function inicioDe(k, v){
+  let s = LIB[k]; if(!s || !s.trim()) return "";
+  if(v !== undefined) s = elegirVariante(s, v);
+  const p = s.split(/\n\s*\n/).find(x => !/^\s*\*/.test(x)) || "";
+  const t = p.replace(/^(℟\.|℣\.|R\.|V\.)\s*/gm, "").replace(/\s+/g, " ").trim();
+  return t.length > 130 ? t.slice(0, 127).replace(/\s+\S*$/, "") + "…" : t;
+}
+function carHTML(id){
+  const o = OPC[id], L = o.opts(), sel = String(o.get());
+  return `<div class="car" data-car="${id}"><div class="car-track">${L.map(x => {
+    const ini = x.dis ? x.dis : (inicioDe(x.k, x.v) || "Sin texto en la biblioteca");
+    return `<button type="button" class="car-card${String(x.val) === sel ? " on" : ""}" data-car="${id}" data-val="${esc(x.val)}" ${x.dis ? "disabled" : ""}>
+      <span class="car-t">${esc(x.title)}</span><span class="car-s">${esc(ini)}</span></button>`; }).join("")}</div>
+    ${L.length > 1 ? `<div class="dots">${L.map((x, i) => `<button type="button" class="dot-b${String(x.val) === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div>` : ""}</div>`;
+}
+/* Desplazamiento horizontal: al soltar, queda elegida la opción centrada */
+function centrada(track){
+  const kids = [...track.children], r = track.getBoundingClientRect(), c = r.left + r.width / 2;
+  let best = 0, d = Infinity;
+  kids.forEach((k, i) => { const b = k.getBoundingClientRect(), dd = Math.abs(b.left + b.width / 2 - c); if(dd < d){ d = dd; best = i; } });
+  return best;
+}
+function iniciarCarruseles(root, alElegir){
+  root.querySelectorAll(".car-track, .alt-track").forEach(track => {
+    const kids = [...track.children], on = kids.findIndex(k => k.classList.contains("on"));
+    if(on > 0) track.scrollLeft = kids[on].offsetLeft - (track.clientWidth - kids[on].offsetWidth) / 2 - kids[0].offsetLeft;
+    if(track.classList.contains("alt-track") && on >= 0) track.style.height = kids[on].offsetHeight + "px";
+    const dots = track.parentElement.querySelectorAll(".dot-b");
+    let tmo;
+    track.addEventListener("scroll", () => {
+      const i = centrada(track);
+      dots.forEach((d, j) => d.classList.toggle("on", j === i));
+      if(track.classList.contains("alt-track")) track.style.height = Math.max(kids[i].offsetHeight, 40) + "px";
+      clearTimeout(tmo);
+      tmo = setTimeout(() => {
+        const k = kids[centrada(track)];
+        if(k && !k.classList.contains("on") && !k.disabled) alElegir(track.parentElement.dataset.car, k.dataset.val);
+      }, 180);
+    }, {passive: true});
+    dots.forEach((d, j) => d.addEventListener("click", () => kids[j].scrollIntoView({behavior:"smooth", block:"nearest", inline:"center"})));
+  });
+}
+function elegirOpcion(id, val){
+  OPC[id].set(val); saveS();
+}
+
 /* ---------- Orden de la celebración ---------- */
 function buildOrder(){
   const R = reglas(), f = R.f, B = [];
@@ -488,7 +590,7 @@ function buildOrder(){
     txt("rito.vig.cirio"); txt("rito.vig.luz");
     rub("En la procesión hacia el altar, al tercer «Luz de Cristo» se encienden las luces de la iglesia, excepto las del altar.");
     rub("Se inciensa el cirio y se canta el pregón pascual.");
-    txt(S.pregon === "breve" ? "rito.vig.pregon_breve" : "rito.vig.pregon_largo");
+    altTxt(txt, "pregon");
     sec("Liturgia de la Palabra");
     txt("rito.vig.mon_palabra");
   } else {
@@ -504,17 +606,17 @@ function buildOrder(){
         rub("Si parece oportuno, sigue una homilía breve."); txt("rito.ramos.inv");
         rub("Comienza la procesión hacia la iglesia donde se celebrará la misa, con cantos en honor de Cristo Rey."); txt("rito.ramos.cantos");
         rub("Al llegar al altar, el sacerdote lo venera y va a la sede. Se omiten los demás ritos iniciales y se dice la colecta.");
-      } else { prop("entrada"); txt("ord.senal"); txt(sal()); txt("ord.ap_inv", null, V("ord.ap_inv")); txt("ord.ap" + S.ap); txt("ord.absol"); if(S.ap !== "3") txt("ord.kyrie"); }
+      } else { prop("entrada"); txt("ord.senal"); altTxt(txt, "saludo"); altTxt(txt, "ap_inv"); altTxt(txt, "ap"); txt("ord.absol"); if(S.ap !== "3") txt("ord.kyrie"); }
     } else if(f.e === "presentacion"){
       rub("Los fieles se reúnen fuera de la iglesia o en otro lugar adecuado, con las candelas sin encender. Mientras se encienden, se canta una antífona.");
-      txt("ord.senal"); txt(sal()); txt("rito.cand.mon"); txt("rito.cand.bend");
+      txt("ord.senal"); altTxt(txt, "saludo"); txt("rito.cand.mon"); txt("rito.cand.bend");
       rub("Rocía las candelas con agua bendita, sin decir nada, y recibe su candela."); txt("rito.cand.inv"); txt("rito.cand.ant");
       rub("Al llegar al altar, el sacerdote lo venera. Se omite el acto penitencial y se canta el Gloria.");
     } else {
       rub("Reunido el pueblo, el sacerdote va al altar con los ministros mientras se canta el canto de entrada. Si no hay canto, se dice la antífona de entrada.");
       prop("entrada");
       rub("Llegado al altar, hace la reverencia debida y lo besa; si se usa incienso, lo inciensa. Luego va a la sede.");
-      txt("ord.senal"); txt(sal());
+      txt("ord.senal"); altTxt(txt, "saludo");
       rub("El sacerdote, el diácono u otro ministro puede introducir a los fieles en la misa del día con palabras muy breves.");
       if(f.e === "ceniza") rub("Se omite el acto penitencial, que se sustituye por la imposición de la ceniza.");
       else if(S.ap === "asp"){
@@ -523,9 +625,9 @@ function buildOrder(){
         rub("El sacerdote rocía con el agua bendita a sí mismo, a los ministros y al pueblo, recorriendo la iglesia si conviene. Mientras, se canta.");
         txt("rito.asp.ant"); txt("rito.asp.or");
       } else {
-        txt("ord.ap_inv", null, V("ord.ap_inv"));
+        altTxt(txt, "ap_inv");
         rub("Se hace una breve pausa en silencio.");
-        txt("ord.ap" + S.ap); txt("ord.absol");
+        altTxt(txt, "ap"); txt("ord.absol");
         if(S.ap !== "3") txt("ord.kyrie");
       }
     }
@@ -657,7 +759,7 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   rub("Si se usa incienso, inciensa las ofrendas, la cruz y el altar. Después, de pie a un lado del altar, se lava las manos diciendo en secreto:");
   txt("ord.lavabo");
   rub("Vuelto al centro del altar, de cara al pueblo, extiende y junta las manos y dice:");
-  txt("ord.orad", null, V("ord.orad"));
+  altTxt(txt, "orad");
   prop("ofrendas");
 
   sec("Plegaria eucarística");
@@ -665,7 +767,7 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   rub(`Se usa la ${pe.n}.`);
   if(pe.own !== "-"){
     txt("ord.pref_dialogo");
-    if(S.pref) txt("pref." + S.pref, "Prefacio: " + PM[S.pref].n);
+    if(S.pref) altTxt(txt, "pref");
     rub("Al final del prefacio, junta las manos y canta o dice con el pueblo:");
     txt("ord.santo");
   }
@@ -679,7 +781,7 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   if(S.pe === "pe1" && hk){ rub("El Hanc igitur es propio:"); txt("emb.hanc." + hk); }
   rub("En el relato de la institución, las palabras del Señor se pronuncian con claridad. El sacerdote muestra al pueblo la hostia y luego el cáliz, y hace genuflexión después de cada uno.");
   txt(`pe.${S.pe}.b`, pe.n + ": relato de la institución");
-  rub("Después dice:"); txt("ord.aclam" + S.aclam);
+  rub("Después dice:"); altTxt(txt, "aclam");
   segmentosPE(f).forEach(([k, l], i) => txt(k, i === 0 ? pe.n + ": hasta la doxología" : (l || ""), {cont: !l && i > 0}));
   rub("Toma la patena con la hostia y el cáliz y, elevándolos, dice:");
   txt("ord.doxologia");
@@ -706,19 +808,19 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   txt("ord.bendicion");
   const aleluya = f.e === "vigilia" || /octava de Pascua|Pascua de la Resurrección|Pentecostés: Misa del día/.test(f.c);
   rub(aleluya ? "El diácono, o el sacerdote, despide al pueblo con el doble aleluya." : "El diácono, o el sacerdote, despide al pueblo.");
-  txt(aleluya ? "ord.desp_aleluya" : "ord.desp" + S.desp);
+  if(aleluya) txt("ord.desp_aleluya"); else altTxt(txt, "desp");
   rub("El sacerdote venera el altar con un beso, hace la reverencia debida y se retira con los ministros.");
 }
 
 function comunion(f, R, rub, txt, prop, completo){
   rub("Dejados el cáliz y la patena, el sacerdote, con las manos juntas, introduce la oración dominical.");
-  txt("ord.pn_mon", null, V("ord.pn_mon")); txt("ord.padrenuestro"); txt("ord.embolismo");
+  altTxt(txt, "pn_mon"); txt("ord.padrenuestro"); txt("ord.embolismo");
   if(completo){
-    txt("ord.paz"); txt("ord.paz_inv", null, V("ord.paz_inv"));
+    txt("ord.paz"); altTxt(txt, "paz_inv");
     rub("Todos se dan la paz. El sacerdote parte el pan sobre la patena y deja caer una partícula en el cáliz, diciendo en secreto:");
     txt("ord.conmixtion");
     rub("Mientras tanto, se canta o se dice:"); txt("ord.cordero");
-    rub("El sacerdote, con las manos juntas, dice en secreto:"); txt("ord.priv" + S.priv);
+    rub("El sacerdote, con las manos juntas, dice en secreto:"); altTxt(txt, "priv");
   }
   rub("Hace genuflexión, toma la hostia y, sosteniéndola un poco elevada sobre la patena o sobre el cáliz, de cara al pueblo, dice:");
   txt("ord.ostension");
@@ -796,6 +898,17 @@ function renderCelebrar(){
       if(v && b.v !== undefined) v = elegirVariante(v, b.v);
       if(v && b.amen && !/Amén\.?\s*$/.test(v.trim())) v = v.trim() + "\n\nR. Amén.";
       if(b.l) h += `<span class="lbl-t">${esc(b.l)}</span>`;
+      if(b.alt){
+        const o = OPC[b.alt], L = o.opts().filter(x => !x.dis), sel = String(o.get());
+        h += `<div class="alt" data-car="${b.alt}"><div class="alt-track">${L.map((x, i) => {
+          let tx = LIB[x.k]; if(tx && x.v !== undefined) tx = elegirVariante(tx, x.v);
+          if(tx && b.amen && !/Amén\.?\s*$/.test(tx.trim())) tx = tx.trim() + "\n\nR. Amén.";
+          const cuerpo = tx && tx.trim() ? parseTexto(tx).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("")
+            : `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(x.k)}">Añadir texto</button></div>`;
+          return `<div class="alt-slide${String(x.val) === sel ? " on" : ""}" data-val="${esc(x.val)}"><div class="alt-t">${esc(x.title)} · ${i+1} de ${L.length}</div>${cuerpo}</div>`;
+        }).join("")}</div><div class="dots">${L.map((x, i) => `<button type="button" class="dot-b${String(x.val) === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div></div>`;
+        continue;
+      }
       if(v && v.trim()) h += parseTexto(v).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("");
       else h += `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(b.k)}">Añadir texto</button></div>`;
     } else if(b.t === "lec"){
@@ -807,7 +920,14 @@ function renderCelebrar(){
   }
   h += `</div><div class="end">Fin de la celebración</div>`;
   $("#v-celebrar").innerHTML = h;
-  SEGS = [...document.querySelectorAll("#lectura p.s")].map(el => {
+  iniciarCarruseles($("#v-celebrar"), (id, val) => {
+    const el = document.querySelector(`#lectura .alt[data-car="${id}"]`), top = el ? el.getBoundingClientRect().top : 0;
+    elegirOpcion(id, val); renderCelebrar();
+    const el2 = document.querySelector(`#lectura .alt[data-car="${id}"]`);
+    if(el2) window.scrollBy(0, el2.getBoundingClientRect().top - top);
+    if(vozOn && el2){ const i = SEGS.findIndex(s => el2.contains(s.el)); if(i >= 0) vozIdx = i; }
+  });
+  SEGS = [...document.querySelectorAll("#lectura p.s")].filter(el => !el.closest(".alt-slide:not(.on)")).map(el => {
     const w = normWords(el.dataset.plain || "");
     const bi = new Map();
     for(let i=0;i<w.length-1;i++){ const k = w[i]+" "+w[i+1]; if(!bi.has(k)) bi.set(k, []); bi.get(k).push(i); }
@@ -862,13 +982,13 @@ function renderComponer(){
 
     <div class="card">
       <h3>${esp === "vigilia" ? "Lucernario" : "Ritos iniciales"}</h3>
-      ${esp === "vigilia" ? `<div class="opt"><span class="lbl">Pregón pascual</span>${segHTML("pregon", [["largo","Forma larga"],["breve","Forma breve"]], S.pregon)}</div>` : ""}
+      ${esp === "vigilia" ? `<div class="opt"><span class="lbl">Pregón pascual</span>${carHTML("pregon")}</div>` : ""}
       ${esp === "ramos" ? `<div class="opt"><span class="lbl">Conmemoración de la entrada</span>${segHTML("ramos", [["procesion","Procesión"],["solemne","Entrada solemne"],["simple","Entrada simple"]], S.ramos)}</div>` : ""}
-      ${!["vigilia","viernes"].includes(esp) ? `<div class="opt"><span class="lbl">Saludo</span>${segHTML("saludo", [["1","Fórmula 1"],["2","Fórmula 2"],["3","Fórmula 3"]], S.saludo)}</div>` : ""}
+      ${!["vigilia","viernes"].includes(esp) ? `<div class="opt"><span class="lbl">Saludo</span>${carHTML("saludo")}</div>` : ""}
 
-      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Acto penitencial</span>${segHTML("apModo", [["formula","Acto penitencial"],["asp","Aspersión del agua"]], S.ap === "asp" ? "asp" : "formula")}</div>
-      ${S.ap !== "asp" ? `<div class="opt"><span class="lbl">Introducción</span>${segHTML("var.ap_inv", Array.from({length:Math.max(nVar("ord.ap_inv"), 4)}, (_,i) => [i, String(i+1)]), S.var.ap_inv || 0)}</div>
-      <div class="opt"><span class="lbl">Fórmula</span>${segHTML("ap", [["1","I · Yo confieso"],["2","II · Versículos"],["3","III · Invocaciones"]], S.ap)}</div>` : ""}` : ""}
+      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Acto penitencial</span>${carHTML("apModo")}</div>
+      ${S.ap !== "asp" ? `<div class="opt"><span class="lbl">Introducción</span>${carHTML("ap_inv")}</div>
+      <div class="opt"><span class="lbl">Fórmula</span>${carHTML("ap")}</div>` : ""}` : ""}
       ${esp !== "viernes" ? `<div class="opt"><span class="lbl">Gloria <span class="auto">${S.gloria === null ? "automático" : "manual"}</span></span>${segHTML("gloria", [["auto","Según rúbricas"],["true","Sí"],["false","No"]], S.gloria === null ? "auto" : S.gloria)}</div>` : ""}
     </div>
 
@@ -908,29 +1028,29 @@ function renderComponer(){
     ${!R.sinPE ? `<div class="card">
       <h3>Liturgia eucarística</h3>
       <div class="row">
-        <div class="fld"><label for="c-pe">Plegaria eucarística</label><select id="c-pe">${R.peOpts.map(p => `<option value="${p.id}" ${p.id === S.pe ? "selected" : ""} ${p.dis ? "disabled" : ""}>${esc(p.n)}${p.dis ? " — no disponible" : ""}</option>`).join("")}</select></div>
-        <div class="fld"><label for="c-pref">Prefacio</label><select id="c-pref" ${R.prefOpts.length <= 1 ? "disabled" : ""}>${R.prefOpts.length ? R.prefOpts.map(id => `<option value="${id}" ${id === S.pref ? "selected" : ""}>${esc(PM[id].n)} — ${esc(PM[id].t)}</option>`).join("") : `<option>Integrado en la plegaria</option>`}</select></div>
+        <div class="opt" style="flex-basis:100%"><span class="lbl">Plegaria eucarística</span>${carHTML("pe")}</div>
+        <div class="opt" style="flex-basis:100%"><span class="lbl">Prefacio</span>${R.prefOpts.length ? carHTML("pref") : `<p class="muted" style="margin:0">Integrado en la plegaria.</p>`}</div>
       </div>
       ${R.prefLock ? `<p class="muted" style="margin:10px 0 0">${esc(R.prefLock)}</p>` : ""}
-      ${nVar("ord.orad") > 1 ? `<div class="opt" style="margin-top:14px"><span class="lbl">«Orad, hermanos»</span>${segHTML("var.orad", Array.from({length:nVar("ord.orad")}, (_,i) => [i, String(i+1)]), S.var.orad || 0)}</div>` : ""}
+      ${nVar("ord.orad") > 1 ? `<div class="opt" style="margin-top:14px"><span class="lbl">«Orad, hermanos»</span>${carHTML("orad")}</div>` : ""}
       <div class="fld" style="margin-bottom:14px"><label for="c-intc">Intercesión particular</label><select id="c-intc">
         <option value="auto" ${S.intc === null ? "selected" : ""}>Según la celebración${intAuto(f) ? ` (${esc(INTC[intAuto(f)])})` : " (ninguna)"}</option>
         <option value="" ${S.intc === "" ? "selected" : ""}>Ninguna</option>
         ${Object.entries(INTC).map(([k,l]) => `<option value="${k}" ${S.intc === k ? "selected" : ""}>${esc(l[0].toUpperCase() + l.slice(1))}</option>`).join("")}
       </select></div>
-      <div class="opt" style="margin-top:14px"><span class="lbl">Aclamación memorial</span>${segHTML("aclam", [["1","1"],["2","2"],["3","3"]], S.aclam)}</div>
-      ${nVar("ord.pn_mon") > 1 ? `<div class="opt"><span class="lbl">Monición al Padrenuestro</span>${segHTML("var.pn_mon", Array.from({length:nVar("ord.pn_mon")}, (_,i) => [i, String(i+1)]), S.var.pn_mon || 0)}</div>` : ""}
-      ${nVar("ord.paz_inv") > 1 ? `<div class="opt"><span class="lbl">Invitación a darse la paz</span>${segHTML("var.paz_inv", Array.from({length:nVar("ord.paz_inv")}, (_,i) => [i, String(i+1)]), S.var.paz_inv || 0)}</div>` : ""}
-      <div class="opt"><span class="lbl">Oración privada antes de comulgar</span>${segHTML("priv", [["1","1"],["2","2"]], S.priv)}</div>
+      <div class="opt" style="margin-top:14px"><span class="lbl">Aclamación memorial</span>${carHTML("aclam")}</div>
+      ${nVar("ord.pn_mon") > 1 ? `<div class="opt"><span class="lbl">Monición al Padrenuestro</span>${carHTML("pn_mon")}</div>` : ""}
+      ${nVar("ord.paz_inv") > 1 ? `<div class="opt"><span class="lbl">Invitación a darse la paz</span>${carHTML("paz_inv")}</div>` : ""}
+      <div class="opt"><span class="lbl">Oración privada antes de comulgar</span>${carHTML("priv")}</div>
       <div class="opt"><span class="lbl">Misa con niños</span>${segHTML("ninos", [["false","No"],["true","Sí"]], S.ninos)}</div>
     </div>` : ""}
 
     ${!["jueves","viernes"].includes(esp) ? `<div class="card">
       <h3>Rito de conclusión</h3>
-      <div class="opt"><span class="lbl">Bendición</span>${segHTML("bend", [["simple","Simple"],["solemne","Solemne"],["pueblo","Oración sobre el pueblo"]], S.bend)}</div>
+      <div class="opt"><span class="lbl">Bendición</span>${carHTML("bend")}</div>
       ${S.bend === "solemne" ? `<div class="fld"><label for="c-bsol">Bendición solemne</label><select id="c-bsol">${BSOL.map((t,i) => `<option value="${i+1}" ${S.bendN == i+1 ? "selected" : ""}>${i+1}. ${esc(t)}</option>`).join("")}</select></div>` : ""}
       ${S.bend === "pueblo" ? `<div class="fld"><label for="c-bpue">Oración sobre el pueblo</label><select id="c-bpue">${f.x.some(x => x[0] === "pueblo") ? `<option value="propia" ${S.puebloN === "propia" ? "selected" : ""}>Propia del día</option>` : ""}${Array.from({length:28}, (_,i) => `<option value="${i+1}" ${S.puebloN == i+1 ? "selected" : ""}>Oración ${i+1}</option>`).join("")}</select></div>` : ""}
-      <div class="opt" style="margin-top:14px"><span class="lbl">Despedida</span>${segHTML("desp", [["1","1"],["2","2"],["3","3"],["4","4"],["5","Pascua"]], S.desp)}</div>
+      <div class="opt" style="margin-top:14px"><span class="lbl">Despedida</span>${carHTML("desp")}</div>
     </div>` : ""}
    </div>
 
@@ -954,6 +1074,7 @@ function renderComponer(){
     </div>
    </aside>
   </div>`;
+  iniciarCarruseles($("#v-componer"), (id, val) => { elegirOpcion(id, val); renderComponer(); });
 }
 
 /* ---------- Biblioteca ---------- */
@@ -1037,6 +1158,12 @@ function toast(t){ const d = document.createElement("div"); d.className = "toast
 const vc = $("#v-componer");
 vc.addEventListener("click", e => {
   const b = e.target.closest("button"); if(!b) return;
+  if(b.classList.contains("car-card")){
+    if(!b.classList.contains("on")){ elegirOpcion(b.dataset.car, b.dataset.val); renderComponer(); }
+    else b.scrollIntoView({behavior:"smooth", block:"nearest", inline:"center"});
+    return;
+  }
+  if(b.classList.contains("dot-b")) return;
   if(b.dataset.set){
     const k = b.dataset.set, v = b.dataset.val;
     if(k === "gloria" || k === "credo") S[k] = v === "auto" ? null : v === "true";
