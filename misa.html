@@ -139,16 +139,16 @@ select:disabled{opacity:.55}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 
 /* Opciones deslizables */
-.car{min-width:0}
-.car-track{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 2px 4px;overscroll-behavior-x:contain}
+.car{min-width:0;background:var(--bg);border:1px solid var(--acc);border-radius:12px;padding:12px 0 10px;overflow:hidden}
+.car-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
 .car-track::-webkit-scrollbar,.alt-track::-webkit-scrollbar{display:none}
-.car-card{flex:0 0 min(84%,420px);scroll-snap-align:center;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;color:var(--fg)}
-.car-card.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);background:color-mix(in srgb,var(--acc) 8%,var(--bg))}
+.car-card{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;text-align:left;background:none;border:0;border-radius:0;padding:0 16px;display:flex;flex-direction:column;gap:6px;color:var(--fg);cursor:grab;height:calc(16px * 1.4 * 3 + 24px)}
+.car-card:focus-visible{outline-offset:-2px}
 .car-card:disabled{opacity:.45;cursor:not-allowed}
 .car-t{font-family:var(--f-sc);font-size:13px;letter-spacing:.06em;color:var(--acc2);font-weight:700}
 .car-s{font-family:var(--f-text);font-size:16px;line-height:1.4;color:var(--fg);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .car-card:disabled .car-s{font-family:var(--f-ui);font-size:13px;color:var(--fg2)}
-.dots{display:flex;justify-content:center;gap:8px;margin-top:8px}
+.dots{display:flex;justify-content:center;gap:8px;margin-top:10px}
 .dot-b{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);transition:background .2s,transform .2s}
 .dot-b.on{background:var(--acc);transform:scale(1.25)}
 #lectura .alt{margin:.2em 0 .9em}
@@ -1028,8 +1028,8 @@ function renderComponer(){
     ${!R.sinPE ? `<div class="card">
       <h3>Liturgia eucarística</h3>
       <div class="row">
-        <div class="opt" style="flex-basis:100%"><span class="lbl">Plegaria eucarística</span>${carHTML("pe")}</div>
-        <div class="opt" style="flex-basis:100%"><span class="lbl">Prefacio</span>${R.prefOpts.length ? carHTML("pref") : `<p class="muted" style="margin:0">Integrado en la plegaria.</p>`}</div>
+        <div class="fld"><label for="c-pe">Plegaria eucarística</label><select id="c-pe">${R.peOpts.map(p => `<option value="${p.id}" ${p.id === S.pe ? "selected" : ""} ${p.dis ? "disabled" : ""}>${esc(p.n)}${p.dis ? " — no disponible" : ""}</option>`).join("")}</select></div>
+        <div class="fld"><label for="c-pref">Prefacio</label><select id="c-pref" ${R.prefOpts.length <= 1 ? "disabled" : ""}>${R.prefOpts.length ? R.prefOpts.map(id => `<option value="${id}" ${id === S.pref ? "selected" : ""}>${esc(PM[id].n)} — ${esc(PM[id].t)}</option>`).join("") : `<option>Integrado en la plegaria</option>`}</select></div>
       </div>
       ${R.prefLock ? `<p class="muted" style="margin:10px 0 0">${esc(R.prefLock)}</p>` : ""}
       ${nVar("ord.orad") > 1 ? `<div class="opt" style="margin-top:14px"><span class="lbl">«Orad, hermanos»</span>${carHTML("orad")}</div>` : ""}
