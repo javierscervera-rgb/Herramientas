@@ -307,9 +307,31 @@ const EMB = [["emb.comm.domingo","Communicantes propio: domingos"],["emb.comm.na
  ["emb.hanc.bautismo","Hanc igitur propio: bautismo"],["emb.hanc.confirmacion","Hanc igitur propio: confirmación"],
  ["emb.hanc.primeracomunion","Hanc igitur propio: primera comunión"],["emb.hanc.matrimonio","Hanc igitur propio: matrimonio"],
  ["emb.hanc.exequias","Hanc igitur propio: exequias"]];
-const BSOL = ["Adviento","Natividad del Señor","Principio del año","Epifanía del Señor","Pasión del Señor","Tiempo pascual","Ascensión del Señor",
- "Espíritu Santo","Tiempo ordinario I","Tiempo ordinario II","Tiempo ordinario III","Tiempo ordinario IV","Tiempo ordinario V","Tiempo ordinario VI",
- "Santa María Virgen","Santos Pedro y Pablo","Apóstoles","Todos los Santos","Dedicación de una iglesia","Difuntos"];
+const BSOL = ["Adviento","Natividad del Señor","Principio del año","Epifanía del Señor","Cuaresma","Pasión del Señor","Vigilia pascual y día de Pascua",
+ "Tiempo pascual","Ascensión del Señor","Espíritu Santo","Tiempo ordinario I","Tiempo ordinario II","Tiempo ordinario III","Tiempo ordinario IV",
+ "Tiempo ordinario V","Tiempo ordinario VI","Tiempo ordinario VII","Tiempo ordinario VIII","Tiempo ordinario IX",
+ "Santa María Virgen","Santos Pedro y Pablo","Apóstoles","Todos los Santos","Fiesta de un santo","Dedicación de una iglesia","Difuntos"];
+/* Bendición solemne que corresponde a cada celebración (numeración del Misal, 3.ª edición) */
+function bendSugerida(f){
+  const c = f.c || "", g = f.g || "";
+  if(f.s === "Misas de difuntos" || /fieles difuntos/.test(c)) return 26;
+  if(/[Dd]edicación/.test(c)) return 25;
+  if(f.s === "Propio del tiempo"){
+    if(g === "Adviento") return 1;
+    if(g === "Navidad") return /Epifanía/.test(c) ? 4 : /Madre de Dios/.test(c) ? 3 : 2;
+    if(g === "Cuaresma") return 5;
+    if(g === "Semana Santa") return 6;
+    if(g === "Triduo pascual") return 7;
+    if(g === "Pascua") return /Ascensión/.test(c) ? 9 : /Pentecostés/.test(c) ? 10 : /Domingo de Pascua|Domingo de Resurrección/.test(c) ? 7 : 8;
+    return 11;
+  }
+  if(/Santa María|Virgen María|Común de Santa María/.test(c)) return 20;
+  if(/Pedro y Pablo/.test(c)) return 21;
+  if(/[Aa]póstol/.test(c)) return 22;
+  if(/Todos los Santos/.test(c)) return 23;
+  if(f.s === "Propio de los santos" || f.s === "Comunes") return 24;
+  return 11;
+}
 const OU_VS = ["Por la santa Iglesia","Por el Papa","Por todos los órdenes de fieles","Por los catecúmenos","Por la unidad de los cristianos",
  "Por los judíos","Por los que no creen en Cristo","Por los que no creen en Dios","Por los gobernantes","Por los atribulados"];
 const RITOS = [
@@ -360,7 +382,7 @@ function labelOf(k){
 
 /* ---------- Estado de la composición ---------- */
 const DEF = {fid:"", saludo:"1", ap:"1", gloria:null, credo:null, simbolo:"apostoles", lect:[], ou:"", pe:"pe2", pref:"", aclam:"1",
-  priv:"1", bend:"simple", bendN:9, puebloN:1, desp:"1", pregon:"largo", ninos:false, ramos:"procesion", vigN:7, pentExt:false, comAlt:false,
+  priv:"1", bend:"simple", bendN:11, puebloN:1, desp:"1", pregon:"largo", ninos:false, ramos:"procesion", vigN:7, pentExt:false, comAlt:false,
   ciclo:"", ouKey:"", var:{}, intc:null, recProp:true, lecModo:"propio", toSem:1, toDia:1, toAnyo:"par", lecOtra:""};
 let S = Object.assign({}, DEF, store.get("misa.actual", {}));
 if(!FM[S.fid]) S.fid = (F.find(f => f.c === "Domingo XXX del tiempo ordinario") || F[0]).id;
@@ -1516,6 +1538,7 @@ function cambiarCel(id, opt = {}){
   const f = FM[id];
   S.bend = f.x.some(x => x[0] === "pueblo") && f.g === "Cuaresma" && f.r !== "Domingo" ? "pueblo" : "simple";
   if(S.bend === "pueblo") S.puebloN = "propia";
+  S.bendN = bendSugerida(f);
   if(f.e === "jueves") S.pe = "pe1";
   if(S.ap === "asp" && f.r !== "Domingo" && f.r !== "Solemnidad") S.ap = "1";
   modoLecturasAuto(f, opt.dia);
