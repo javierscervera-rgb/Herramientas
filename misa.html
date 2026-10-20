@@ -109,6 +109,7 @@ select:disabled{opacity:.55}
 #lectura .rub-in{color:var(--rub);font-family:var(--f-ui);font-size:.78em}
 #lectura .missing{font-family:var(--f-ui);font-size:15px;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;color:var(--fg2);display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:.3em 0 .8em}
 #lectura .cita{color:var(--fg2);font-style:italic}
+#lectura p.rub.tit{font-style:italic;margin-top:.2em}
 .end{text-align:center;color:var(--fg2);margin:3em 0 1em;font-family:var(--f-sc);letter-spacing:.1em}
 
 .dock{position:fixed;z-index:30;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
@@ -209,6 +210,54 @@ const store = {
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
 };
 let LIB = store.get("misa.lib", {});
+/* Leccionario: se guarda en IndexedDB (cabe mucho más que en localStorage) */
+const idb = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    try{ const r = indexedDB.open("misa", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }
+    catch(e){ rej(e); }
+  }));
+  return {
+    async get(k){ try{ const db = await open(); return await new Promise((res, rej) => { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); }catch(e){ return undefined; } },
+    async set(k, v){ try{ const db = await open(); await new Promise((res, rej) => { const tx = db.transaction("kv", "readwrite"); tx.objectStore("kv").put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); return true; }catch(e){ return false; } }
+  };
+})();
+let LEC = {lecturas:{}, titulos:{}, apendice:{}};
+const ROMN = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI","XXII","XXIII","XXIV","XXV","XXVI","XXVII","XXVIII","XXIX","XXX","XXXI","XXXII","XXXIII","XXXIV"];
+const DIASN = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+/* Calendario: semana del tiempo ordinario para una fecha */
+function pascuaDe(y){
+  const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3),
+    h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+    mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mes - 1, dia);
+}
+const diasEntre = (a, b) => Math.round((a - b) / 864e5);
+function semanaTO(d0 = new Date()){
+  const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()), y = d.getFullYear(), dow = d.getDay();
+  const ep = new Date(y, 0, 6), bau = new Date(y, 0, 6 + (7 - ep.getDay()));
+  const pas = pascuaDe(y), ceniza = new Date(y, pas.getMonth(), pas.getDate() - 46), pent = new Date(y, pas.getMonth(), pas.getDate() + 49);
+  const nav = new Date(y, 11, 25), adv = new Date(y, 11, 25 - (nav.getDay() || 7) - 21);
+  let sem = 0;
+  if(d > bau && d < ceniza) sem = Math.floor(diasEntre(d, bau) / 7) + 1;
+  else if(d > pent && d < adv) sem = 34 - Math.floor((diasEntre(adv, d) - 1) / 7);
+  if(!sem) return null;
+  return {sem, dia: dow, anyo: y % 2 ? "impar" : "par"};
+}
+function claveLecturas(f){
+  if(S.lecModo === "feria") return `to.${S.toSem}.${S.toDia}.${S.toAnyo}`;
+  if(S.lecModo === "otra") return S.lecOtra || "";
+  if(LEC.lecturas[`${f.id}.${S.ciclo}`]) return `${f.id}.${S.ciclo}`;
+  if(LEC.lecturas[`${f.id}.T`]) return `${f.id}.T`;
+  return "";
+}
+function tituloLec(k){
+  if(LEC.titulos && LEC.titulos[k]) return LEC.titulos[k];
+  const m = k.match(/^(F\d+)\.(\w)$/);
+  if(m && FM[m[1]]) return FM[m[1]].c + (m[2] !== "T" ? ` · año ${m[2]}` : "");
+  return k;
+}
+const lecN = () => Object.keys(LEC.lecturas).length;
 const saveLib = () => store.set("misa.lib", LIB);
 
 /* ---------- Catálogo de textos de la biblioteca ---------- */
@@ -312,7 +361,7 @@ function labelOf(k){
 /* ---------- Estado de la composición ---------- */
 const DEF = {fid:"", saludo:"1", ap:"1", gloria:null, credo:null, simbolo:"niceno", lect:[], ou:"", pe:"pe2", pref:"", aclam:"1",
   priv:"1", bend:"simple", bendN:9, puebloN:1, desp:"1", pregon:"largo", ninos:false, ramos:"procesion", vigN:7, pentExt:false, comAlt:false,
-  ciclo:"", ouKey:"", var:{}, intc:null, recProp:true};
+  ciclo:"", ouKey:"", var:{}, intc:null, recProp:true, lecModo:"propio", toSem:1, toDia:1, toAnyo:"par", lecOtra:""};
 let S = Object.assign({}, DEF, store.get("misa.actual", {}));
 if(!FM[S.fid]) S.fid = (F.find(f => f.c === "Domingo XXX del tiempo ordinario") || F[0]).id;
 function cicloActual(d = new Date()){
@@ -379,8 +428,55 @@ function lecturasPorDefecto(f){
   return a;
 }
 const TL = {lectura:"Lectura",salmo:"Salmo responsorial",secuencia:"Secuencia",aclamacion:"Aclamación antes del evangelio",evangelio:"Evangelio"};
+const lecCur = L => (L.alts && L.alts.length) ? L.alts[Math.min(L.sel || 0, L.alts.length - 1)] : {cita: L.cita || "", txt: L.txt || "", tit: ""};
+const copia = o => JSON.parse(JSON.stringify(o));
+/* Lecturas desde el leccionario cargado */
+function lecturasDelLeccionario(f){
+  const key = claveLecturas(f), src = LEC.lecturas[key];
+  if(!src) return null;
+  let items = copia(src).map(x => ({t:x.t, n:x.n, slot:x.slot, nota:x.nota, entrada:x.entrada, alts:x.alts, sel:0}));
+  const num = s => /^l\d$/.test(s) ? +s[1] : 0;
+  if(f.e === "vigilia"){
+    /* número de lecturas del A. T.: la del Éxodo (3.ª) nunca se omite */
+    const PRI = {3:[1,3,7], 4:[1,2,3,7], 5:[1,2,3,4,7], 6:[1,2,3,4,5,7], 7:[1,2,3,4,5,6,7]}[S.vigN] || [1,2,3,4,5,6,7];
+    const out = [];
+    for(let i = 0; i < items.length; i++){
+      const x = items[i], k = num(x.slot);
+      if(k){
+        const sal = items[i+1] && items[i+1].t === "salmo" ? items[i+1] : null;
+        if(PRI.includes(k)){ x.or = k; x.n = `${x.n} (A. T.)`; out.push(x); if(sal) out.push(sal); }
+        if(sal) i++;
+        continue;
+      }
+      out.push(x);
+    }
+    items = out;
+  } else if(f.e === "pentvig"){
+    const ot = items.filter(x => num(x.slot)), resto = items.filter(x => !num(x.slot) && !(x.t === "salmo" && x.slot !== "s:"));
+    const sal = items.filter(x => x.t === "salmo");
+    if(S.pentExt){
+      items.forEach(x => { const k = num(x.slot); if(k) x.pent = k; });
+    } else {
+      const ORDN = ["", "primera", "segunda", "tercera", "cuarta"];
+      const lec = {t:"lectura", n:"Primera lectura", slot:"l1", nota:ot[0] && ot[0].nota, sel:0,
+        alts: ot.map(x => Object.assign({}, x.alts[0], {nom: `${x.n} · ${x.alts[0].tit || ""}`.replace(/ · $/, "")}))};
+      const ps = {t:"salmo", n:"Salmo responsorial", slot:"s:", sel:0,
+        alts: sal.flatMap((x, i) => x.alts.map(a => Object.assign({}, a, {nom: `A la ${ORDN[i+1] || ""} lectura${x.alts.length > 1 ? " · " + a.nom : ""}`})))};
+      const epi = resto.find(x => x.slot === "epi"); if(epi) epi.n = "Segunda lectura";
+      items = [lec, ps, ...resto];
+    }
+  }
+  items.forEach(x => {
+    if(x.t === "evangelio" && !x.entrada && (f.e === "ramos" || f.e === "viernes")) x.n = "Pasión del Señor";
+    if(x.t === "secuencia") x.opc = f.sq === 1;
+  });
+  return items;
+}
 function rehacerLecturas(){
-  const old = S.lect || [];
+  const f = FM[S.fid], deLec = lecturasDelLeccionario(f);
+  if(deLec){ S.lect = deLec; S.lectSrc = claveLecturas(f); return; }
+  S.lectSrc = "";
+  const old = (S.lect || []).filter(o => !o.alts);
   const nuevas = lecturasPorDefecto(FM[S.fid]);
   const used = new Set();
   nuevas.forEach(n => {
@@ -530,9 +626,9 @@ function inicioDe(k, v){
   return t.length > 130 ? t.slice(0, 127).replace(/\s+\S*$/, "") + "…" : t;
 }
 function carHTML(id){
-  const o = OPC[id], L = o.opts(), sel = String(o.get());
+  const o = opcDe(id), L = o.opts(), sel = String(o.get());
   return `<div class="car" data-car="${id}"><div class="car-track">${L.map(x => {
-    const ini = x.dis ? x.dis : (inicioDe(x.k, x.v) || "Sin texto en la biblioteca");
+    const ini = x.dis ? x.dis : (x.ini !== undefined ? (x.ini || "Sin texto") : (inicioDe(x.k, x.v) || "Sin texto en la biblioteca"));
     return `<button type="button" class="car-card${String(x.val) === sel ? " on" : ""}" data-car="${id}" data-val="${esc(x.val)}" ${x.dis ? "disabled" : ""}>
       <span class="car-t">${esc(x.title)}</span><span class="car-s">${esc(ini)}</span></button>`; }).join("")}</div>
     ${L.length > 1 ? `<div class="dots">${L.map((x, i) => `<button type="button" class="dot-b${String(x.val) === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div>` : ""}</div>`;
@@ -565,7 +661,30 @@ function iniciarCarruseles(root, alElegir){
   });
 }
 function elegirOpcion(id, val){
+  if(id.startsWith("lec:")){ const L = S.lect[+id.slice(4)]; if(L) L.sel = +val; saveS(); return; }
   OPC[id].set(val); saveS();
+}
+function opcDe(id){
+  if(!id.startsWith("lec:")) return OPC[id];
+  const L = S.lect[+id.slice(4)];
+  return {label: L.n, get: () => String(L.sel || 0), set: v => L.sel = +v,
+    opts: () => L.alts.map((a, i) => ({val: String(i), title: (a.nom || `Opción ${i+1}`) + (a.cita ? ` · ${a.cita}` : ""), ini: inicioTxt(textoLec(a, "evangelio"))}))};
+}
+function inicioTxt(s){
+  const p = (s || "").split(/\n\s*\n/).find(x => !/^\s*\*/.test(x) && !/^(Lectura|Comienzo|Principio|Pasión)\b/.test(x)) || "";
+  const t = p.replace(/^(℟\.|℣\.|R\.|V\.)\s*/gm, "").replace(/\s+/g, " ").trim();
+  return t.length > 130 ? t.slice(0, 127).replace(/\s+\S*$/, "") + "…" : t;
+}
+/* Texto que se proclama: sin el anuncio ni la conclusión que ya da el Ordinario */
+function textoLec(a, modo){
+  let t = (a.txt || "").trim();
+  if(modo === "lectura") t = t.replace(/\n*\s*Palabra de Dios\.?\s*$/, "");
+  if(modo === "evangelio") t = t.replace(/^(Lectura|Comienzo|Conclusión|Final) del santo Evangelio según[^\n]*\n*/, "").replace(/\n*\s*Palabra del Señor\.?\s*$/, "");
+  return t.trim();
+}
+function anuncioEv(L){
+  const m = (lecCur(L).txt || "").match(/^((Lectura|Comienzo|Conclusión|Final) del santo Evangelio según [^\n]+?)\.?\s*$/m);
+  return m ? m[1] + "." : "";
 }
 
 /* ---------- Orden de la celebración ---------- */
@@ -577,7 +696,7 @@ function buildOrder(){
   const AMEN = ["colecta","ofrendas","postcomunion","pueblo"];
   const prop = (tipo, l) => { if(f.x.some(x => x[0] === tipo)) txt(`prop.${f.id}.${tipo}`, l || TIPOS[tipo], {amen: AMEN.includes(tipo)}); };
   const sal = () => "ord.saludo" + (["1","2","3"].includes(S.saludo) ? S.saludo : "1");
-  const lect = (L) => B.push({t:"lec", L});
+  const lect = (L, modo) => B.push({t:"lec", L, modo: modo || ""});
 
   if(f.e === "viernes") return viernes(f, B, sec, rub, txt, prop, lect);
 
@@ -698,16 +817,22 @@ function buildOrder(){
   return B;
 }
 
-function palabra(f, R, rub, txt, prop, lect){
+function palabra(f, R, rub, txt, prop, lect0){
   let primera = true;
+  const ultimaOT = Math.max(0, ...S.lect.filter(x => x.or).map(x => x.or));
   S.lect.forEach(L => {
     if(L.entrada) return;
+    const lect = (X, modo) => lect0(X, modo);
     if(L.t === "lectura"){
       rub(primera ? "El lector va al ambón y proclama la lectura; todos escuchan sentados." : "Sigue la lectura.");
       primera = false;
-      lect(L);
+      lect(L, "lectura");
       txt("ord.palabra");
     } else if(L.t === "salmo"){
+      if(f.e === "vigilia" && L.slot === "s:a la epístola"){
+        rub("Acabada la epístola, todos se levantan y el sacerdote entona solemnemente el aleluya tres veces, elevando la voz cada vez. El pueblo lo repite.");
+        txt("rito.vig.aleluya");
+      }
       lect(L);
     } else if(L.t === "secuencia"){
       rub(L.opc ? "Se puede cantar la secuencia." : "Se canta la secuencia.");
@@ -716,7 +841,7 @@ function palabra(f, R, rub, txt, prop, lect){
       rub("Todos se levantan y se canta el Aleluya o, en Cuaresma, la aclamación correspondiente.");
       lect(L);
     } else if(L.t === "evangelio"){
-      if(f.e === "vigilia"){
+      if(f.e === "vigilia" && !S.lect.some(x => x.slot === "s:a la epístola")){
         rub("Después de la epístola, todos se levantan y el sacerdote entona solemnemente el aleluya tres veces, elevando la voz cada vez. El pueblo lo repite.");
         txt("rito.vig.aleluya");
       }
@@ -725,8 +850,8 @@ function palabra(f, R, rub, txt, prop, lect){
         lect(L);
       } else {
         rub("Mientras se pone incienso, si se usa, el diácono pide la bendición; si no hay diácono, el sacerdote, inclinado ante el altar, dice en secreto:");
-        txt("ord.ev_secreta"); txt("ord.ev_dialogo");
-        lect(L);
+        txt("ord.ev_secreta"); txt("ord.ev_dialogo", null, {sub: anuncioEv(L)});
+        lect(L, "evangelio");
         txt("ord.ev_final");
       }
     }
@@ -736,7 +861,7 @@ function palabra(f, R, rub, txt, prop, lect){
       if(prev && (prev.or || prev.pent)) rub("Todos se levantan; el sacerdote invita a orar y, tras un momento de silencio, dice la oración.");
       if(prev && prev.or) txt(`rito.vig.or${prev.or}`);
       if(prev && prev.pent) txt(`rito.pent.or${prev.pent}`);
-      if(f.e === "vigilia" && prev && prev.or === S.vigN){
+      if(f.e === "vigilia" && prev && prev.or && prev.or === ultimaOT){
         rub("Después de la última lectura del Antiguo Testamento, con su salmo y su oración, se encienden las velas del altar y se canta el Gloria, mientras se tocan las campanas.");
         txt("ord.gloria");
         rub("El sacerdote dice la oración colecta.");
@@ -897,6 +1022,7 @@ function renderCelebrar(){
       let v = b.t === "free" ? b.x : LIB[b.k];
       if(v && b.v !== undefined) v = elegirVariante(v, b.v);
       if(v && b.amen && !/Amén\.?\s*$/.test(v.trim())) v = v.trim() + "\n\nR. Amén.";
+      if(v && b.sub) v = v.replace(/Lectura del santo Evangelio según san N\.?/, b.sub);
       if(b.l) h += `<span class="lbl-t">${esc(b.l)}</span>`;
       if(b.alt){
         const o = OPC[b.alt], L = o.opts().filter(x => !x.dis), sel = String(o.get());
@@ -912,10 +1038,25 @@ function renderCelebrar(){
       if(v && v.trim()) h += parseTexto(v).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("");
       else h += `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(b.k)}">Añadir texto</button></div>`;
     } else if(b.t === "lec"){
-      const L = b.L, nom = L.n || TL[L.t];
-      h += `<span class="lbl-t">${esc(nom)}${L.cita ? ` · <span class="cita">${esc(L.cita)}</span>` : ""}</span>`;
-      if(L.txt && L.txt.trim()) h += parseTexto(L.txt).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("");
-      else h += `<div class="missing">Sin texto. Pégalo en Componer › Liturgia de la Palabra.</div>`;
+      const L = b.L, nom = L.n || TL[L.t], idx = S.lect.indexOf(L);
+      (L.nota || []).forEach(n => h += `<p class="rub">${esc(n)}</p>`);
+      const cuerpoLec = a => {
+        const tx = textoLec(a, b.modo);
+        return (a.tit ? `<p class="rub tit">${esc(a.tit)}</p>` : "") +
+          (tx ? parseTexto(tx).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("")
+              : `<div class="missing">Sin texto. Pégalo en Componer › Liturgia de la Palabra.</div>`);
+      };
+      if(L.alts && L.alts.length > 1){
+        const sel = Math.min(L.sel || 0, L.alts.length - 1);
+        h += `<span class="lbl-t">${esc(nom)}</span>`;
+        h += `<div class="alt" data-car="lec:${idx}"><div class="alt-track">${L.alts.map((a, i) =>
+          `<div class="alt-slide${i === sel ? " on" : ""}" data-val="${i}"><div class="alt-t">${esc(a.nom || "Opción " + (i+1))}${a.cita ? ` · <span class="cita">${esc(a.cita)}</span>` : ""} · ${i+1} de ${L.alts.length}</div>${cuerpoLec(a)}</div>`).join("")}</div>
+          <div class="dots">${L.alts.map((a, i) => `<button type="button" class="dot-b${i === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div></div>`;
+      } else {
+        const a = lecCur(L);
+        h += `<span class="lbl-t">${esc(nom)}${a.cita ? ` · <span class="cita">${esc(a.cita)}</span>` : ""}</span>`;
+        h += cuerpoLec(a);
+      }
     }
   }
   h += `</div><div class="end">Fin de la celebración</div>`;
@@ -994,15 +1135,18 @@ function renderComponer(){
 
     <div class="card">
       <h3>Liturgia de la Palabra</h3>
+      ${lecHTML()}
       ${esp === "vigilia" ? `<div class="opt"><span class="lbl">Lecturas del Antiguo Testamento</span>${segHTML("vigN", [3,4,5,6,7].map(n => [n, String(n)]), S.vigN)}<span class="muted">Al menos tres; la del Éxodo (tercera) nunca se omite.</span></div>` : ""}
       ${esp === "pentvig" ? `<div class="opt"><span class="lbl">Forma de la vigilia</span>${segHTML("pentExt", [["false","Simple"],["true","Extendida"]], S.pentExt)}</div>` : ""}
       <div id="lects">
-      ${L.map((l,i) => `<div class="lect">
+      ${L.map((l,i) => { const a = lecCur(l); return `<div class="lect">
         <div class="lect-h"><strong>${esc(l.n || TL[l.t])}${l.opc ? " (opcional)" : ""}</strong>
-        <input type="text" data-lect="${i}" data-f="cita" placeholder="Cita (ej.: Is 55, 10-11)" value="${esc(l.cita)}">
+        <input type="text" data-lect="${i}" data-f="cita" placeholder="Cita (ej.: Is 55, 10-11)" value="${esc(a.cita || "")}">
         <button class="btn small danger" data-dellect="${i}" title="Quitar">Quitar</button></div>
-        <textarea rows="3" data-lect="${i}" data-f="txt" placeholder="${l.t === "salmo" ? "℟. Respuesta, y después las estrofas" : "Pega aquí el texto"}">${esc(l.txt)}</textarea>
-      </div>`).join("")}
+        ${(l.nota || []).map(n => `<p class="muted" style="margin:0">${esc(n)}</p>`).join("")}
+        ${l.alts && l.alts.length > 1 ? carHTML("lec:" + i) : ""}
+        <textarea rows="3" data-lect="${i}" data-f="txt" placeholder="${l.t === "salmo" ? "R. Respuesta, y después las estrofas" : "Pega aquí el texto"}">${esc(a.txt || "")}</textarea>
+      </div>`; }).join("")}
       </div>
       <div class="row" style="margin-top:12px">
         <button class="btn small" data-addlect="lectura">Añadir lectura</button>
@@ -1015,8 +1159,7 @@ function renderComponer(){
         const prop = ouPropias(), todos = Object.keys(LIB).filter(k => k.startsWith("ou.") && LIB[k].trim() && !prop.includes(k));
         const vistos = new Set(); const otros = todos.filter(k => { const t = ouTitulo(k); if(vistos.has(t)) return false; vistos.add(t); return true; })
           .sort((a,b) => ouTitulo(a).localeCompare(ouTitulo(b), "es"));
-        return `<div class="opt" style="margin-top:16px"><span class="lbl">Ciclo de lecturas</span>${segHTML("ciclo", [["A","Año A"],["B","Año B"],["C","Año C"]], S.ciclo)}</div>
-        <div class="fld" style="margin-top:6px"><label for="c-ouk">Oración universal: formulario</label>
+        return `<div class="fld" style="margin-top:16px"><label for="c-ouk">Oración universal: formulario</label>
         <select id="c-ouk"><option value="">${S.ou.trim() && !S.ouKey ? "Texto propio (escrito a mano)" : "Ninguno"}</option>
         ${prop.length ? `<optgroup label="De esta celebración">${prop.map(k => `<option value="${esc(k)}" ${k === S.ouKey ? "selected" : ""}>${esc(ouTitulo(k))}</option>`).join("")}</optgroup>` : ""}
         ${otros.length ? `<optgroup label="Otros formularios">${otros.map(k => `<option value="${esc(k)}" ${k === S.ouKey ? "selected" : ""}>${esc(ouTitulo(k))}</option>`).join("")}</optgroup>` : ""}
@@ -1078,7 +1221,7 @@ function renderComponer(){
 }
 
 /* ---------- Biblioteca ---------- */
-let libGrupo = "Ordinario de la misa", libKey = "", libFiltro = "", libConfirm = false;
+let libGrupo = "Ordinario de la misa", libKey = "", libFiltro = "", libConfirm = false, lecConfirm = false;
 function libItems(){
   if(libGrupo === "Propio de la misa actual"){
     const f = FM[S.fid];
@@ -1131,7 +1274,15 @@ function renderBiblioteca(){
           <label class="btn" for="l-imp" style="display:inline-block">Importar archivo</label><input id="l-imp" type="file" accept=".json,application/json" hidden>
           ${libConfirm ? `<span class="confirm"><span class="muted">¿Borrar los ${n} textos?</span><button class="btn danger" id="l-del-si">Sí, borrar</button><button class="btn" id="l-del-no">Cancelar</button></span>` : `<button class="btn danger" id="l-del">Borrar todo</button>`}
         </div>
-        <p class="muted" style="margin:10px 0 0">Al importar, los textos del archivo se añaden a los que ya tienes y sustituyen a los de la misma clave.</p>
+        <p class="muted" style="margin:10px 0 0">Al importar, los textos del archivo se añaden a los que ya tienes y sustituyen a los de la misma clave. El mismo botón sirve para la biblioteca y para el leccionario.</p>
+      </div>
+      <div class="card">
+        <h3>Leccionario</h3>
+        <p class="muted" style="margin:0 0 10px">${lecN() ? `Tienes lecturas para ${lecN()} celebraciones (cada ciclo cuenta aparte).` : "Aún no has importado ningún leccionario."}</p>
+        <div class="row">
+          <button class="btn" id="lec-exp" ${lecN() ? "" : "disabled"}>Exportar leccionario</button>
+          ${lecConfirm ? `<span class="confirm"><span class="muted">¿Borrar el leccionario?</span><button class="btn danger" id="lec-del-si">Sí, borrar</button><button class="btn" id="lec-del-no">Cancelar</button></span>` : `<button class="btn danger" id="lec-del" ${lecN() ? "" : "disabled"}>Borrar leccionario</button>`}
+        </div>
       </div>
     </div>
   </div>`;
@@ -1172,15 +1323,16 @@ vc.addEventListener("click", e => {
     else if(k === "apModo"){ if(v === "asp"){ if(S.ap !== "asp") S.apF = S.ap; S.ap = "asp"; } else S.ap = S.apF || "1"; }
     else if(k === "vigN") S[k] = +v;
     else S[k] = v;
-    if(["vigN","pentExt"].includes(k)) rehacerLecturas();
+    if(["vigN","pentExt","ciclo","lecModo"].includes(k)) rehacerLecturas();
     if(k === "ciclo") ouAuto();
     if(k === "bend" && v === "pueblo" && FM[S.fid].x.some(x => x[0] === "pueblo")) S.puebloN = "propia";
     renderComponer(); return;
   }
   if(b.dataset.dellect !== undefined){ S.lect.splice(+b.dataset.dellect, 1); renderComponer(); return; }
   if(b.dataset.addlect){ const ai = S.lect.findIndex(l => l.t === "aclamacion"); S.lect.splice(ai < 0 ? S.lect.length : ai, 0, {t:b.dataset.addlect, cita:"", txt:"", n: b.dataset.addlect === "lectura" ? "Lectura" : ""}); renderComponer(); return; }
-  if(b.id === "reset-lect"){ S.lect = []; rehacerLecturas(); S.lect.forEach(l => { l.cita = ""; l.txt = ""; }); renderComponer(); return; }
+  if(b.id === "reset-lect"){ S.lect = []; rehacerLecturas(); if(!S.lectSrc) S.lect.forEach(l => { l.cita = ""; l.txt = ""; }); renderComponer(); return; }
   if(b.id === "go-celebrar"){ mostrar("celebrar"); return; }
+  if(b.id === "to-hoy"){ const h = semanaTO(); if(h){ S.toSem = h.sem; S.toDia = h.dia; S.toAnyo = h.anyo; rehacerLecturas(); renderComponer(); } return; }
   if(b.id === "ver-faltan"){ libGrupo = "Lo que falta en esta misa"; libKey = ""; mostrar("biblioteca"); return; }
   if(b.id === "g-guardar"){
     const nombre = $("#g-nombre").value.trim() || FM[S.fid].c;
@@ -1199,12 +1351,16 @@ vc.addEventListener("change", e => {
   else if(t.id === "c-intc"){ S.intc = t.value === "auto" ? null : t.value; renderComponer(); }
   else if(t.id === "c-ouk"){ S.ouKey = t.value; S.ou = t.value ? ouCuerpo(t.value) : ""; renderComponer(); }
   else if(t.id === "c-pref"){ S.pref = t.value; renderComponer(); }
+  else if(["c-tosem","c-todia","c-toanyo","c-lecotra"].includes(t.id)){
+    const k = {"c-tosem":"toSem","c-todia":"toDia","c-toanyo":"toAnyo","c-lecotra":"lecOtra"}[t.id];
+    S[k] = ["toSem","toDia"].includes(k) ? +t.value : t.value; rehacerLecturas(); renderComponer();
+  }
   else if(t.id === "c-bsol"){ S.bendN = +t.value; saveS(); }
   else if(t.id === "c-bpue"){ S.puebloN = t.value === "propia" ? "propia" : +t.value; saveS(); }
 });
 vc.addEventListener("input", e => {
   const t = e.target;
-  if(t.dataset.lect !== undefined){ S.lect[+t.dataset.lect][t.dataset.f] = t.value; saveS(); }
+  if(t.dataset.lect !== undefined){ const L = S.lect[+t.dataset.lect]; if(L.alts && L.alts.length) L.alts[Math.min(L.sel || 0, L.alts.length - 1)][t.dataset.f] = t.value; else L[t.dataset.f] = t.value; saveS(); }
   else if(t.id === "c-ou"){ S.ou = t.value; S.ouKey = ""; saveS(); }
   else if(t.id === "c-busca"){ filtroCel = t.value; clearTimeout(vc._t); vc._t = setTimeout(() => { renderComponer(); const i = $("#c-busca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); }
 });
@@ -1215,7 +1371,45 @@ function cambiarCel(id){
   if(S.bend === "pueblo") S.puebloN = "propia";
   if(f.e === "jueves") S.pe = "pe1";
   if(S.ap === "asp" && f.r !== "Domingo" && f.r !== "Solemnidad") S.ap = "1";
+  modoLecturasAuto(f);
   rehacerLecturas(); ouAuto(); renderComponer();
+}
+/* Elige de dónde salen las lecturas al cambiar de celebración */
+function modoLecturasAuto(f){
+  S.lecModo = "propio";
+  const hoy = semanaTO();
+  const propias = LEC.lecturas[`${f.id}.${S.ciclo}`] || LEC.lecturas[`${f.id}.T`];
+  const deFeria = propias && /Memoria/.test(f.r) && propias.some(x => (x.nota || []).some(n => /^Ordinariamente, lecturas de la feria/.test(n)));
+  if(deFeria && hoy){ S.lecModo = "feria"; S.toSem = hoy.sem; S.toDia = hoy.dia; S.toAnyo = hoy.anyo; return; }
+  if(propias) return;
+  const ferial = (f.g === "Tiempo ordinario" && f.r !== "Domingo") || (f.s === "Propio de los santos" && /Memoria/.test(f.r)) || f.s === "Comunes" || f.s === "Misas votivas" || f.s === "Misas por diversas necesidades";
+  if(ferial && hoy){ S.lecModo = "feria"; S.toSem = hoy.sem; S.toDia = hoy.dia; S.toAnyo = hoy.anyo; }
+  else if(f.g === "Tiempo ordinario" && f.r !== "Domingo"){ S.lecModo = "feria"; }
+}
+function lecHTML(){
+  const f = FM[S.fid], clave = claveLecturas(f), hay = !!LEC.lecturas[clave];
+  let h = `<div class="opt"><span class="lbl">Lecturas</span>${segHTML("lecModo", [["propio","De la celebración"],["feria","Feria del tiempo ordinario"],["otra","Otras"]], S.lecModo)}</div>`;
+  if(S.lecModo === "propio")
+    h += `<div class="opt"><span class="lbl">Ciclo dominical</span>${segHTML("ciclo", [["A","Año A"],["B","Año B"],["C","Año C"]], S.ciclo)}</div>`;
+  if(S.lecModo === "feria"){
+    const hoy = semanaTO();
+    h += `<div class="row" style="margin-bottom:12px">
+      <div class="fld" style="flex:1 1 120px"><label for="c-tosem">Semana</label><select id="c-tosem">${ROMN.map((r, i) => `<option value="${i+1}" ${S.toSem == i+1 ? "selected" : ""}>${r}</option>`).join("")}</select></div>
+      <div class="fld" style="flex:1 1 120px"><label for="c-todia">Día</label><select id="c-todia">${[1,2,3,4,5,6].map(d => `<option value="${d}" ${S.toDia == d ? "selected" : ""}>${DIASN[d]}</option>`).join("")}</select></div>
+      <div class="fld" style="flex:1 1 120px"><label for="c-toanyo">Año</label><select id="c-toanyo"><option value="impar" ${S.toAnyo === "impar" ? "selected" : ""}>Impar (I)</option><option value="par" ${S.toAnyo === "par" ? "selected" : ""}>Par (II)</option></select></div>
+      ${hoy ? `<button class="btn" id="to-hoy" type="button">Hoy: ${DIASN[hoy.dia]} ${ROMN[hoy.sem-1]}</button>` : ""}</div>`;
+  }
+  if(S.lecModo === "otra"){
+    const ks = Object.keys(LEC.lecturas), grupos = {};
+    const grupo = k => /^to\./.test(k) ? `Tiempo ordinario · año ${k.endsWith("impar") ? "impar" : "par"}` : /^F\d+\.T$/.test(k) ? `Ferias de ${(FM[k.split(".")[0]] || {}).g || "otros tiempos"}` : /^F\d+\./.test(k) ? `Domingos y solemnidades · año ${k.slice(-1)}` : "Otras";
+    ks.forEach(k => (grupos[grupo(k)] = grupos[grupo(k)] || []).push(k));
+    const orden = k => { const m = k.match(/^to\.(\d+)\.(\d)/); return m ? +m[1] * 10 + +m[2] : (FM[k.split(".")[0]] ? F.indexOf(FM[k.split(".")[0]]) : 9999); };
+    h += `<div class="fld" style="margin-bottom:12px"><label for="c-lecotra">Lecturas de</label><select id="c-lecotra"><option value="">Elige…</option>${Object.keys(grupos).sort().map(g =>
+      `<optgroup label="${esc(g)}">${grupos[g].sort((a, b) => orden(a) - orden(b)).map(k => `<option value="${esc(k)}" ${k === S.lecOtra ? "selected" : ""}>${esc(tituloLec(k))}</option>`).join("")}</optgroup>`).join("")}</select></div>`;
+  }
+  h += `<div class="info" style="margin:-4px 0 12px">${hay ? `<span class="chip acc">${esc(tituloLec(clave))}</span>` :
+    lecN() ? `<span class="chip">No hay lecturas cargadas para esta elección</span>` : `<span class="chip">Sin leccionario: impórtalo en Biblioteca o pega aquí las lecturas</span>`}</div>`;
+  return h;
 }
 
 /* Eventos de Biblioteca */
@@ -1229,6 +1423,14 @@ vb.addEventListener("click", e => {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "biblioteca-misal.json"; document.body.appendChild(a); a.click(); a.remove();
     return;
   }
+  if(b.id === "lec-exp"){
+    const blob = new Blob([JSON.stringify(Object.assign({tipo:"leccionario-misal", version:1}, LEC))], {type:"application/json"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "leccionario-misal.json"; document.body.appendChild(a); a.click(); a.remove();
+    return;
+  }
+  if(b.id === "lec-del"){ lecConfirm = true; renderBiblioteca(); return; }
+  if(b.id === "lec-del-no"){ lecConfirm = false; renderBiblioteca(); return; }
+  if(b.id === "lec-del-si"){ LEC = {lecturas:{}, titulos:{}, apendice:{}}; idb.set("leccionario", LEC); lecConfirm = false; toast("Leccionario borrado"); renderBiblioteca(); return; }
   if(b.id === "l-del"){ libConfirm = true; renderBiblioteca(); return; }
   if(b.id === "l-del-no"){ libConfirm = false; renderBiblioteca(); return; }
   if(b.id === "l-del-si"){ LIB = {}; saveLib(); libConfirm = false; toast("Biblioteca vaciada"); renderBiblioteca(); return; }
@@ -1251,10 +1453,19 @@ vb.addEventListener("change", e => {
     const r = new FileReader();
     r.onload = () => {
       try{
-        const j = JSON.parse(r.result), tx = j.textos || j;
+        const j = JSON.parse(r.result);
+        if(j.tipo === "leccionario-misal"){
+          const n = Object.keys(j.lecturas || {}).length;
+          Object.assign(LEC.lecturas, j.lecturas || {}); Object.assign(LEC.apendice, j.apendice || {}); LEC.titulos = Object.assign(LEC.titulos || {}, j.titulos || {});
+          idb.set("leccionario", LEC).then(ok => toast(ok ? `${n} celebraciones de lecturas importadas` : "No se pudo guardar el leccionario en este navegador"));
+          if(!S.lectSrc && lecturasDelLeccionario(FM[S.fid])){ rehacerLecturas(); saveS(); }
+          renderBiblioteca(); t.value = ""; return;
+        }
+        const tx = j.textos || j;
         let n = 0; for(const [k,v] of Object.entries(tx)) if(typeof v === "string"){ LIB[k] = v; n++; }
         saveLib(); toast(`${n} textos importados`); renderBiblioteca();
       }catch(err){ toast("El archivo no es una biblioteca válida"); }
+      t.value = "";
     };
     r.readAsText(t.files[0]);
   }
@@ -1376,6 +1587,15 @@ $("#b-voz").onclick = () => {
 };
 
 mostrar("componer");
+idb.get("leccionario").then(v => {
+  if(!v || !v.lecturas) return;
+  LEC = {lecturas: v.lecturas || {}, titulos: v.titulos || {}, apendice: v.apendice || {}};
+  const f = FM[S.fid];
+  if(S.lectSrc !== claveLecturas(f) && lecturasDelLeccionario(f)){ rehacerLecturas(); saveS(); }
+  if(vista === "componer") renderComponer();
+  if(vista === "biblioteca") renderBiblioteca();
+  if(vista === "celebrar") renderCelebrar();
+});
 </script>
 
 </body>
