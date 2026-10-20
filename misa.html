@@ -359,7 +359,7 @@ function labelOf(k){
 }
 
 /* ---------- Estado de la composición ---------- */
-const DEF = {fid:"", saludo:"1", ap:"1", gloria:null, credo:null, simbolo:"niceno", lect:[], ou:"", pe:"pe2", pref:"", aclam:"1",
+const DEF = {fid:"", saludo:"1", ap:"1", gloria:null, credo:null, simbolo:"apostoles", lect:[], ou:"", pe:"pe2", pref:"", aclam:"1",
   priv:"1", bend:"simple", bendN:9, puebloN:1, desp:"1", pregon:"largo", ninos:false, ramos:"procesion", vigN:7, pentExt:false, comAlt:false,
   ciclo:"", ouKey:"", var:{}, intc:null, recProp:true, lecModo:"propio", toSem:1, toDia:1, toAnyo:"par", lecOtra:""};
 let S = Object.assign({}, DEF, store.get("misa.actual", {}));
@@ -401,8 +401,10 @@ function ouPropias(fid = S.fid, ciclo = S.ciclo){
 }
 function ouAuto(){
   if(S.ou.trim() && !S.ouKey) return;
-  const p = ouPropias();
-  S.ouKey = p[0] || ""; S.ou = S.ouKey ? ouCuerpo(S.ouKey) : "";
+  const f = FM[S.fid];
+  const p = (S.diaDom === false && f && f.r === "Domingo") ? [] : ouPropias();
+  const feriaI = Object.keys(LIB).find(k => k.startsWith("ou.gen.") && ouTitulo(k) === "Ferias del Tiempo Ordinario I");
+  S.ouKey = p[0] || feriaI || ""; S.ou = S.ouKey ? ouCuerpo(S.ouKey) : "";
 }
 const saveS = () => store.set("misa.actual", S);
 
@@ -487,6 +489,133 @@ function rehacerLecturas(){
 }
 if(!S.lect || !S.lect.length) rehacerLecturas();
 
+
+/* ---------- Calendario: la misa de cada día (España) ---------- */
+const MES3 = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const fidC = c => (F.find(x => x.c === c) || {}).id;
+const fidP = c => (F.find(x => x.c.startsWith(c)) || {}).id;
+const masDias = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const mismoDia = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+function adviento1(y){ const nav = new Date(y, 11, 25); return new Date(y, 11, 25 - (nav.getDay() || 7) - 21); }
+function bautismo(y){ const ep = new Date(y, 0, 6); return new Date(y, 0, 6 + (7 - ep.getDay())); }
+/* Celebraciones del santoral para una fecha */
+function santosDe(d){
+  const k = `${d.getDate()} ${MES3[d.getMonth()]}`;
+  const y = d.getFullYear(), E = pascuaDe(y), pent = masDias(E, 49);
+  return F.filter(f => f.s === "Propio de los santos" && (f.f === k ||
+    (f.f === "Lunes después de Pentecostés" && mismoDia(d, masDias(pent, 1))) ||
+    (/^Sábado después del 2/.test(f.f) && mismoDia(d, masDias(E, 69)))));
+}
+function misaDelDia(d0){
+  const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()), y = d.getFullYear(), dow = d.getDay();
+  const DIA = DIASN[dow], dom = dow === 0;
+  const E = pascuaDe(y), ceniza = masDias(E, -46), pent = masDias(E, 49), adv = adviento1(y), bau = bautismo(y);
+  const dd = x => diasEntre(d, x);
+  const r = (fid, extra = {}) => Object.assign({fid, domingo: dom}, extra);
+  /* Tiempo propio */
+  let temp = null, tiempo = "";
+  if(d >= adv){                                   /* Adviento */
+    tiempo = "Adviento";
+    if(d.getMonth() === 11 && d.getDate() >= 25) temp = null;
+    else if(dom) temp = fidC(`Domingo ${ROMN[Math.floor(dd(adv) / 7)]} de Adviento`);
+    else if(d.getMonth() === 11 && d.getDate() >= 17) temp = fidC(`Ferias mayores: ${d.getDate()} de diciembre`);
+    else temp = fidC(`${DIA} de la semana ${ROMN[Math.floor(dd(adv) / 7)]} de Adviento`);
+  }
+  const navidad = (d.getMonth() === 11 && d.getDate() >= 25) || (d.getMonth() === 0 && d <= bau);
+  if(navidad){
+    tiempo = "Navidad";
+    const m = d.getMonth(), n = d.getDate();
+    const sf = (() => { for(let i = 26; i <= 31; i++){ const x = new Date(m === 11 ? y : y - 1, 11, i); if(x.getDay() === 0) return x; } return new Date(m === 11 ? y : y - 1, 11, 30); })();
+    if(m === 11 && n === 25) temp = fidC("Natividad del Señor: Misa del día");
+    else if(mismoDia(d, sf)) temp = fidC("Sagrada Familia de Jesús, María y José");
+    else if(m === 11 && n >= 29) temp = fidC(`${n} de diciembre: día dentro de la octava`);
+    else if(m === 0 && n === 1) temp = fidC("Santa María, Madre de Dios");
+    else if(m === 0 && n === 6) temp = fidC("Epifanía del Señor: Misa del día");
+    else if(mismoDia(d, bau)) temp = fidC("Bautismo del Señor");
+    else if(m === 0 && dom && n < 6) temp = fidC("Domingo II después de Navidad");
+    else if(m === 0 && n < 6) temp = fidC(`Feria del tiempo de Navidad antes de la Epifanía (${DIA})`);
+    else if(m === 0) temp = fidC(`Feria del tiempo de Navidad después de la Epifanía (${DIA})`);
+    if(m === 0 && n > 1 && n !== 6 && !dom && !mismoDia(d, bau)) return Object.assign(r(temp), {lec:{modo:"otra", clave:`dia.01-${String(n).padStart(2, "0")}`}, tiempo});
+  }
+  if(d >= ceniza && d < E){                       /* Cuaresma y Semana Santa */
+    tiempo = "Cuaresma";
+    const ramos = masDias(E, -7);
+    if(mismoDia(d, ceniza)) temp = fidC("Miércoles de Ceniza");
+    else if(dd(ceniza) < 4) temp = fidC(`${DIA} después de Ceniza`);
+    else if(mismoDia(d, ramos)) temp = fidC("Domingo de Ramos en la Pasión del Señor");
+    else if(d > ramos){
+      const k = dd(ramos);
+      temp = k <= 3 ? fidC(`${DIA} Santo`) : k === 4 ? fidC("Jueves Santo: Misa vespertina de la Cena del Señor") : k === 5 ? fidC("Viernes Santo: Celebración de la Pasión del Señor") : fidC("Vigilia pascual en la noche santa");
+    } else {
+      const sem = Math.floor((dd(ceniza) - 4) / 7) + 1;
+      temp = dom ? fidC(`Domingo ${ROMN[sem-1]} de Cuaresma`) : fidC(`${DIA} de la semana ${ROMN[sem-1]} de Cuaresma`);
+    }
+  }
+  if(d >= E && d <= pent){                        /* Pascua */
+    tiempo = "Pascua";
+    const k = dd(E), sem = Math.floor(k / 7) + 1;
+    if(k === 0) temp = fidC("Domingo de Pascua de la Resurrección del Señor: Misa del día");
+    else if(k < 7) temp = fidC(`${DIA} de la octava de Pascua`);
+    else if(k === 42) temp = fidC("Ascensión del Señor: Misa del día");        /* en España, el domingo VII */
+    else if(k === 49) temp = fidC("Domingo de Pentecostés: Misa del día");
+    else if(dom) temp = fidC(`Domingo ${ROMN[sem-1]} de Pascua` + (sem === 2 ? " (de la Divina Misericordia)" : ""));
+    else temp = fidC(`${DIA} de la semana ${ROMN[sem-1]} de Pascua`);
+  }
+  let to = null;
+  if(!temp && !navidad && ((d > bau && d < ceniza) || (d > pent && d < adv))){   /* Tiempo ordinario */
+    tiempo = "Tiempo ordinario";
+    const sem = d < ceniza ? Math.floor(dd(bau) / 7) + 1 : 34 - Math.floor((diasEntre(adv, d) - 1) / 7);
+    const k = dd(pent);
+    if(k === 7) temp = fidC("Santísima Trinidad");
+    else if(k === 14) temp = fidC("Santísimo Cuerpo y Sangre de Cristo");        /* en España, en domingo */
+    else if(k === 19) temp = fidC("Sagrado Corazón de Jesús");
+    else if(k === 4) temp = fidC("Nuestro Señor Jesucristo, Sumo y Eterno Sacerdote");
+    else if(sem === 34 && dom) temp = fidC("Nuestro Señor Jesucristo, Rey del Universo");
+    else if(dom) temp = fidC(`Domingo ${ROMN[sem-1]} del tiempo ordinario`);
+    else {
+      temp = sem === 1 ? fidC("Semana I del tiempo ordinario") : sem === 34 ? fidC("Nuestro Señor Jesucristo, Rey del Universo") : fidC(`Domingo ${ROMN[sem-1]} del tiempo ordinario`);
+      to = {sem, dia: dow, anyo: y % 2 ? "impar" : "par"};
+    }
+  }
+  /* Santoral: solemnidades, fiestas y memorias obligatorias */
+  const T = temp ? FM[temp] : null;
+  const privilegiado = T && (["Semana Santa", "Triduo pascual"].includes(T.g) || /octava de Pascua|Miércoles de Ceniza|Ferias mayores/.test(T.c) || (T.r === "Domingo" && ["Adviento","Cuaresma","Pascua"].includes(T.g)) || T.r === "Solemnidad");
+  const san = santosDe(d).filter(f => !/vigilia/.test(f.c));
+  const solemne = san.find(f => f.r === "Solemnidad"), fiesta = san.find(f => f.r === "Fiesta"), memoria = san.find(f => f.r === "Memoria obligatoria");
+  const delSenor = f => /Señor|Santa Cruz|basílica de Letrán|Todos los Santos|fieles difuntos/.test(f.c);
+  let elegido = null;
+  if(solemne && !(T && (T.r === "Solemnidad" || (privilegiado && T.r !== "Domingo") || (T.r === "Domingo" && ["Adviento","Cuaresma","Pascua"].includes(T.g)) || ["Semana Santa","Triduo pascual"].includes(T.g)))) elegido = solemne;
+  else if(fiesta && !privilegiado && (!dom || (T && T.g === "Tiempo ordinario" && delSenor(fiesta)) || navidad)) elegido = fiesta;
+  else if(memoria && !dom && !privilegiado && tiempo !== "Cuaresma") elegido = memoria;
+  if(elegido) return {fid: elegido.id, domingo: dom, to, tiempo, santo: true};
+  return {fid: temp || fidC("Semana I del tiempo ordinario"), domingo: dom, to, tiempo};
+}
+/* Fecha de la celebración: hoy, o el domingo si es sábado por la tarde */
+function fechaInicial(){
+  const now = new Date();
+  if(now.getDay() === 6 && now.getHours() >= 16) return {fecha: masDias(now, 1), vespertina: true};
+  return {fecha: now, vespertina: false};
+}
+const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const deIso = s => { const [a, b, c] = s.split("-").map(Number); return new Date(a, b - 1, c); };
+function fechaSel(){ return S.fecha ? deIso(S.fecha) : new Date(); }
+function aplicarDia(fecha, vespertina){
+  S.fecha = iso(fecha); S.vespertina = !!vespertina;
+  const m = misaDelDia(fecha);
+  S.diaDom = m.domingo;
+  S.ciclo = cicloActual(fecha);
+  S.simbolo = "apostoles";
+  S.ou = ""; S.ouKey = "";
+  cambiarCel(m.fid, {noRender: true, dia: m});
+  const f = FM[S.fid];
+  /* Prefacio: dominical los domingos del tiempo ordinario, común en las ferias */
+  if(f.g === "Tiempo ordinario" && f.r === "Domingo" || f.c === "Semana I del tiempo ordinario"){
+    const sem = (m.to && m.to.sem) || ROMN.indexOf((f.c.match(/Domingo ([IVX]+) del/) || [])[1]) + 1;
+    S.pref = m.domingo ? `dom${((Math.max(sem, 2) - 2) % 8) + 1}` : `com${Math.min(Math.max(fecha.getDay(), 1), 6)}`;
+  }
+  renderComponer();
+}
+
 /* ---------- Reglas ---------- */
 function commKey(f){
   const c = f.c;
@@ -551,6 +680,8 @@ function reglas(){
     if(S.pe === "pe2" && !f.pp && !prefOpts.includes("com6") && !["Adviento","Navidad","Cuaresma","Semana Santa","Pascua"].includes(f.g)) prefOpts.push("com6");
     if(f.pp) prefLock = f.pm.length > 1 ? "Prefacio propio de la celebración (con las alternativas que permite la rúbrica)." : "Prefacio propio de la celebración: no puede cambiarse.";
   }
+  if(!pe.own && f.g === "Tiempo ordinario" && (f.r === "Domingo" || f.c === "Semana I del tiempo ordinario"))
+    ["com1","com2","com3","com4","com5","com6","com7","com8","com9","dom1","dom2","dom3","dom4","dom5","dom6","dom7","dom8","dom9","dom10"].forEach(p => { if(PM[p] && !prefOpts.includes(p)) prefOpts.push(p); });
   if(prefOpts.length && !prefOpts.includes(S.pref)) S.pref = f.pp && !pe.own ? f.pp : prefOpts[0];
   if(!prefOpts.length) S.pref = "";
   if(pe.own && pe.own !== "-") S.pref = pe.own;
@@ -566,7 +697,10 @@ function reglas(){
   if(ck) notes.push({c: S.pe === "pe1" ? "lock" : "", t: S.pe === "pe1" ? (ck === "domingo" ? "Puede usarse el Communicantes propio del domingo." : "Se inserta el Communicantes propio del día.") : "Con la P. E. I se usaría un Communicantes propio.", s: hancKey(f) ? "También hay Hanc igitur propio." : ""});
   if(f.e === "jueves" && S.pe !== "pe1") notes.push({c:"warn", t:"Para la Cena del Señor se recomienda la P. E. I, con su relato de la institución propio."});
 
-  const gloriaAuto = f.gl, credoAuto = f.cr;
+  let gloriaAuto = f.gl, credoAuto = f.cr;
+  if(S.diaDom === false && f.r === "Domingo"){ gloriaAuto = false; credoAuto = false; }
+  if(S.diaDom === true && f.r !== "Domingo" && f.e !== "vigilia" && f.e !== "viernes"){ credoAuto = true; if(!["Adviento","Cuaresma"].includes(f.g) || f.r === "Solemnidad" || f.r === "Fiesta") gloriaAuto = gloriaAuto || f.r !== "Feria"; }
+  if(/fieles difuntos/.test(f.c) || f.s === "Misas de difuntos"){ gloriaAuto = false; credoAuto = S.diaDom === true; }
   const gloria = S.gloria ?? gloriaAuto, credo = S.credo ?? credoAuto;
   notes.push({c: S.gloria === null ? "lock" : "warn", t:`Gloria: ${gloria ? "sí" : "no"}`, s: S.gloria === null ? "Según el rango y el tiempo litúrgico." : "Cambiado a mano."});
   notes.push({c: S.credo === null ? "lock" : "warn", t:`Credo: ${credo ? "sí" : "no"}`, s: S.credo === null ? "Domingos y solemnidades." : "Cambiado a mano."});
@@ -945,7 +1079,7 @@ function comunion(f, R, rub, txt, prop, completo){
     rub("Todos se dan la paz. El sacerdote parte el pan sobre la patena y deja caer una partícula en el cáliz, diciendo en secreto:");
     txt("ord.conmixtion");
     rub("Mientras tanto, se canta o se dice:"); txt("ord.cordero");
-    rub("El sacerdote, con las manos juntas, dice en secreto:"); altTxt(txt, "priv");
+    txt("ord.priv1", "Oración privada antes de comulgar"); txt("ord.priv2", "O bien:");
   }
   rub("Hace genuflexión, toma la hostia y, sosteniéndola un poco elevada sobre la patena o sobre el cáliz, de cara al pueblo, dice:");
   txt("ord.ostension");
@@ -1107,6 +1241,11 @@ function renderComponer(){
    <div class="stack">
     <div class="card">
       <h3>Celebración</h3>
+      <div class="row" style="margin-bottom:12px">
+        <div class="fld" style="flex:1 1 160px"><label for="c-fecha">Fecha</label><input id="c-fecha" type="date" value="${esc(S.fecha || iso(new Date()))}"></div>
+        ${fechaSel().getDay() === 0 ? `<div class="fld" style="flex:1 1 160px"><span class="lbl">Misa</span>${segHTML("vesp", [["false","Del domingo"],["true","Vespertina del sábado"]], !!S.vespertina)}</div>` : ""}
+        <button class="btn" id="c-hoy" type="button" style="align-self:flex-end">Misa de hoy</button>
+      </div>
       <div class="row">
         <div class="fld"><label for="c-sec">Sección del Misal</label><select id="c-sec">${SECCIONES.map(s => `<option ${s === f.s ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></div>
         <div class="fld"><label for="c-grp">Tiempo o grupo</label><select id="c-grp">${grupos.map(g => `<option ${g === f.g ? "selected" : ""}>${esc(g)}</option>`).join("")}</select></div>
@@ -1116,7 +1255,8 @@ function renderComponer(){
         <div class="fld" style="flex-basis:100%"><label for="c-cel">Celebración</label><select id="c-cel">${cels.map(x => `<option value="${x.id}" ${x.id === f.id ? "selected" : ""}>${esc(x.c)}${x.f ? " · " + esc(x.f) : ""}</option>`).join("")}${cels.some(x => x.id === f.id) ? "" : `<option value="${f.id}" selected>${esc(f.c)}</option>`}</select></div>
       </div>
       <div class="info">
-        ${f.r ? `<span class="chip">${esc(f.r)}</span>` : ""}${f.f ? `<span class="chip">${esc(f.f)}</span>` : ""}
+        <span class="chip acc">${esc(DIASN[fechaSel().getDay()])}${S.diaDom === false && f.r === "Domingo" ? " · se usa como feria" : ""}</span>
+        ${f.r && !(S.diaDom === false && f.r === "Domingo") ? `<span class="chip">${esc(f.r)}</span>` : ""}${f.f ? `<span class="chip">${esc(f.f)}</span>` : ""}
         ${f.pp ? `<span class="chip acc">Prefacio propio</span>` : ""}${f.o ? `<span class="chip">${esc(f.o)}</span>` : ""}
       </div>
     </div>
@@ -1127,7 +1267,7 @@ function renderComponer(){
       ${esp === "ramos" ? `<div class="opt"><span class="lbl">Conmemoración de la entrada</span>${segHTML("ramos", [["procesion","Procesión"],["solemne","Entrada solemne"],["simple","Entrada simple"]], S.ramos)}</div>` : ""}
       ${!["vigilia","viernes"].includes(esp) ? `<div class="opt"><span class="lbl">Saludo</span>${carHTML("saludo")}</div>` : ""}
 
-      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Acto penitencial</span>${carHTML("apModo")}</div>
+      ${!["vigilia","viernes","ceniza","presentacion"].includes(esp) && !(esp === "ramos" && S.ramos !== "simple") ? `<div class="opt"><span class="lbl">Aspersión del agua</span>${segHTML("apModo", [["asp","Sí"],["formula","No"]], S.ap === "asp" ? "asp" : "formula")}</div>
       ${S.ap !== "asp" ? `<div class="opt"><span class="lbl">Introducción</span>${carHTML("ap_inv")}</div>
       <div class="opt"><span class="lbl">Fórmula</span>${carHTML("ap")}</div>` : ""}` : ""}
       ${esp !== "viernes" ? `<div class="opt"><span class="lbl">Gloria <span class="auto">${S.gloria === null ? "automático" : "manual"}</span></span>${segHTML("gloria", [["auto","Según rúbricas"],["true","Sí"],["false","No"]], S.gloria === null ? "auto" : S.gloria)}</div>` : ""}
@@ -1184,7 +1324,6 @@ function renderComponer(){
       <div class="opt" style="margin-top:14px"><span class="lbl">Aclamación memorial</span>${carHTML("aclam")}</div>
       ${nVar("ord.pn_mon") > 1 ? `<div class="opt"><span class="lbl">Monición al Padrenuestro</span>${carHTML("pn_mon")}</div>` : ""}
       ${nVar("ord.paz_inv") > 1 ? `<div class="opt"><span class="lbl">Invitación a darse la paz</span>${carHTML("paz_inv")}</div>` : ""}
-      <div class="opt"><span class="lbl">Oración privada antes de comulgar</span>${carHTML("priv")}</div>
       <div class="opt"><span class="lbl">Misa con niños</span>${segHTML("ninos", [["false","No"],["true","Sí"]], S.ninos)}</div>
     </div>` : ""}
 
@@ -1325,6 +1464,7 @@ vc.addEventListener("click", e => {
     if(k === "gloria" || k === "credo") S[k] = v === "auto" ? null : v === "true";
     else if(["ninos","pentExt","recProp"].includes(k)) S[k] = v === "true";
     else if(k.startsWith("var.")) S.var[k.slice(4)] = +v;
+    else if(k === "vesp") S.vespertina = v === "true";
     else if(k === "apModo"){ if(v === "asp"){ if(S.ap !== "asp") S.apF = S.ap; S.ap = "asp"; } else S.ap = S.apF || "1"; }
     else if(k === "vigN") S[k] = +v;
     else S[k] = v;
@@ -1337,6 +1477,7 @@ vc.addEventListener("click", e => {
   if(b.dataset.addlect){ const ai = S.lect.findIndex(l => l.t === "aclamacion"); S.lect.splice(ai < 0 ? S.lect.length : ai, 0, {t:b.dataset.addlect, cita:"", txt:"", n: b.dataset.addlect === "lectura" ? "Lectura" : ""}); renderComponer(); return; }
   if(b.id === "reset-lect"){ S.lect = []; rehacerLecturas(); if(!S.lectSrc) S.lect.forEach(l => { l.cita = ""; l.txt = ""; }); renderComponer(); return; }
   if(b.id === "go-celebrar"){ mostrar("celebrar"); return; }
+  if(b.id === "c-hoy"){ const h = fechaInicial(); aplicarDia(h.fecha, h.vespertina); return; }
   if(b.id === "to-hoy"){ const h = semanaTO(); if(h){ S.toSem = h.sem; S.toDia = h.dia; S.toAnyo = h.anyo; rehacerLecturas(); renderComponer(); } return; }
   if(b.id === "ver-faltan"){ libGrupo = "Lo que falta en esta misa"; libKey = ""; mostrar("biblioteca"); return; }
   if(b.id === "g-guardar"){
@@ -1356,6 +1497,7 @@ vc.addEventListener("change", e => {
   else if(t.id === "c-intc"){ S.intc = t.value === "auto" ? null : t.value; renderComponer(); }
   else if(t.id === "c-ouk"){ S.ouKey = t.value; S.ou = t.value ? ouCuerpo(t.value) : ""; renderComponer(); }
   else if(t.id === "c-pref"){ S.pref = t.value; renderComponer(); }
+  else if(t.id === "c-fecha" && t.value){ aplicarDia(deIso(t.value), false); }
   else if(["c-tosem","c-todia","c-toanyo","c-lecotra"].includes(t.id)){
     const k = {"c-tosem":"toSem","c-todia":"toDia","c-toanyo":"toAnyo","c-lecotra":"lecOtra"}[t.id];
     S[k] = ["toSem","toDia"].includes(k) ? +t.value : t.value; rehacerLecturas(); renderComponer();
@@ -1369,26 +1511,28 @@ vc.addEventListener("input", e => {
   else if(t.id === "c-ou"){ S.ou = t.value; S.ouKey = ""; saveS(); }
   else if(t.id === "c-busca"){ filtroCel = t.value; clearTimeout(vc._t); vc._t = setTimeout(() => { renderComponer(); const i = $("#c-busca"); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }, 250); }
 });
-function cambiarCel(id){
+function cambiarCel(id, opt = {}){
   S.fid = id; S.gloria = null; S.credo = null; S.pref = ""; S.intc = null; S.recProp = true;
   const f = FM[id];
   S.bend = f.x.some(x => x[0] === "pueblo") && f.g === "Cuaresma" && f.r !== "Domingo" ? "pueblo" : "simple";
   if(S.bend === "pueblo") S.puebloN = "propia";
   if(f.e === "jueves") S.pe = "pe1";
   if(S.ap === "asp" && f.r !== "Domingo" && f.r !== "Solemnidad") S.ap = "1";
-  modoLecturasAuto(f);
-  rehacerLecturas(); ouAuto(); renderComponer();
+  modoLecturasAuto(f, opt.dia);
+  rehacerLecturas(); ouAuto(); if(!opt.noRender) renderComponer();
 }
 /* Elige de dónde salen las lecturas al cambiar de celebración */
-function modoLecturasAuto(f){
+function modoLecturasAuto(f, dia){
   S.lecModo = "propio";
-  const hoy = semanaTO();
+  if(dia && dia.lec){ S.lecModo = dia.lec.modo; S.lecOtra = dia.lec.clave; return; }
+  if(dia && dia.to && !dia.santo){ S.lecModo = "feria"; S.toSem = dia.to.sem; S.toDia = dia.to.dia; S.toAnyo = dia.to.anyo; return; }
+  const hoy = semanaTO(fechaSel());
   const propias = LEC.lecturas[`${f.id}.${S.ciclo}`] || LEC.lecturas[`${f.id}.T`];
   const deFeria = propias && /Memoria/.test(f.r) && propias.some(x => (x.nota || []).some(n => /^Ordinariamente, lecturas de la feria/.test(n)));
   if(deFeria && hoy){ S.lecModo = "feria"; S.toSem = hoy.sem; S.toDia = hoy.dia; S.toAnyo = hoy.anyo; return; }
   if(propias) return;
   const ferial = (f.g === "Tiempo ordinario" && f.r !== "Domingo") || (f.s === "Propio de los santos" && /Memoria/.test(f.r)) || f.s === "Comunes" || f.s === "Misas votivas" || f.s === "Misas por diversas necesidades";
-  if(ferial && hoy){ S.lecModo = "feria"; S.toSem = hoy.sem; S.toDia = hoy.dia; S.toAnyo = hoy.anyo; }
+  if(ferial && hoy && S.diaDom !== true){ S.lecModo = "feria"; S.toSem = hoy.sem; S.toDia = hoy.dia; S.toAnyo = hoy.anyo; }
   else if(f.g === "Tiempo ordinario" && f.r !== "Domingo"){ S.lecModo = "feria"; }
 }
 function lecHTML(){
@@ -1592,10 +1736,13 @@ $("#b-voz").onclick = () => {
   mostrarOido("", "Escuchando…"); iniciarVoz(); pedirWakeLock();
 };
 
+let arrancado = false;
+{ const h = fechaInicial(); aplicarDia(h.fecha, h.vespertina); }
 mostrar("componer");
 idb.get("leccionario").then(v => {
   if(!v || !v.lecturas) return;
   LEC = {lecturas: v.lecturas || {}, titulos: v.titulos || {}, apendice: v.apendice || {}};
+  { const h = fechaInicial(); if(S.fecha === iso(h.fecha)) aplicarDia(h.fecha, h.vespertina); }
   const f = FM[S.fid];
   if(S.lectSrc !== claveLecturas(f) && lecturasDelLeccionario(f)){ rehacerLecturas(); saveS(); }
   if(vista === "componer") renderComponer();
