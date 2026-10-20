@@ -2152,6 +2152,48 @@ addEventListener("resize", () => { if(!LB.on) return; clearTimeout(lbRs); const 
 let arrancado = false;
 { const h = fechaInicial(); aplicarDia(h.fecha, h.vespertina); }
 mostrar("componer");
+
+/* ---------- Carga automática de los archivos que están junto a la página ---------- */
+const firma = t => { let h = 2166136261; for(let i = 0; i < t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return t.length + ":" + (h >>> 0).toString(36); };
+async function leerJunto(nombre){
+  try{ const r = await fetch(nombre, {cache:"no-cache"}); if(!r.ok) return null; return await r.text(); }
+  catch(e){ return null; }
+}
+async function cargarJunto(){
+  const hechos = [];
+  const tb = await leerJunto("biblioteca-misal.json");
+  if(tb){
+    const f = firma(tb);
+    if(store.get("misa.auto.lib", "") !== f){
+      try{
+        const j = JSON.parse(tb), tx = j.textos || j; let n = 0;
+        for(const [k, v] of Object.entries(tx)) if(typeof v === "string"){ LIB[k] = v; n++; }
+        saveLib(); store.set("misa.auto.lib", f); hechos.push(`biblioteca (${n} textos)`);
+      }catch(e){}
+    }
+  }
+  const tl = await leerJunto("leccionario-misal.json");
+  if(tl){
+    const f = firma(tl);
+    if(store.get("misa.auto.lec", "") !== f){
+      try{
+        const j = JSON.parse(tl);
+        if(j.tipo === "leccionario-misal"){
+          Object.assign(LEC.lecturas, j.lecturas || {}); Object.assign(LEC.apendice, j.apendice || {}); LEC.titulos = Object.assign(LEC.titulos || {}, j.titulos || {});
+          const ok = await idb.set("leccionario", LEC);
+          if(ok){ store.set("misa.auto.lec", f); hechos.push(`leccionario (${Object.keys(j.lecturas || {}).length} celebraciones)`); }
+          const fm = FM[S.fid];
+          if(S.lectSrc !== claveLecturas(fm) && lecturasDelLeccionario(fm)){ rehacerLecturas(); saveS(); }
+        }
+      }catch(e){}
+    }
+  }
+  if(!hechos.length) return;
+  toast("Cargado de la carpeta: " + hechos.join(" y "));
+  if(vista === "componer") renderComponer();
+  if(vista === "biblioteca") renderBiblioteca();
+  if(vista === "celebrar") renderCelebrar();
+}
 idb.get("leccionario").then(v => {
   if(!v || !v.lecturas) return;
   LEC = {lecturas: v.lecturas || {}, titulos: v.titulos || {}, apendice: v.apendice || {}};
@@ -2161,7 +2203,7 @@ idb.get("leccionario").then(v => {
   if(vista === "componer") renderComponer();
   if(vista === "biblioteca") renderBiblioteca();
   if(vista === "celebrar") renderCelebrar();
-});
+}).finally(cargarJunto);
 </script>
 
 </body>
