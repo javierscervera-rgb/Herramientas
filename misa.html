@@ -1250,7 +1250,11 @@ function renderBiblioteca(){
   const n = Object.values(LIB).filter(v => v && v.trim()).length;
   $("#v-biblioteca").innerHTML = `
   <h1 class="view-title">Biblioteca de textos</h1>
-  <p class="lead">Aquí guardas los textos de tu Misal y tu Leccionario. Se guardan solo en este navegador; haz una copia de vez en cuando con «Exportar». Tienes ${n} textos cargados.</p>
+  <p class="lead">Aquí guardas los textos de tu Misal y tu Leccionario. Se guardan solo en este navegador; haz una copia de vez en cuando con «Exportar». Tienes ${n} textos y ${lecN()} juegos de lecturas cargados.</p>
+  <div class="row" style="margin:-6px 0 18px">
+    <label class="btn primary" for="l-imp" style="display:inline-block">Importar biblioteca</label>
+    <label class="btn primary" for="lec-imp" style="display:inline-block">Importar leccionario</label>
+  </div>
   <div class="lib">
     <div class="card">
       <div class="fld"><label for="l-grupo">Grupo</label><select id="l-grupo">${grupos.map(g => `<option ${g === libGrupo ? "selected" : ""}>${esc(g)}</option>`).join("")}</select></div>
@@ -1274,12 +1278,13 @@ function renderBiblioteca(){
           <label class="btn" for="l-imp" style="display:inline-block">Importar archivo</label><input id="l-imp" type="file" accept=".json,application/json" hidden>
           ${libConfirm ? `<span class="confirm"><span class="muted">¿Borrar los ${n} textos?</span><button class="btn danger" id="l-del-si">Sí, borrar</button><button class="btn" id="l-del-no">Cancelar</button></span>` : `<button class="btn danger" id="l-del">Borrar todo</button>`}
         </div>
-        <p class="muted" style="margin:10px 0 0">Al importar, los textos del archivo se añaden a los que ya tienes y sustituyen a los de la misma clave. El mismo botón sirve para la biblioteca y para el leccionario.</p>
+        <p class="muted" style="margin:10px 0 0">Al importar, los textos del archivo se añaden a los que ya tienes y sustituyen a los de la misma clave. Para las lecturas usa «Importar leccionario», más abajo.</p>
       </div>
       <div class="card">
         <h3>Leccionario</h3>
         <p class="muted" style="margin:0 0 10px">${lecN() ? `Tienes lecturas para ${lecN()} celebraciones (cada ciclo cuenta aparte).` : "Aún no has importado ningún leccionario."}</p>
         <div class="row">
+          <label class="btn primary" for="lec-imp" style="display:inline-block">Importar leccionario</label><input id="lec-imp" type="file" accept=".json,application/json" hidden>
           <button class="btn" id="lec-exp" ${lecN() ? "" : "disabled"}>Exportar leccionario</button>
           ${lecConfirm ? `<span class="confirm"><span class="muted">¿Borrar el leccionario?</span><button class="btn danger" id="lec-del-si">Sí, borrar</button><button class="btn" id="lec-del-no">Cancelar</button></span>` : `<button class="btn danger" id="lec-del" ${lecN() ? "" : "disabled"}>Borrar leccionario</button>`}
         </div>
@@ -1449,11 +1454,12 @@ vb.addEventListener("input", e => {
 vb.addEventListener("change", e => {
   const t = e.target;
   if(t.id === "l-grupo"){ libGrupo = t.value; libKey = ""; libFiltro = ""; renderBiblioteca(); }
-  if(t.id === "l-imp" && t.files[0]){
+  if((t.id === "l-imp" || t.id === "lec-imp") && t.files[0]){
     const r = new FileReader();
     r.onload = () => {
       try{
         const j = JSON.parse(r.result);
+        if(t.id === "lec-imp" && j.tipo !== "leccionario-misal"){ toast("Este archivo no es un leccionario. Usa «Importar archivo» para la biblioteca."); t.value = ""; return; }
         if(j.tipo === "leccionario-misal"){
           const n = Object.keys(j.lecturas || {}).length;
           Object.assign(LEC.lecturas, j.lecturas || {}); Object.assign(LEC.apendice, j.apendice || {}); LEC.titulos = Object.assign(LEC.titulos || {}, j.titulos || {});
