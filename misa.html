@@ -181,6 +181,33 @@ select:disabled{opacity:.55}
 .lb-page::before{content:"";position:absolute;inset:0 auto 0 0;width:26px;border-radius:2px 0 0 2px;pointer-events:none;
   background:linear-gradient(to right,rgba(80,60,40,.16),rgba(80,60,40,0))}
 .lb-vp{position:absolute;inset:var(--lb-pt) var(--lb-px) var(--lb-pb);overflow:hidden}
+.lb-runL,.lb-vpR,.lb-lomo,.lb-leaf .back .lb-vp,.lb-guarda[hidden]{display:none}
+.lb-guarda{height:100%;break-after:column}
+.lb-leaf .shade2{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,.16),rgba(0,0,0,0) 55%);opacity:0}
+/* Libro abierto: dos páginas con lomo central */
+#libro.lb-doble .lb-page{width:min(100%,1640px);border-radius:4px;
+  box-shadow:1px 1px 0 #ebe5d9,2px 2px 0 #cfc7b8,3px 3px 0 #f1ece2,4px 4px 0 #c9c0b0,5px 5px 0 #ede7dc,6px 6px 0 #c3baa9,
+    -1px 1px 0 #ebe5d9,-2px 2px 0 #cfc7b8,-3px 3px 0 #f1ece2,-4px 4px 0 #c9c0b0,-5px 5px 0 #ede7dc,-6px 6px 0 #c3baa9,
+    0 24px 50px rgba(0,0,0,.55),0 4px 10px rgba(0,0,0,.35);
+  background:linear-gradient(to right,#f3eee4 0,#fbf8f1 6%,#fbf8f1 44%,#efe9de 49.4%,#e4ddcf 50%,#efe9de 50.6%,#fbf8f1 56%,#fbf8f1 94%,#f3eee4 100%)}
+#libro.lb-doble .lb-page::before{display:none}
+#libro.lb-doble .lb-lomo{display:block;position:absolute;top:0;bottom:0;left:50%;width:120px;transform:translateX(-50%);pointer-events:none;z-index:4;
+  background:linear-gradient(to right,rgba(60,40,20,0) 0,rgba(60,40,20,.05) 30%,rgba(60,40,20,.2) 47%,rgba(40,25,10,.34) 50%,rgba(60,40,20,.2) 53%,rgba(60,40,20,.05) 70%,rgba(60,40,20,0) 100%)}
+#libro.lb-doble .lb-vp{left:var(--lb-px);right:calc(50% + var(--lb-pi))}
+#libro.lb-doble .lb-vpR{display:block;left:calc(50% + var(--lb-pi));right:var(--lb-px)}
+#libro.lb-doble .lb-runL{display:flex;left:var(--lb-px);right:calc(50% + var(--lb-pi))}
+#libro.lb-doble .lb-runR{left:calc(50% + var(--lb-pi));right:var(--lb-px)}
+#libro.lb-doble .lb-runL .n{margin-right:1em}
+#libro.lb-doble .lb-runL{justify-content:flex-start}
+#libro.lb-doble .lb-leaf{left:50%;right:0}
+#libro.lb-doble .lb-leaf .face{border-radius:0 4px 4px 0;background:linear-gradient(to right,#e9e2d5 0,#f6f2ea 6%,#fbf8f1 14%,#fbf8f1 94%,#f3eee4 100%)}
+#libro.lb-doble .lb-leaf .back{border-radius:4px 0 0 4px;background:linear-gradient(to left,#e9e2d5 0,#f6f2ea 6%,#fbf8f1 14%,#fbf8f1 94%,#f3eee4 100%)}
+#libro.lb-doble .lb-leaf .front .lb-vp{left:var(--lb-pi);right:var(--lb-px)}
+#libro.lb-doble .lb-leaf .back .lb-vp{display:block;left:var(--lb-px);right:var(--lb-pi)}
+#libro.lb-doble .lb-cast{left:50%;background:linear-gradient(to right,rgba(0,0,0,.24),rgba(0,0,0,0) 70%)}
+#libro.lb-doble .lb-cast.izq{left:0;right:50%;background:linear-gradient(to left,rgba(0,0,0,.24),rgba(0,0,0,0) 70%)}
+#libro.lb-doble .lb-stage{padding-inline:22px}
+#libro.lb-full.lb-doble .lb-page{border-radius:0;box-shadow:none}
 .lb-run{position:absolute;left:var(--lb-px);right:var(--lb-px);top:calc(var(--lb-pt)*.38);display:flex;justify-content:space-between;
   font-family:var(--f-sc);font-size:12px;letter-spacing:.14em;color:#a3281f;pointer-events:none}
 .lb-run .n{color:#8b8174;font-family:var(--f-ui);letter-spacing:0;font-variant-numeric:tabular-nums}
@@ -267,12 +294,15 @@ select:disabled{opacity:.55}
   </div>
   <div class="lb-stage" id="lb-stage">
     <div class="lb-page" id="lb-page">
-      <div class="lb-run"><span id="lb-sec"></span><span class="n" id="lb-pn"></span></div>
+      <div class="lb-run lb-runL"><span class="n" id="lb-pnL"></span><span id="lb-secL"></span></div>
+      <div class="lb-run lb-runR"><span id="lb-sec"></span><span class="n" id="lb-pn"></span></div>
       <div class="lb-vp" id="lb-vp"><div class="lb-flow" id="lb-flow"></div></div>
+      <div class="lb-vp lb-vpR" id="lb-vpR"><div class="lb-flow" id="lb-flowR"></div></div>
+      <div class="lb-lomo" aria-hidden="true"></div>
       <div class="lb-cast" id="lb-cast"></div>
       <div class="lb-leaf" id="lb-leaf">
         <div class="face front"><div class="lb-vp"><div class="lb-flow" id="lb-flow2"></div></div><div class="shade"></div></div>
-        <div class="face back"></div>
+        <div class="face back"><div class="lb-vp"><div class="lb-flow" id="lb-flow3"></div></div><div class="shade2"></div></div>
       </div>
     </div>
     <div class="lb-hear" id="lb-hear" hidden></div>
@@ -1303,8 +1333,8 @@ function parseTexto(s){
     const html = lines.map(l => {
       let m;
       if((m = l.match(/^\s*(?:\*|\[)(.*?)\]?\s*$/))) return `<span class="rub-in">${esc(m[1].trim())}</span>`;
-      if((m = l.match(/^\s*(?:℟|R\.|R\/)\s*(.*)$/))) return `<span class="vr">℟.</span><span class="r">${esc(m[1])}</span>`;
-      if((m = l.match(/^\s*(?:℣|V\.|V\/)\s*(.*)$/))) return `<span class="vr">℣.</span>${esc(m[1])}`;
+      if((m = l.match(/^\s*(?:℟\.?|R\/\.?|R\.)\s*(.*)$/))) return `<span class="vr">℟.</span><span class="r">${esc(m[1])}</span>`;
+      if((m = l.match(/^\s*(?:℣\.?|V\/\.?|V\.)\s*(.*)$/))) return `<span class="vr">℣.</span>${esc(m[1])}`;
       return esc(l);
     }).join("<br>");
     return {html, plain: rubOnly ? "" : lines.join(" ")};
@@ -1886,8 +1916,8 @@ function seguir(palabras){
   const frac = Math.min(1, bestPos / seg.w.length);
   if(LB.on){
     const pg = paginaDe(seg.el, frac);
-    if(pg > LB.page) irA(pg);
-    else if(pg === LB.page && !LB.busy && finDePagina(best, bestPos)) irA(LB.page + 1);
+    if(pg > ultimaVista()) irA(pg);
+    else if(pg >= LB.page && !LB.busy && finDePagina(best, bestPos)) irA(LB.page + LB.span);
     if(frac > 0.85 && best + 1 < SEGS.length) vozIdx = best + (seg.w.length - bestPos < 3 ? 1 : 0);
     return;
   }
@@ -1932,8 +1962,10 @@ $("#b-voz").onclick = () => {
 
 
 /* ---------- Vista libro ---------- */
-const LB = {on:false, page:0, n:1, W:0, G:0, busy:false, secs:[], auto:false, autoT:null, seg:store.get("misa.lbseg", 45)};
+const LB = {on:false, page:0, n:1, W:0, G:0, span:1, busy:false, secs:[], auto:false, autoT:null, seg:store.get("misa.lbseg", 45)};
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+// Libro abierto (dos páginas) en tableta u ordenador apaisados
+const quiereDoble = () => innerWidth >= 900 && innerWidth > innerHeight * 1.15;
 function contenidoLibro(){
   const f = FM[S.fid], src = $("#lectura"); if(!src) return "";
   const c = src.cloneNode(true);
@@ -1945,31 +1977,37 @@ function contenidoLibro(){
   });
   c.querySelectorAll("[id]").forEach(e => e.removeAttribute("id"));
   const NUEVAS = ["liturgia de la palabra","liturgia eucaristica","plegaria eucaristica","rito de la comunion","rito de conclusion"];
-  const nrm = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  const nrm = t => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
   c.querySelectorAll("h2.sec").forEach(h => { if(NUEVAS.includes(nrm(h.textContent))) h.classList.add("nueva"); });
   c.querySelectorAll(".now").forEach(e => e.classList.remove("now"));
-  return `<div class="lb-portada"><div class="eyebrow">${esc(f.g)}${f.f ? " · " + esc(f.f) : ""}</div><h1>${esc(f.c)}</h1>
+  return `<div class="lb-guarda" aria-hidden="true"></div><div class="lb-portada"><div class="eyebrow">${esc(f.g)}${f.f ? " · " + esc(f.f) : ""}</div><h1>${esc(f.c)}</h1>
     ${f.r ? `<div class="eyebrow">${esc(f.r)}</div>` : ""}<div class="orn">✠</div>${ORN.portada ? `<img class="lb-med" src="${ORN.portada.src}" alt="">` : ""}</div>` + c.innerHTML + `<div class="end">Fin de la celebración</div>`;
 }
+const FLOWS = () => ["#lb-flow", "#lb-flowR", "#lb-flow2", "#lb-flow3"].map(s => $(s));
 function medidas(){
-  const pg = $("#lb-page"), w = pg.clientWidth, h = pg.clientHeight;
+  const lb = $("#libro"), pg = $("#lb-page");
+  lb.classList.toggle("lb-doble", quiereDoble());
+  LB.span = lb.classList.contains("lb-doble") ? 2 : 1;
+  const w = pg.clientWidth / LB.span, h = pg.clientHeight;
   const px = Math.round(Math.max(22, Math.min(64, w * 0.075))), pt = Math.round(Math.max(36, Math.min(70, h * 0.075))), pb = Math.round(Math.max(28, Math.min(56, h * 0.06)));
-  const full = $("#libro").classList.contains("lb-full");
+  const full = lb.classList.contains("lb-full");
   const pb2 = full ? Math.max(pb, $(".lb-bar").offsetHeight + 22) : pb, pt2 = full ? Math.max(pt, 44) : pt;
   pg.style.setProperty("--lb-pb", pb2 + "px"); pg.style.setProperty("--lb-pt", pt2 + "px");
   pg.style.setProperty("--lb-px", px + "px");
+  pg.style.setProperty("--lb-pi", Math.round(px * 1.15) + "px");   // margen junto al lomo
 }
 function paginar(ancla){
   const fl = $("#lb-flow"), vp = $("#lb-vp");
   medidas();
   LB.W = vp.clientWidth; LB.G = Math.round(LB.W * 0.12) + 40;
-  for(const e of [fl, $("#lb-flow2")]){ e.style.width = LB.W + "px"; e.style.columnWidth = LB.W + "px"; e.style.columnGap = LB.G + "px"; }
+  for(const e of FLOWS()){ e.style.width = LB.W + "px"; e.style.columnWidth = LB.W + "px"; e.style.columnGap = LB.G + "px"; }
   fl.style.transform = "none";
+  fl.querySelector(".lb-guarda").hidden = LB.span < 2;   // en el libro abierto la portada cae en la página derecha
   fl.querySelectorAll(".lb-orn").forEach(e => e.remove());
   const med = fl.querySelector(".lb-med"), por = fl.querySelector(".lb-portada");
   if(med){
     med.style.height = "0px"; med.style.width = "0px";
-    const H = $("#lb-vp").clientHeight, libre = H - por.offsetHeight - 16;
+    const H = vp.clientHeight, libre = H - por.offsetHeight - 16;
     const lado = Math.max(0, Math.min(libre, LB.W * 0.82));
     med.style.width = Math.floor(lado / ORN.portada.r) + "px"; med.style.height = Math.floor(lado) + "px";
     med.hidden = lado < 80;
@@ -1979,15 +2017,16 @@ function paginar(ancla){
   let maxR = 0; for(const el of fl.children){ for(const r of el.getClientRects()) maxR = Math.max(maxR, r.right - base); }
   LB.n = Math.max(1, Math.round((maxR + LB.G) / (LB.W + LB.G)));
   LB.secs = [...fl.querySelectorAll("h2.sec")].map(h => ({t: h.textContent, p: Math.round((h.getBoundingClientRect().left - base) / (LB.W + LB.G))}));
-  $("#lb-flow2").innerHTML = fl.innerHTML;
-  LB.page = Math.min(LB.n - 1, ancla ? paginaDe(ancla, 0) : LB.page);
+  const html = fl.innerHTML; for(const e of FLOWS().slice(1)) e.innerHTML = html;
+  LB.page = inicio(ancla ? paginaDe(ancla, 0) : LB.page);
   pintar();
 }
+const inicio = p => { p = Math.max(0, Math.min(LB.n - 1, p)); return p - p % LB.span; };
+const ultimaVista = () => Math.min(LB.n - 1, LB.page + LB.span - 1);
 const ORN_SEC = {"liturgia de la palabra":"ihs","liturgia eucaristica":"virgen","plegaria eucaristica":"cruz","rito de la comunion":"altar","rito de conclusion":"ihs"};
 function rellenarHuecos(fl){
   const H = $("#lb-vp").clientHeight, fr = fl.getBoundingClientRect(), paso = LB.W + LB.G;
   const pagina = x => Math.round((x - fr.left) / paso);
-  // fondo ocupado por página
   const fondo = {};
   for(const el of fl.querySelectorAll("p, h1, h2, span.lbl-t, div.missing, div.end, div.lb-portada, li")){
     for(const r of el.getClientRects()){ if(!r.height) continue; const p = pagina(r.left); fondo[p] = Math.max(fondo[p] || 0, r.bottom - fr.top); }
@@ -1997,13 +2036,12 @@ function rellenarHuecos(fl){
     const r = h.getClientRects()[0]; if(!r) continue;
     const p = pagina(r.left) - 1; if(p < 1 || fondo[p] === undefined) continue;
     const libre = H - fondo[p] - 18; if(libre < 90) continue;
-    const k = h.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const k = h.textContent.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
     huecos.push({h, libre, k: ORN_SEC[k] || "ihs"});
   }
   for(const {h, libre, k} of huecos){
     let im = ORN[k];
     if(!im) continue;
-    // si el dibujo no cabe al 60 % del ancho, prueba con el más apaisado
     if(LB.W * 0.6 * im.r > libre && ORN.ihs) im = ORN.ihs;
     const w = Math.min(LB.W * 0.92, libre / im.r), alto = Math.min(libre, w * im.r);
     if(w < LB.W * 0.4) continue;
@@ -2019,57 +2057,79 @@ function paginaDe(el, frac){
   const r = rs[Math.min(rs.length - 1, Math.floor((frac || 0) * rs.length))];
   return Math.max(0, Math.min(LB.n - 1, Math.round((r.left - base) / (LB.W + LB.G))));
 }
-// ¿se ha leído el final del último párrafo en negro de la página actual?
+// ¿se ha leído el final del último párrafo en negro de lo que se ve?
 function finDePagina(i, pos){
-  const fl = $("#lb-flow"), base = fl.getBoundingClientRect().left, paso = LB.W + LB.G;
+  const fl = $("#lb-flow"), base = fl.getBoundingClientRect().left, paso = LB.W + LB.G, ult = ultimaVista();
   const pag = el => [...el.getClientRects()].filter(r => r.height).map(r => ({p: Math.round((r.left - base) / paso), h: r.height}));
-  for(let j = i + 1; j < SEGS.length; j++){ const rs = pag(SEGS[j].el); if(!rs.length) continue; if(rs[0].p <= LB.page) return false; break; }
+  for(let j = i + 1; j < SEGS.length; j++){ const rs = pag(SEGS[j].el); if(!rs.length) continue; if(rs[0].p <= ult) return false; break; }
   const rs = pag(SEGS[i].el), tot = rs.reduce((a, r) => a + r.h, 0); if(!tot) return false;
-  const aqui = rs.filter(r => r.p <= LB.page).reduce((a, r) => a + r.h, 0) / tot;
-  if(aqui >= 0.999 && SEGS[i].w.length - pos <= 2) return LB.page < LB.n - 1;
+  const aqui = rs.filter(r => r.p <= ult).reduce((a, r) => a + r.h, 0) / tot;
+  if(aqui >= 0.999 && SEGS[i].w.length - pos <= 2) return LB.page + LB.span <= LB.n - 1;
   return aqui < 0.999 && aqui * SEGS[i].w.length - pos <= 1.5;
 }
 const posX = p => `translateX(${-p * (LB.W + LB.G)}px)`;
+const numero = p => LB.span > 1 ? p : p + 1;   // la guarda del libro abierto no lleva número
+const seccionDe = p => { const s = LB.secs.filter(x => x.p <= p).pop(); return s ? s.t : ""; };
 function pintar(){
-  $("#lb-flow").style.transform = posX(LB.page);
-  $("#lb-num").textContent = `${LB.page + 1} / ${LB.n}`;
-  $("#lb-pn").textContent = LB.page ? LB.page + 1 : "";
-  const s = LB.secs.filter(x => x.p <= LB.page).pop();
-  $("#lb-sec").textContent = LB.page && s ? s.t : "";
-  $("#lb-prev").disabled = LB.page <= 0; $("#lb-next").disabled = LB.page >= LB.n - 1;
+  const p = LB.page, d = LB.span > 1;
+  $("#lb-flow").style.transform = posX(p);
+  $("#lb-flowR").style.transform = posX(p + 1);
+  $("#lb-vpR").style.visibility = d && p + 1 < LB.n ? "visible" : "hidden";
+  const tot = numero(LB.n - 1);
+  if(d){
+    const a = p > 1 ? numero(p) : "", b = p + 1 < LB.n ? numero(p + 1) : "";
+    $("#lb-num").textContent = `${a && b ? a + "–" + b : a || b} / ${tot}`;
+    $("#lb-pnL").textContent = a; $("#lb-secL").textContent = p > 1 ? seccionDe(p) : "";
+    $("#lb-pn").textContent = p > 0 && b ? b : ""; $("#lb-sec").textContent = p > 0 && b ? seccionDe(p + 1) : "";
+  } else {
+    $("#lb-num").textContent = `${p + 1} / ${LB.n}`;
+    $("#lb-pn").textContent = p ? p + 1 : ""; $("#lb-sec").textContent = p ? seccionDe(p) : "";
+    $("#lb-pnL").textContent = $("#lb-secL").textContent = "";
+  }
+  $("#lb-prev").disabled = p <= 0; $("#lb-next").disabled = p + LB.span > LB.n - 1;
 }
 function anclaActual(){
   const fl = $("#lb-flow"), base = fl.getBoundingClientRect().left, x0 = base + LB.page * (LB.W + LB.G);
   for(const el of fl.querySelectorAll("p.s, p.rub, h2.sec, .lbl-t")){
-    for(const r of el.getClientRects()) if(r.left >= x0 - 2 && r.left < x0 + LB.W) return el;
+    for(const r of el.getClientRects()) if(r.left >= x0 - 2 && r.left < x0 + LB.W * LB.span + LB.G * (LB.span - 1)) return el;
   }
   return null;
 }
 function irA(p){
-  p = Math.max(0, Math.min(LB.n - 1, p));
+  p = inicio(p);
   if(p === LB.page) return;
   if(LB.busy){ LB.busyEnd && LB.busyEnd(); }
   if(reduce.matches){ LB.page = p; pintar(); return; }
-  const fwd = p > LB.page, leaf = $("#lb-leaf"), f2 = $("#lb-flow2"), cast = $("#lb-cast"), shade = leaf.querySelector(".shade");
-  f2.style.transform = posX(fwd ? LB.page : p);
-  leaf.style.transition = "none"; shade.style.transition = cast.style.transition = "none";
-  leaf.style.transform = fwd ? "rotateY(0deg)" : "rotateY(-179deg)";
-  shade.style.opacity = fwd ? 0 : 1; cast.style.opacity = fwd ? 0 : .9;
+  const fwd = p > LB.page, d = LB.span > 1, old = LB.page;
+  const leaf = $("#lb-leaf"), cast = $("#lb-cast"), shade = leaf.querySelector(".shade"), shade2 = leaf.querySelector(".shade2");
+  // hoja que gira: en el libro abierto, la página derecha (adelante) o la izquierda (atrás) sobre el lomo
+  if(d){
+    $("#lb-flow2").style.transform = posX(fwd ? old + 1 : p + 1);   // anverso: página derecha
+    $("#lb-flow3").style.transform = posX(fwd ? p : old);           // reverso: página izquierda
+  } else $("#lb-flow2").style.transform = posX(fwd ? old : p);
+  cast.classList.toggle("izq", d && !fwd);
+  leaf.style.transition = "none"; shade.style.transition = shade2.style.transition = cast.style.transition = "none";
+  leaf.style.transform = fwd ? "rotateY(0deg)" : "rotateY(-179.5deg)";
+  shade.style.opacity = fwd ? 0 : 1; shade2.style.opacity = fwd ? 1 : 0; cast.style.opacity = fwd ? 0 : .9;
   leaf.style.display = "block";
-  if(fwd){ LB.page = p; pintar(); }
+  // debajo de la hoja: hacia delante se ve ya la página nueva; hacia atrás, la anterior
+  if(d){
+    if(fwd){ $("#lb-flowR").style.transform = posX(p + 1); $("#lb-vpR").style.visibility = p + 1 < LB.n ? "visible" : "hidden"; }
+    else { $("#lb-flow").style.transform = posX(p); }
+  } else if(fwd){ LB.page = p; pintar(); }
   LB.busy = true;
-  const dur = 620;
-  const fin = () => { if(!LB.busy) return; LB.busy = false; LB.busyEnd = null; clearTimeout(t); leaf.style.display = "none"; cast.style.opacity = 0; if(!fwd){ LB.page = p; pintar(); } };
+  const dur = d ? 760 : 620;
+  const fin = () => { if(!LB.busy) return; LB.busy = false; LB.busyEnd = null; clearTimeout(t); leaf.style.display = "none"; cast.style.opacity = 0; LB.page = p; pintar(); };
   LB.busyEnd = fin;
   requestAnimationFrame(() => requestAnimationFrame(() => {
     const ease = `${dur}ms cubic-bezier(.32,.08,.24,1)`;
-    leaf.style.transition = `transform ${ease}`; shade.style.transition = cast.style.transition = `opacity ${ease}`;
-    leaf.style.transform = fwd ? "rotateY(-179deg)" : "rotateY(0deg)";
-    shade.style.opacity = fwd ? 1 : 0; cast.style.opacity = fwd ? .9 : 0;
+    leaf.style.transition = `transform ${ease}`; shade.style.transition = shade2.style.transition = cast.style.transition = `opacity ${ease}`;
+    leaf.style.transform = fwd ? "rotateY(-179.5deg)" : "rotateY(0deg)";
+    shade.style.opacity = fwd ? 1 : 0; shade2.style.opacity = fwd ? 0 : 1; cast.style.opacity = fwd ? .9 : 0;
   }));
   const t = setTimeout(fin, dur + 40);
 }
-const siguiente = () => irA(LB.page + 1), anterior = () => irA(LB.page - 1);
+const siguiente = () => irA(LB.page + LB.span), anterior = () => irA(LB.page - LB.span);
 function abrirLibro(){
   if(vista !== "celebrar") return;
   const vis = SEGS.find(s => s.el.getBoundingClientRect().bottom > innerHeight * 0.15);
@@ -2114,7 +2174,7 @@ $("#lb-mas").onclick = () => tamLibro(2); $("#lb-menos").onclick = () => tamLibr
 $("#lb-voz").onclick = () => {
   if(vozOn){ pararVoz(); return; }
   pararAutoLibro();
-  const fl = $("#lb-flow"); vozIdx = Math.max(0, SEGS.findIndex(s => paginaDe(s.el, 0) >= LB.page));
+  vozIdx = Math.max(0, SEGS.findIndex(s => paginaDe(s.el, 0) >= LB.page));
   vozOn = true; oidas = []; $("#lb-voz").setAttribute("aria-pressed", "true");
   mostrarOido("", "Escuchando…"); iniciarVoz(); pedirWakeLock();
 };
@@ -2122,7 +2182,7 @@ $("#lb-auto").onclick = () => {
   if(LB.auto){ pararAutoLibro(); return; }
   if(vozOn) pararVoz();
   LB.auto = true; $("#lb-auto").setAttribute("aria-pressed", "true");
-  LB.autoT = setInterval(() => { if(LB.page >= LB.n - 1) pararAutoLibro(); else siguiente(); }, LB.seg * 1000);
+  LB.autoT = setInterval(() => { if(LB.page + LB.span > LB.n - 1) pararAutoLibro(); else siguiente(); }, LB.seg * LB.span * 1000);
   toast(`Página cada ${LB.seg} s`);
 };
 const ritmo = d => { LB.seg = Math.max(10, Math.min(180, LB.seg + d)); store.set("misa.lbseg", LB.seg); toast(`Página cada ${LB.seg} s`); if(LB.auto){ pararAutoLibro(); $("#lb-auto").onclick(); } };
@@ -2141,7 +2201,8 @@ document.addEventListener("keydown", e => {
     if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)){ dx < 0 ? siguiente() : anterior(); return; }
     if(Math.abs(dx) < 8 && Math.abs(dy) < 8 && Date.now() - t0 < 500){
       const r = $("#lb-page").getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
-      if(fx > 0.66) siguiente(); else if(fx < 0.34) anterior();
+      const lim = LB.span > 1 ? [0.5, 0.5] : [0.34, 0.66];
+      if(fx > lim[1] && (LB.span < 2 || fx > 0.62)) siguiente(); else if(fx < lim[0] && (LB.span < 2 || fx < 0.38)) anterior();
       else if($("#libro").classList.contains("lb-full")){ const bar = $(".lb-bar"); bar.classList.add("vis"); clearTimeout(bar._t); bar._t = setTimeout(() => bar.classList.remove("vis"), 3000); }
     }
   });
