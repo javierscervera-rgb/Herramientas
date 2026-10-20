@@ -2108,9 +2108,10 @@ function irA(p){
     $("#lb-flow3").style.transform = posX(fwd ? p : old);           // reverso: página izquierda
   } else $("#lb-flow2").style.transform = posX(fwd ? old : p);
   cast.classList.toggle("izq", d && !fwd);
-  leaf.style.transition = "none"; shade.style.transition = shade2.style.transition = cast.style.transition = "none";
-  leaf.style.transform = fwd ? "rotateY(0deg)" : "rotateY(-179.5deg)";
-  shade.style.opacity = fwd ? 0 : 1; shade2.style.opacity = fwd ? 1 : 0; cast.style.opacity = fwd ? 0 : .9;
+  const front = leaf.querySelector(".front"), back = leaf.querySelector(".back");
+  leaf.getAnimations({subtree:true}).forEach(a => a.cancel()); cast.getAnimations().forEach(a => a.cancel());
+  leaf.style.transition = shade.style.transition = shade2.style.transition = cast.style.transition = "none";
+  leaf.style.transform = fwd ? "rotateY(0deg)" : "rotateY(-180deg)";
   leaf.style.display = "block";
   // debajo de la hoja: hacia delante se ve ya la página nueva; hacia atrás, la anterior
   if(d){
@@ -2118,16 +2119,25 @@ function irA(p){
     else { $("#lb-flow").style.transform = posX(p); }
   } else if(fwd){ LB.page = p; pintar(); }
   LB.busy = true;
-  const dur = d ? 760 : 620;
-  const fin = () => { if(!LB.busy) return; LB.busy = false; LB.busyEnd = null; clearTimeout(t); leaf.style.display = "none"; cast.style.opacity = 0; LB.page = p; pintar(); };
+  const dur = d ? 760 : 640;
+  // curva simétrica: la hoja pasa por los 90° justo a mitad del tiempo, y ahí se cambia de cara
+  const curva = "cubic-bezier(.45,.05,.55,.95)", op = {duration: dur, fill: "forwards"};
+  const giro = leaf.animate([{transform: fwd ? "rotateY(0deg)" : "rotateY(-180deg)"}, {transform: fwd ? "rotateY(-180deg)" : "rotateY(0deg)"}], {...op, easing: curva});
+  const cara = (el, ver) => { const a = ver ? 0 : 1, z = ver ? 1 : 0;
+    return el.animate([{opacity: a, offset: 0}, {opacity: a, offset: 0.5}, {opacity: z, offset: 0.5}, {opacity: z, offset: 1}], {...op, easing: "linear"}); };
+  cara(front, !fwd); cara(back, fwd);
+  shade.animate([{opacity: fwd ? 0 : 1}, {opacity: fwd ? 1 : 0}], {...op, easing: curva});
+  shade2.animate([{opacity: fwd ? 1 : 0}, {opacity: fwd ? 0 : 1}], {...op, easing: curva});
+  cast.animate([{opacity: fwd ? 0 : .9}, {opacity: fwd ? .9 : 0}], {...op, easing: curva});
+  const fin = () => {
+    if(!LB.busy) return; LB.busy = false; LB.busyEnd = null;
+    LB.page = p; pintar();
+    leaf.style.display = "none";
+    leaf.getAnimations({subtree:true}).forEach(a => a.cancel()); cast.getAnimations().forEach(a => a.cancel());
+    cast.style.opacity = 0;
+  };
   LB.busyEnd = fin;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    const ease = `${dur}ms cubic-bezier(.32,.08,.24,1)`;
-    leaf.style.transition = `transform ${ease}`; shade.style.transition = shade2.style.transition = cast.style.transition = `opacity ${ease}`;
-    leaf.style.transform = fwd ? "rotateY(-179.5deg)" : "rotateY(0deg)";
-    shade.style.opacity = fwd ? 1 : 0; shade2.style.opacity = fwd ? 0 : 1; cast.style.opacity = fwd ? .9 : 0;
-  }));
-  const t = setTimeout(fin, dur + 40);
+  giro.onfinish = fin;
 }
 const siguiente = () => irA(LB.page + LB.span), anterior = () => irA(LB.page - LB.span);
 function abrirLibro(){
