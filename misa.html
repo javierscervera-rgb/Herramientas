@@ -138,7 +138,8 @@ select:disabled{opacity:.55}
 #lectura p.s.now{border-left-color:var(--rub)}
 #lectura .r{font-weight:700}
 #lectura p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.45}
-#lectura p.s.secreta{font-size:calc(var(--fs) - 2px)}
+#lectura p.s.secreta{font-size:calc(var(--fs) - 2px);font-style:italic}
+#lectura p.s.capital::first-letter{float:left;font-size:3.2em;line-height:.82;margin:.07em .1em 0 0;color:var(--rub);font-weight:500;font-style:normal}
 #lectura .cruz{color:var(--rub)}
 #lectura p.s.consagra::first-letter{float:left;font-size:3.2em;line-height:.82;margin:.07em .1em 0 0;color:var(--rub);font-weight:500}
 #lectura .vr{color:var(--rub);font-weight:700;margin-right:.3em}
@@ -262,7 +263,8 @@ select:disabled{opacity:.55}
 .lb-flow p.s{margin:.2em 0 .5em;padding:1px 5px 1px 9px;margin-left:0;border-left:3px solid transparent;transition:border-color .3s}
 .lb-flow p.s.now{border-left-color:#a3281f}
 .lb-flow p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.42;margin:.4em 0 .7em}
-.lb-flow p.s.secreta{font-size:calc(var(--fs) - 2px)}
+.lb-flow p.s.secreta{font-size:calc(var(--fs) - 2px);font-style:italic}
+.lb-flow p.s.capital::first-letter{float:left;font-size:3.3em;line-height:.8;margin:.06em .09em 0 0;color:#a3281f;font-weight:500;font-style:normal}
 .lb-flow .cruz{color:#a3281f}
 .lb-flow > .lb-alt{margin-left:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .lb-flow .lb-alt > :not(p.s){margin-left:12px}
@@ -1559,6 +1561,12 @@ function parseTexto(s){
     return {html, plain: rubOnly ? "" : lines.join(" ")};
   });
 }
+// párrafos de un texto; con cap, el primero que se dice lleva letra capitular (inicio del prefacio)
+function parrafosHTML(tx, cap){
+  let hecho = !cap;
+  return parseTexto(tx).map(p => { const c = !hecho && p.plain.trim() ? (hecho = true, " capital") : "";
+    return `<p class="s${c}" data-plain="${esc(p.plain)}">${p.html}</p>`; }).join("");
+}
 let SEGS = [];
 function renderCelebrar(){
   const f = FM[S.fid], B = buildOrder();
@@ -1586,13 +1594,13 @@ function renderCelebrar(){
         h += `<div class="alt" data-car="${b.alt}"><div class="alt-track">${L.map((x, i) => {
           let tx = LIB[x.k]; if(tx && x.v !== undefined) tx = elegirVariante(tx, x.v);
           if(tx && b.amen && !/Amén\.?\s*$/.test(tx.trim())) tx = tx.trim() + "\n\nR. Amén.";
-          const cuerpo = tx && tx.trim() ? parseTexto(tx).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("")
+          const cuerpo = tx && tx.trim() ? parrafosHTML(tx, b.alt === "pref")
             : `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(x.k)}">Añadir texto</button></div>`;
           return `<div class="alt-slide${String(x.val) === sel ? " on" : ""}" data-val="${esc(x.val)}"><div class="alt-t">${esc(x.title)} · ${i+1} de ${L.length}</div>${cuerpo}</div>`;
         }).join("")}</div><div class="dots">${L.map((x, i) => `<button type="button" class="dot-b${String(x.val) === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div></div>`;
         continue;
       }
-      if(v && v.trim()) h += parseTexto(v).map(p => `<p class="s" data-plain="${esc(p.plain)}">${p.html}</p>`).join("");
+      if(v && v.trim()) h += parrafosHTML(v, /^pref\./.test(b.k || ""));
       else h += `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(b.k)}">Añadir texto</button></div>`;
     } else if(b.t === "lec"){
       const L = b.L, nom = L.n || TL[L.t], idx = S.lect.indexOf(L);
