@@ -20,7 +20,7 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-@media (max-width:560px){.brand{display:none}.tabs{margin-left:auto}.tabs button{padding:7px 9px;font-size:15px}}
+@media (max-width:560px){.brand{display:none}#b-ayuda{order:1;margin-left:auto}.tabs{order:2;flex:1 1 100%;justify-content:space-between}.tabs button{padding:7px 9px;font-size:15px}}
 @media (max-width:400px){.tabs{gap:2px;padding:3px}.tabs button{padding:6px 7px;font-size:14px}}
 html,body{background:var(--bg);color:var(--fg);margin:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -71,6 +71,20 @@ select:disabled{opacity:.55}
 .opt{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
 .opt:last-child{margin-bottom:0}
 .auto{font-size:12px;color:var(--fg2);margin-left:6px}
+.ayuda-btn{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:1px solid var(--line);background:var(--btn);color:var(--acc2);
+  font:700 18px var(--f-ui);display:grid;place-items:center;cursor:pointer}
+.ayuda-btn:hover{border-color:var(--acc)}
+#ayuda{width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);padding:0;border:1px solid var(--line);border-radius:16px;
+  background:var(--card);color:var(--fg);box-shadow:0 24px 60px rgba(0,0,0,.6)}
+#ayuda::backdrop{background:rgba(10,8,6,.7);backdrop-filter:blur(2px)}
+#ayuda .ay-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+#ayuda h2{margin:0;font-family:var(--f-text);font-weight:500;font-size:24px;color:var(--fg)}
+#ayuda .ay-body{padding:6px 22px 22px;font-family:var(--f-ui);font-size:16px;line-height:1.55;color:var(--fg)}
+#ayuda h3{font-family:var(--f-sc);letter-spacing:.08em;color:var(--acc2);font-size:15px;margin:20px 0 6px}
+#ayuda .ay-lead{font-family:var(--f-text);font-size:18px;color:var(--fg)}
+#ayuda li{margin:0 0 8px}#ayuda ol,#ayuda ul{padding-left:22px;margin:6px 0}
+#ayuda b{color:var(--fg);font-weight:700}#ayuda p{margin:8px 0}
+#ayuda .ay-nota{color:var(--fg2);font-size:14px;margin-top:16px}
 .btn{background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:9px 14px;color:var(--fg)}
 .btn:hover{border-color:var(--acc)}
 .btn.primary{background:var(--acc);color:#171310;border-color:var(--acc);font-weight:700}
@@ -283,7 +297,32 @@ select:disabled{opacity:.55}
     <button role="tab" data-view="celebrar" aria-selected="false">Celebrar</button>
     <button role="tab" id="t-libro" aria-selected="false">Libro</button>
   </nav>
+  <button class="ayuda-btn" id="b-ayuda" type="button" aria-label="Ayuda: qué es y cómo funciona" title="Ayuda">?</button>
 </header>
+<dialog id="ayuda" aria-labelledby="ayuda-tit">
+  <div class="ay-head"><h2 id="ayuda-tit">Compositor de la Misa</h2><button class="ayuda-btn" id="ay-cerrar" type="button" aria-label="Cerrar">✕</button></div>
+  <div class="ay-body">
+    <p class="ay-lead">Una herramienta para preparar y celebrar la Misa con el Misal Romano (tercera edición) tal como se celebra en España: eliges la celebración, el compositor aplica las reglas del Misal y monta la misa completa, con sus rúbricas y textos, lista para leer en el altar.</p>
+    <h3>Cómo se usa</h3>
+    <ol>
+      <li><b>Componer.</b> Al abrir propone la misa del día. Puedes cambiar la fecha o buscar cualquier celebración del Misal y elegir prefacio, plegaria eucarística, lecturas, oración de los fieles, bendición, etc. Las reglas marcan lo obligatorio (Gloria, Credo, prefacio propio…) y desactivan lo que no corresponde. Arriba puedes poner el nombre del Papa y del Obispo, que se usan en las plegarias.</li>
+      <li><b>Biblioteca.</b> Aquí están los textos del Misal y del Leccionario. No vienen dentro de la página: se cargan con «Importar biblioteca» e «Importar leccionario» (archivos <i>biblioteca-misal.json</i> y <i>leccionario-misal.json</i>) y se guardan en este navegador. Si la página está publicada junto a esos archivos, se cargan solos. También puedes añadir o corregir textos a mano.</li>
+      <li><b>Celebrar.</b> La misa completa en una sola página que se desplaza, con tamaño de letra ajustable, desplazamiento automático y la opción de seguir tu voz. Deslizando sobre un texto con varias fórmulas puedes cambiar la elegida.</li>
+      <li><b>Libro.</b> La misma misa maquetada como un libro: páginas de papel, texto en negro y rúbricas en rojo, paso de página con animación (botones, toque en los lados, deslizar, teclado o pedal) y, en tableta horizontal, libro abierto a dos páginas. Con el micrófono activado sigue tu lectura con una línea roja y pasa la página al terminar lo que dice el sacerdote, dando tiempo a las respuestas del pueblo y a las oraciones secretas. También puedes decir «Pasa página».</li>
+    </ol>
+    <h3>Lo que falta todavía</h3>
+    <p>La biblioteca está en construcción. Están completos el Ordinario, el Propio del tiempo, los prefacios, las plegarias eucarísticas principales, la oración de los fieles y las misas de difuntos, pero <b>faltan muchos textos</b>:</p>
+    <ul>
+      <li><b>El Santoral casi entero:</b> solo hay unas pocas fiestas y solemnidades; faltan las memorias y la mayoría de las fiestas de los santos.</li>
+      <li>Buena parte de los <b>Comunes</b> (mártires, pastores, doctores, vírgenes, santos y santas).</li>
+      <li>Las <b>misas por diversas necesidades</b> y casi todas las <b>votivas</b>.</li>
+      <li>Varias <b>misas rituales</b> (confirmación, órdenes, unción, dedicación…), las <b>oraciones sobre el pueblo</b> y las plegarias para misas con niños.</li>
+      <li>Leccionario: faltan algunos domingos y ferias, casi todo el Santoral y los leccionarios de misas rituales y diversas.</li>
+    </ul>
+    <p>Cuando falta un texto, la misa se monta igual y en su lugar aparece «Falta este texto en tu biblioteca», con un botón para añadirlo.</p>
+    <p class="ay-nota">Uso personal. Los textos litúrgicos son © Conferencia Episcopal Española y no se incluyen en esta página.</p>
+  </div>
+</dialog>
 
 <main>
   <section id="v-componer"></section>
@@ -2321,6 +2360,9 @@ document.addEventListener("keydown", e => {
 let lbRs = 0;
 addEventListener("resize", () => { if(!LB.on) return; clearTimeout(lbRs); const a = anclaActual(); lbRs = setTimeout(() => paginar(a), 150); });
 
+$("#b-ayuda").onclick = () => $("#ayuda").showModal();
+$("#ay-cerrar").onclick = () => $("#ayuda").close();
+$("#ayuda").addEventListener("click", e => { if(e.target.id === "ayuda") $("#ayuda").close(); });
 let arrancado = false;
 { const h = fechaInicial(); aplicarDia(h.fecha, h.vespertina); }
 mostrar("componer");
