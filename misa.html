@@ -1928,8 +1928,11 @@ function seguir(palabras){
   const bis = [];
   for(let i = Math.max(0, palabras.length - 12); i < palabras.length - 1; i++) bis.push(palabras[i] + " " + palabras[i+1]);
   let best = -1, bestScore = 0, bestPos = 0;
+  // en el libro solo se busca en lo que se ve y en el primer párrafo de la página siguiente
+  const cand = LB.on ? candidatosLibro() : [];
   const desde = Math.max(0, vozIdx - 2), hasta = Math.min(SEGS.length - 1, vozIdx + 30);
-  for(let s = desde; s <= hasta; s++){
+  const lista = LB.on ? cand : Array.from({length: hasta - desde + 1}, (_, k) => desde + k);
+  for(const s of lista){
     const seg = SEGS[s]; let hits = 0, pos = -1;
     bis.forEach((b, j) => { const o = seg.bi.get(b); if(o){ hits += 1 + j / bis.length; pos = Math.max(pos, o[0] + 1); } });
     if(!hits) continue;
@@ -1940,7 +1943,7 @@ function seguir(palabras){
   if(best < 0 || bestScore < 1.6) return;
   vozIdx = best;
   const seg = SEGS[best];
-  SEGS.forEach((x, i) => x.el.classList.toggle("now", i === best));
+  marcarAhora(best);
   const frac = Math.min(1, bestPos / seg.w.length);
   if(LB.on){
     const pg = paginaDe(seg.el, frac);
@@ -2144,6 +2147,26 @@ function finDePagina(i, pos){
   }
   if(!pueblo && !secretas) return 1;
   return Math.min(15000, (pueblo ? 1200 + pueblo * 300 : 0) + (secretas ? 1500 + secretas * 380 : 0));
+}
+// Párrafos que se ven en las páginas abiertas + el primero de la página siguiente
+function candidatosLibro(){
+  const clave = LB.page + "/" + LB.n + "/" + LB.W;
+  if(LB.cand && LB.cand.k === clave) return LB.cand.l;
+  const fl = $("#lb-flow"), base = fl.getBoundingClientRect().left, paso = LB.W + LB.G, ult = ultimaVista(), l = [];
+  for(let i = 0; i < SEGS.length; i++){
+    const s = SEGS[i], p0 = paginaPal(s, 0, base, paso), p1 = paginaPal(s, s.pal.length - 1, base, paso);
+    if(p0 > ult){ l.push(i); break; }
+    if(p1 >= LB.page) l.push(i);
+  }
+  LB.cand = {k: clave, l};
+  return l;
+}
+// Marca el párrafo que se lee en el texto y en las copias que muestran las otras páginas
+function marcarAhora(best){
+  SEGS.forEach((x, i) => x.el.classList.toggle("now", i === best));
+  if(!LB.on) return;
+  const idx = best >= 0 ? [...$("#lb-flow").querySelectorAll("p.s")].indexOf(SEGS[best].el) : -1;
+  for(const f of FLOWS().slice(1)) f.querySelectorAll("p.s").forEach((e, i) => e.classList.toggle("now", i === idx));
 }
 const posX = p => `translateX(${-p * (LB.W + LB.G)}px)`;
 const numero = p => LB.span > 1 ? p : p + 1;   // la guarda del libro abierto no lleva número
