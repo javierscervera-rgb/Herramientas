@@ -74,6 +74,11 @@ select:disabled{opacity:.55}
 .cel-actual{display:flex;flex-direction:column;gap:4px;margin:0 0 12px}
 .cel-actual b{font-weight:500}
 #c-otra.on{border-color:#D88972;color:#D88972}
+.cal-op:disabled{opacity:.4;cursor:not-allowed}
+#calModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:12px}
+#calModal .cal-win{position:relative;width:min(900px,100%);height:min(92vh,1100px);background:#171310;border:1px solid #37312B;border-radius:12px;overflow:hidden}
+#calModal .cal-x{position:absolute;top:8px;right:8px;z-index:1;width:36px;height:36px;border-radius:50%;border:1px solid #37312B;background:#292420;color:#F0E8DC;font-size:20px;line-height:1;cursor:pointer}
+#calFrame{width:100%;height:100%;border:0;display:block}
 .cal-n{color:var(--fg2);font-size:.8rem;line-height:1.45;margin:8px 2px 0}
 .seg{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px}
 .seg button{background:none;border:0;border-radius:8px;padding:6px 11px;color:var(--fg2)}
@@ -320,6 +325,12 @@ select:disabled{opacity:.55}
   </nav>
   <button class="ayuda-btn" id="b-ayuda" type="button" aria-label="Ayuda: qué es y cómo funciona" title="Ayuda">?</button>
 </header>
+<div id="calModal" role="dialog" aria-modal="true" aria-label="Calendario litúrgico CEE">
+  <div class="cal-win">
+    <button type="button" class="cal-x" id="calCerrar" aria-label="Cerrar">×</button>
+    <iframe id="calFrame" title="Calendario litúrgico CEE"></iframe>
+  </div>
+</div>
 <dialog id="ayuda" aria-labelledby="ayuda-tit">
   <div class="ay-head"><h2 id="ayuda-tit">Compositor de la Misa</h2><button class="ayuda-btn" id="ay-cerrar" type="button" aria-label="Cerrar">✕</button></div>
   <div class="ay-body">
@@ -858,7 +869,7 @@ function votivasHTML(){
   if(!votivasPermitidas()) return "";
   const V = (VOTIVAS_DIA[fechaSel().getDay()] || []).filter(id => FM[id]); if(!V.length) return "";
   return `<div class="cal-box"><span class="lbl">Misa votiva sugerida para el ${esc(DIASN[fechaSel().getDay()].toLowerCase())}</span>
-    <div class="cal-ops">${V.map(id => `<button type="button" class="cal-op" data-voto="${id}" aria-pressed="${S.fid === id}"><b>${esc(FM[id].c)}</b><small>Misa votiva</small></button>`).join("")}</div></div>`;
+    <div class="cal-ops">${V.map(id => `<button type="button" class="cal-op" data-voto="${id}" aria-pressed="${S.fid === id && !otraMisa}" ${otraMisa ? "disabled" : ""}><b>${esc(FM[id].c)}</b><small>Misa votiva</small></button>`).join("")}</div></div>`;
 }
 function elegirVotiva(fid){
   const d = fechaSel(), m = misaDelDia(d);
@@ -870,7 +881,7 @@ function calHTML(){
   const d = fechaSel(), c = calDe(d), O = opcionesCal(d); if(!c || !O.length) return "";
   const m = misaDelDia(d), sel = O.findIndex(o => resolverCal(m, o).fid === S.fid);
   return `<div class="cal-box"><span class="lbl">Calendario litúrgico${O.length > 1 ? " · elige la celebración" : ""}</span>
-    <div class="cal-ops">${O.map((o, i) => `<button type="button" class="cal-op" data-cal="${i}" aria-pressed="${i === sel}"><b>${esc(o.t)}</b>${o.r ? `<small>${esc(o.r)}${o.com ? " · del Común" : ""}</small>` : ""}</button>`).join("")}</div>
+    <div class="cal-ops">${O.map((o, i) => `<button type="button" class="cal-op" data-cal="${i}" aria-pressed="${i === sel && !otraMisa}" ${otraMisa ? "disabled" : ""}><b>${esc(o.t)}</b>${o.r ? `<small>${esc(o.r)}${o.com ? " · del Común" : ""}</small>` : ""}</button>`).join("")}</div>
     ${c.n ? `<p class="cal-n">Misal: ${esc(c.n)}</p>` : ""}</div>`;
 }
 /* Fecha de la celebración: hoy, o el domingo si es sábado por la tarde */
@@ -1795,6 +1806,7 @@ function renderComponer(){
       <h3>Reglas aplicadas</h3>
       <ul class="notes">${R.notes.map(n => `<li class="${n.c}">${esc(n.t)}${n.s ? `<small>${esc(n.s)}</small>` : ""}</li>`).join("")}</ul>
     </div>
+    <button type="button" class="btn" id="c-vercal" style="width:100%">Ver calendario litúrgico CEE</button>
     <div class="card">
       <h3>Textos de esta misa</h3>
       <p class="muted" style="margin:0 0 8px">${total - faltan.length} de ${total} textos en tu biblioteca.</p>
@@ -1907,7 +1919,8 @@ function toast(t){ const d = document.createElement("div"); d.className = "toast
 const vc = $("#v-componer");
 vc.addEventListener("click", e => {
   const b = e.target.closest("button"); if(!b) return;
-  if(b.dataset.cal !== undefined){ elegirCal(+b.dataset.cal); return; }
+  if(b.dataset.cal !== undefined){ otraMisa = false; filtroCel = ""; elegirCal(+b.dataset.cal); return; }
+  if(b.id === "c-vercal"){ verDia(S.fecha || iso(new Date())); return; }
   if(b.classList.contains("car-card")){
     if(!b.classList.contains("on")){ elegirOpcion(b.dataset.car, b.dataset.val); renderComponer(); }
     else b.scrollIntoView({behavior:"smooth", block:"nearest", inline:"center"});
@@ -1933,7 +1946,7 @@ vc.addEventListener("click", e => {
   if(b.id === "reset-lect"){ S.lect = []; rehacerLecturas(); if(!S.lectSrc) S.lect.forEach(l => { l.cita = ""; l.txt = ""; }); renderComponer(); return; }
   if(b.id === "go-celebrar"){ mostrar("celebrar"); return; }
   if(b.id === "c-otra"){ otraMisa = !otraMisa; if(!otraMisa) filtroCel = ""; renderComponer(); return; }
-  if(b.dataset.voto){ elegirVotiva(b.dataset.voto); return; }
+  if(b.dataset.voto){ otraMisa = false; filtroCel = ""; elegirVotiva(b.dataset.voto); return; }
   if(b.id === "to-hoy"){ const h = semanaTO(); if(h){ S.toSem = h.sem; S.toDia = h.dia; S.toAnyo = h.anyo; rehacerLecturas(); renderComponer(); } return; }
   if(b.id === "ver-faltan"){ libGrupo = "Lo que falta en esta misa"; libKey = ""; mostrar("biblioteca"); return; }
   if(b.id === "g-guardar"){
@@ -2575,6 +2588,18 @@ document.addEventListener("keydown", e => {
 let lbRs = 0;
 addEventListener("resize", () => { if(!LB.on) return; clearTimeout(lbRs); const a = anclaActual(); lbRs = setTimeout(() => paginar(a), 150); });
 
+/* Calendario litúrgico CEE, en una ventana dentro de la página */
+const CAL_URL = "https://javierscervera-rgb.github.io/Herramientas/calendario/index.html";
+function verDia(fecha){
+  const f = $("#calFrame");
+  if(f.getAttribute("src")) f.contentWindow.postMessage({fecha}, "*");   // ya cargado: solo cambia de día
+  else f.src = CAL_URL + "?embed=1&fecha=" + fecha;                        // primera vez
+  $("#calModal").style.display = "flex";
+}
+function cerrarCalendario(){ $("#calModal").style.display = "none"; }
+$("#calCerrar").onclick = cerrarCalendario;
+$("#calModal").addEventListener("click", e => { if(e.target.id === "calModal") cerrarCalendario(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#calModal").style.display === "flex") cerrarCalendario(); });
 $("#b-ayuda").onclick = () => $("#ayuda").showModal();
 $("#ay-cerrar").onclick = () => $("#ayuda").close();
 $("#ayuda").addEventListener("click", e => { if(e.target.id === "ayuda") $("#ayuda").close(); });
