@@ -122,6 +122,8 @@ select:disabled{opacity:.55}
 #lectura p.s.now{border-left-color:var(--rub)}
 #lectura .r{font-weight:700}
 #lectura p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.45}
+#lectura p.s.secreta{font-size:calc(var(--fs) - 2px)}
+#lectura .cruz{color:var(--rub)}
 #lectura p.s.consagra::first-letter{float:left;font-size:3.2em;line-height:.82;margin:.07em .1em 0 0;color:var(--rub);font-weight:500}
 #lectura .vr{color:var(--rub);font-weight:700;margin-right:.3em}
 #lectura .rub-in{color:var(--rub);font-family:var(--f-ui);font-size:.78em}
@@ -244,6 +246,13 @@ select:disabled{opacity:.55}
 .lb-flow p.s{margin:.2em 0 .5em;padding:1px 5px 1px 9px;margin-left:0;border-left:3px solid transparent;transition:border-color .3s}
 .lb-flow p.s.now{border-left-color:#a3281f}
 .lb-flow p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.42;margin:.4em 0 .7em}
+.lb-flow p.s.secreta{font-size:calc(var(--fs) - 2px)}
+.lb-flow .cruz{color:#a3281f}
+.lb-flow > .lb-alt{margin-left:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lb-flow .lb-alt > :not(p.s){margin-left:12px}
+.lb-flow .lb-alt p.s.lb-cambia::before{content:"\2022\2022\2022";float:right;margin:.15em 0 0 .6em;font-size:.7em;letter-spacing:.12em;color:#a3281f;opacity:.75;line-height:1.6}
+.lb-flow .lb-alt.flash p.s{animation:lbflash .7s ease}
+@keyframes lbflash{from{background:rgba(163,40,31,.10)}to{background:transparent}}
 .lb-flow p.s.consagra::first-letter{float:left;font-size:3.3em;line-height:.8;margin:.06em .09em 0 0;color:#a3281f;font-weight:500}
 .lb-flow .vr{color:#a3281f;font-weight:700;margin-right:.3em}
 .lb-flow .r{font-weight:700}
@@ -308,7 +317,7 @@ select:disabled{opacity:.55}
       <li><b>Componer.</b> Al abrir propone la misa del día. Puedes cambiar la fecha o buscar cualquier celebración del Misal y elegir prefacio, plegaria eucarística, lecturas, oración de los fieles, bendición, etc. Las reglas marcan lo obligatorio (Gloria, Credo, prefacio propio…) y desactivan lo que no corresponde. Arriba puedes poner el nombre del Papa y del Obispo, que se usan en las plegarias.</li>
       <li><b>Biblioteca.</b> Aquí están los textos del Misal y del Leccionario. No vienen dentro de la página: se cargan con «Importar biblioteca» e «Importar leccionario» (archivos <i>biblioteca-misal.json</i> y <i>leccionario-misal.json</i>) y se guardan en este navegador. Si la página está publicada junto a esos archivos, se cargan solos. También puedes añadir o corregir textos a mano.</li>
       <li><b>Celebrar.</b> La misa completa en una sola página que se desplaza, con tamaño de letra ajustable, desplazamiento automático y la opción de seguir tu voz. Deslizando sobre un texto con varias fórmulas puedes cambiar la elegida.</li>
-      <li><b>Libro.</b> La misma misa maquetada como un libro: páginas de papel, texto en negro y rúbricas en rojo, paso de página con animación (botones, toque en los lados, deslizar, teclado o pedal) y, en tableta horizontal, libro abierto a dos páginas. Con el micrófono activado sigue tu lectura con una línea roja y pasa la página al terminar lo que dice el sacerdote, dando tiempo a las respuestas del pueblo y a las oraciones secretas. También puedes decir «Pasa página».</li>
+      <li><b>Libro.</b> La misma misa maquetada como un libro: páginas de papel, texto en negro y rúbricas en rojo, paso de página con animación (botones, toque en los lados, deslizar, teclado o pedal) y, en tableta horizontal, libro abierto a dos páginas. Con el micrófono activado sigue tu lectura con una línea roja y pasa la página al terminar lo que dice el sacerdote, dando tiempo a las respuestas del pueblo y a las oraciones secretas. También puedes decir «Pasa página». Los textos marcados con tres puntos rojos (saludo, acto penitencial, «Orad, hermanos», aclamación, moniciones, bendición y despedida) cambian a la siguiente fórmula con solo tocarlos.</li>
     </ol>
     <h3>Lo que falta todavía</h3>
     <p>La biblioteca está casi completa: el Ordinario, el Propio del tiempo, el Propio de los santos (con el calendario propio de España), los Comunes, los prefacios, las plegarias eucarísticas principales, las misas rituales, votivas, por diversas necesidades y de difuntos, y la oración de los fieles. Cuando una memoria no tiene un texto propio, se toma del Común que indica el Misal. <b>Aún faltan algunos textos</b>:</p>
@@ -957,7 +966,7 @@ const OPC = {
     opts:() => rango(Math.max(nVar("ord.paz_inv"), 1)).map(i => ({val:String(i), title:`Invitación ${i+1}`, k:"ord.paz_inv", v:i}))},
   priv:{label:"Oración privada antes de comulgar", get:() => S.priv, set:v => S.priv = v, opts:() => ["1","2"].map(n => ({val:n, title:`Oración ${n}`, k:`ord.priv${n}`}))},
   bend:{label:"Bendición", get:() => S.bend, set:v => { S.bend = v; if(v === "pueblo" && FM[S.fid].x.some(x => x[0] === "pueblo")) S.puebloN = "propia"; },
-    opts:() => [{val:"simple", title:"Bendición simple", k:"ord.bendicion"}, {val:"solemne", title:"Bendición solemne", k:`bend.sol.${S.bendN}`},
+    opts:() => [{val:"simple", title:"Bendición simple", k:"ord.bendicion"}, {val:"solemne", title:"Bendición solemne", k: ritoBend(FM[S.fid]) || `bend.sol.${S.bendN}`},
       {val:"pueblo", title:"Oración sobre el pueblo", k: S.puebloN === "propia" ? `prop.${S.fid}.pueblo` : `bend.pueblo.${S.puebloN}`}]},
   desp:{label:"Despedida", get:() => S.desp, set:v => S.desp = v,
     opts:() => ["1","2","3","4","5"].map(n => ({val:n, title: n === "5" ? "Despedida 5 · Pascua" : `Despedida ${n}`, k:`ord.desp${n}`}))}
@@ -1379,15 +1388,15 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
   if(ritoBend(f) && S.bend === "solemne"){
     rub(esMat(f) ? "El sacerdote bendice a los esposos y al pueblo; todos responden «Amén» a cada invocación." :
         "El sacerdote bendice al enfermo y a los presentes; todos responden «Amén» a cada invocación.");
-    txt(ritoBend(f));
+    txt(ritoBend(f), null, {alt:"bend"});
   } else if(S.bend === "solemne"){
     rub("El diácono, o el sacerdote, invita a inclinarse para recibir la bendición. El sacerdote, con las manos extendidas sobre el pueblo, dice la bendición solemne; todos responden «Amén» a cada invocación.");
-    txt(`bend.sol.${S.bendN}`);
+    txt(`bend.sol.${S.bendN}`, null, {alt:"bend"});
   } else if(S.bend === "pueblo"){
     rub("El diácono, o el sacerdote, invita a inclinarse. El sacerdote, con las manos extendidas sobre el pueblo, dice la oración.");
-    if(S.puebloN === "propia") txt(`prop.${f.id}.pueblo`, "Oración sobre el pueblo"); else txt(`bend.pueblo.${S.puebloN}`);
+    if(S.puebloN === "propia") txt(`prop.${f.id}.pueblo`, "Oración sobre el pueblo", {alt:"bend"}); else txt(`bend.pueblo.${S.puebloN}`, null, {alt:"bend"});
   }
-  if(S.bend !== "solemne") txt("ord.bendicion");
+  if(S.bend === "simple") txt("ord.bendicion", null, {alt:"bend"}); else if(S.bend !== "solemne") txt("ord.bendicion");
   if(esMat(f)) txt("rito.matrimonio.entrega");
   const aleluya = f.e === "vigilia" || /octava de Pascua|Pascua de la Resurrección|Pentecostés: Misa del día/.test(f.c);
   rub(aleluya ? "El diácono, o el sacerdote, despide al pueblo con el doble aleluya." : "El diácono, o el sacerdote, despide al pueblo.");
@@ -1461,6 +1470,10 @@ function conNombres(t){
   if(o) t = t.replace(/\b(Obispo|obispo)\s+N\./g, `$1 ${o}`);
   return t;
 }
+const FIN_PNSJ = "Por nuestro Señor Jesucristo, tu Hijo, que vive y reina contigo en la unidad del Espíritu Santo y es Dios por los siglos de los siglos.";
+const conclusionLarga = t => t.replace(/Por nuestro [Ss]eñor Jesucristo(?!,)\.?/g, FIN_PNSJ)
+  .replace(/^(Él|El|Que), que vive y reina contigo\.?\s*$/gm, "Él, que vive y reina contigo en la unidad del Espíritu Santo y es Dios por los siglos de los siglos.")
+  .replace(/^Que vive y reina contigo\.?\s*$/gm, "Que vive y reina contigo en la unidad del Espíritu Santo y es Dios por los siglos de los siglos.");
 function parseTexto(s){
   return s.trim().split(/\n\s*\n/).map(par => {
     const lines = par.split("\n").map(l => l.trimEnd()).filter(l => l.trim());
@@ -1471,7 +1484,7 @@ function parseTexto(s){
       if((m = l.match(/^\s*(?:℟\.?|R\/\.?|R\.)\s*(.*)$/))) return `<span class="vr">℟.</span><span class="r">${esc(m[1])}</span>`;
       if((m = l.match(/^\s*(?:℣\.?|V\/\.?|V\.)\s*(.*)$/))) return `<span class="vr">℣.</span>${esc(m[1])}`;
       return esc(l);
-    }).join("<br>");
+    }).join("<br>").replace(/✠/g, '<span class="cruz">✠</span>');
     return {html, plain: rubOnly ? "" : lines.join(" ")};
   });
 }
@@ -1494,6 +1507,7 @@ function renderCelebrar(){
       if(v && b.v !== undefined) v = elegirVariante(v, b.v);
       if(v && b.amen && !/Amén\.?\s*$/.test(v.trim())) v = v.trim() + "\n\nR. Amén.";
       if(v && /^pe\./.test(b.k || "")) v = conNombres(v);
+      if(v && /\.colecta$/.test(b.k || "")) v = conclusionLarga(v);
       if(v && b.sub) v = v.replace(/Lectura del santo Evangelio según san N\.?/, b.sub);
       if(b.l) h += `<span class="lbl-t">${esc(b.l)}</span>`;
       if(b.alt){
@@ -2159,11 +2173,33 @@ const LB = {on:false, page:0, n:1, W:0, G:0, span:1, busy:false, secs:[], auto:f
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 // Libro abierto (dos páginas) en tableta u ordenador apaisados
 const quiereDoble = () => innerWidth >= 900 && innerWidth > innerHeight * 1.15;
+// textos que se pueden cambiar tocándolos en la vista Libro
+const CAMBIA_LIBRO = ["saludo", "ap_inv", "ap", "orad", "aclam", "pn_mon", "paz_inv", "bend", "desp"];
+function cambiarEnLibro(id){
+  const o = OPC[id]; if(!o) return;
+  const L = o.opts().filter(x => !x.dis && (String(x.val) === String(o.get()) || (LIB[x.k] || "").trim())); if(L.length < 2) return;
+  const i = L.findIndex(x => String(x.val) === String(o.get())), nx = L[(i + 1) % L.length];
+  const pg = LB.page;
+  elegirOpcion(id, nx.val); renderCelebrar();
+  $("#lb-flow").innerHTML = contenidoLibro();
+  SEGS = hacerSegs($("#lb-flow"));
+  LB.page = pg; paginar(null);
+  FLOWS().forEach(f => f.querySelectorAll(`.lb-alt[data-car="${id}"]`).forEach(e => { e.classList.remove("flash"); void e.offsetWidth; e.classList.add("flash"); }));
+  if(vozOn){ const el = $("#lb-flow").querySelector(`.lb-alt[data-car="${id}"]`); const k = el ? SEGS.findIndex(s => el.contains(s.el)) : -1; if(k >= 0){ vozIdx = k; marcarAhora(k); } }
+  toast(`${o.label}: ${nx.title}`);
+}
 function contenidoLibro(){
   const f = FM[S.fid], src = $("#lectura"); if(!src) return "";
   const c = src.cloneNode(true);
   c.querySelectorAll(".alt").forEach(a => {
     const on = a.querySelector(".alt-slide.on") || a.querySelector(".alt-slide");
+    if(on && CAMBIA_LIBRO.includes(a.dataset.car) && a.querySelectorAll(".alt-slide").length > 1){
+      const d = document.createElement("div"); d.className = "lb-alt"; d.dataset.car = a.dataset.car;
+      [...on.childNodes].forEach(n => d.appendChild(n));
+      const pri = [...d.querySelectorAll("p.s")].find(x => (x.dataset.plain || "").trim()) || d.querySelector("p.s");
+      if(pri) pri.classList.add("lb-cambia");
+      a.replaceWith(d); return;
+    }
     const frag = document.createDocumentFragment();
     if(on) [...on.childNodes].forEach(n => frag.appendChild(n));
     a.replaceWith(frag);
@@ -2330,9 +2366,9 @@ function anclaActual(){
   return null;
 }
 function irA(p){
+  if(LB.busy){ LB.busyEnd && LB.busyEnd(); }   // termina el giro en curso antes de empezar el siguiente
   p = inicio(p);
   if(p === LB.page) return;
-  if(LB.busy){ LB.busyEnd && LB.busyEnd(); }
   if(reduce.matches){ LB.page = p; pintar(); return; }
   const fwd = p > LB.page, d = LB.span > 1, old = LB.page;
   const leaf = $("#lb-leaf"), cast = $("#lb-cast"), shade = leaf.querySelector(".shade"), shade2 = leaf.querySelector(".shade2");
@@ -2365,15 +2401,16 @@ function irA(p){
   cast.animate([{opacity: fwd ? 0 : .9}, {opacity: fwd ? .9 : 0}], {...op, easing: curva});
   const fin = () => {
     if(!LB.busy) return; LB.busy = false; LB.busyEnd = null;
-    LB.page = p; pintar();
+    LB.page = p; LB.dest = null; pintar();
     leaf.style.display = "none";
     leaf.getAnimations({subtree:true}).forEach(a => a.cancel()); cast.getAnimations().forEach(a => a.cancel());
     cast.style.opacity = 0;
   };
-  LB.busyEnd = fin;
+  LB.busyEnd = fin; LB.dest = p;
   giro.onfinish = fin;
 }
-const siguiente = () => irA(LB.page + LB.span), anterior = () => irA(LB.page - LB.span);
+const destino = () => LB.busy && LB.dest != null ? LB.dest : LB.page;
+const siguiente = () => irA(destino() + LB.span), anterior = () => irA(destino() - LB.span);
 function abrirLibro(){
   if(vista !== "celebrar") return;
   const vis = SEGS.find(s => s.el.getBoundingClientRect().bottom > innerHeight * 0.15);
@@ -2444,6 +2481,10 @@ document.addEventListener("keydown", e => {
     if(x0 === null) return; const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
     if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)){ dx < 0 ? siguiente() : anterior(); return; }
     if(Math.abs(dx) < 8 && Math.abs(dy) < 8 && Date.now() - t0 < 500){
+      if(!LB.busy && !e.target.closest("button")){
+        const al = document.elementsFromPoint(e.clientX, e.clientY).map(x => x.closest(".lb-alt")).find(x => x && x.closest("#lb-vp, #lb-vpR"));
+        if(al){ cambiarEnLibro(al.dataset.car); return; }
+      }
       const r = $("#lb-page").getBoundingClientRect(), fx = (e.clientX - r.left) / r.width;
       const lim = LB.span > 1 ? [0.5, 0.5] : [0.34, 0.66];
       if(fx > lim[1] && (LB.span < 2 || fx > 0.62)) siguiente(); else if(fx < lim[0] && (LB.span < 2 || fx < 0.38)) anterior();
