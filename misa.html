@@ -315,7 +315,7 @@ select:disabled{opacity:.55}
 </head>
 <body>
 <header class="top">
-  <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/herramientas.html" target="_self" aria-label="Volver a Herramientas">
+  <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" aria-label="Volver a Herramientas">
     <img class="logo" src="logo.svg" alt="Herramientas" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'Herramientas',className:'brand-fb'}))">
   </a>
   <span class="brand">Compositor de la Misa</span>
@@ -366,7 +366,7 @@ select:disabled{opacity:.55}
 
 <div id="libro" hidden role="dialog" aria-label="Vista libro">
   <div class="lb-top">
-    <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/herramientas.html" target="_self" aria-label="Volver a Herramientas">
+    <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" aria-label="Volver a Herramientas">
       <img class="logo" src="logo.svg" alt="Herramientas" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'Herramientas',className:'brand-fb'}))">
     </a>
     <span class="lb-tit" id="lb-tit"></span>
@@ -2597,7 +2597,7 @@ let lbRs = 0;
 addEventListener("resize", () => { if(!LB.on) return; clearTimeout(lbRs); const a = anclaActual(); lbRs = setTimeout(() => paginar(a), 150); });
 
 /* Calendario litúrgico CEE, en una ventana dentro de la página */
-const CAL_URL = "https://javierscervera-rgb.github.io/Herramientas/index.html";
+const CAL_URL = "https://javierscervera-rgb.github.io/Herramientas/epacta.html";
 function verDia(fecha){
   const f = $("#calFrame");
   if(f.getAttribute("src")) f.contentWindow.postMessage({fecha}, "*");   // ya cargado: solo cambia de día
