@@ -25,6 +25,7 @@
     .logo { display: block; height: clamp(32px, 5vw, 48px); width: auto; max-width: 200px; }
     .logo-link { display: flex; align-items: center; flex-shrink: 0; border-radius: 8px; }
     .logo-link:focus-visible { outline: 2px solid var(--accent-alt); outline-offset: 3px; }
+    .embed .logo-link { display: none; }
 
     .topbar {
       background: var(--card); color: var(--text);
@@ -396,11 +397,44 @@
         status.innerHTML = 'No se pudo cargar el PDF.<br>' + e.message;
         return;
       }
+      const requested = dateFromUrl();
+      if (requested && dateMap[requested]) { await goToDate(requested); return; }
       const today = new Date();
       const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
       if (dateMap[todayStr]) await goToDate(todayStr);
       else await goToDate('2025-11-30');
     }
+
+    /* ---- Abrir un día concreto desde fuera ----
+       index.html?fecha=2026-03-15   (o  index.html#2026-03-15)
+       &embed=1  → oculta el logo (útil en ventana emergente / iframe)
+       Desde un iframe ya abierto: iframe.contentWindow.postMessage({ fecha: '2026-03-15' }, '*')  */
+    function normDate(v) {
+      if (!v) return null;
+      v = String(v).trim().replace(/^#\/?/, '');
+      let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);            // 2026-03-15
+      if (m) return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+      m = v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);       // 15/03/2026
+      if (m) return m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+      return null;
+    }
+    function dateFromUrl() {
+      const p = new URLSearchParams(location.search);
+      return normDate(p.get('fecha') || p.get('date')) || normDate(decodeURIComponent(location.hash));
+    }
+    if (new URLSearchParams(location.search).get('embed') === '1') document.documentElement.classList.add('embed');
+
+    async function goToExternal(v) {
+      const d = normDate(v);
+      if (!d || !pdfDoc) return;
+      if (dateMap[d]) await goToDate(d);
+    }
+    window.addEventListener('hashchange', () => goToExternal(decodeURIComponent(location.hash)));
+    window.addEventListener('message', e => {
+      const data = e.data;
+      const v = typeof data === 'string' ? data : (data && (data.fecha || data.date));
+      if (v) goToExternal(v);
+    });
 
     /* =========================================================
        VISOR: ajuste, recorte de márgenes, zoom y desplazamiento
