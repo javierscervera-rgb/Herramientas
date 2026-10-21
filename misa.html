@@ -266,7 +266,7 @@ select:disabled{opacity:.55}
 #lb-voz[aria-pressed="true"] svg{transform:translateY(-4px)}
 .lb-hear{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:5;max-width:min(86%,460px);font:14px var(--f-ui);color:var(--fg2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lb-hear b{color:var(--acc2);font-weight:500}
-@media (max-width:560px){.lb-stage{padding:6px 14px 14px 8px}.lb-bar{gap:5px;padding:0 6px 10px}.lb-bar .grp{gap:4px;padding:4px}.lb-bar .lb-nav{width:46px}.lb-ic{width:40px;height:42px}#lb-lento,#lb-rapido{display:none}}
+@media (max-width:560px){.lb-stage{padding:6px 14px 14px 8px}.lb-bar{gap:5px;padding:0 6px 10px}.lb-bar .grp{gap:4px;padding:4px}.lb-bar .lb-nav{width:46px}.lb-ic{width:40px;height:42px}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 
@@ -325,9 +325,6 @@ select:disabled{opacity:.55}
     </div>
     <div class="grp">
       <button class="lb-ic" id="lb-voz" title="Escucha: pasa la página siguiendo tu voz" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="escu" aria-hidden="true"><i></i><i></i><i></i></span></button>
-      <button class="lb-ic" id="lb-auto" title="Pasar página automáticamente" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 5l7 7-7 7M13 5l7 7-7 7"/></svg></button>
-      <button class="lb-ic" id="lb-lento" title="Más tiempo por página">−</button>
-      <button class="lb-ic" id="lb-rapido" title="Menos tiempo por página">+</button>
     </div>
     <div class="grp"><button class="lb-ic lb-nav" id="lb-next" title="Página siguiente" aria-label="Página siguiente"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button></div>
   </div>
@@ -1435,10 +1432,19 @@ function renderCelebrar(){
 }
 function hacerSegs(root){
   return [...root.querySelectorAll("p.s")].filter(el => !el.closest(".alt-slide:not(.on)")).map(el => {
-    const w = normWords(el.dataset.plain || "");
+    // palabras tal como se ven, con su nodo de texto y si son del pueblo (negrita)
+    const w = [], pal = [];
+    const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for(let n; (n = tw.nextNode());){
+      if(n.parentElement.closest(".vr, .rub-in")) continue;
+      const bold = !!n.parentElement.closest(".r");
+      for(const m of n.data.matchAll(/[\p{L}\p{N}]+/gu)){
+        for(const x of normWords(m[0])){ w.push(x); pal.push({n, a: m.index, b: m.index + m[0].length, bold}); }
+      }
+    }
     const bi = new Map();
     for(let i=0;i<w.length-1;i++){ const k = w[i]+" "+w[i+1]; if(!bi.has(k)) bi.set(k, []); bi.get(k).push(i); }
-    return {el, w, bi, sec: el.classList.contains("secreta")};
+    return {el, w, bi, pal, sec: el.classList.contains("secreta")};
   }).filter(s => s.w.length);
 }
 
@@ -2109,23 +2115,35 @@ function paginaDe(el, frac){
   return Math.max(0, Math.min(LB.n - 1, Math.round((r.left - base) / (LB.W + LB.G))));
 }
 // ¿se ha leído el final del último párrafo en negro de lo que se ve?
-// Devuelve false si aún queda texto en voz alta en lo que se ve; si no, los milisegundos que hay que esperar
-// (las oraciones secretas que queden debajo no se oyen: se da un momento para decirlas)
+// Página en la que se ve cada palabra (con el rectángulo real de la palabra)
+const rangoPal = document.createRange();
+function paginaPal(seg, k, base, paso){
+  const p = seg.pal[k]; rangoPal.setStart(p.n, p.a); rangoPal.setEnd(p.n, p.b);
+  const q = rangoPal.getClientRects()[0]; return q ? Math.floor((q.left - base + 4) / paso) : -1;
+}
+function ultimaVisible(seg, ult, base, paso){   // índice de la última palabra que se ve en las páginas abiertas
+  let lo = 0, hi = seg.pal.length - 1, res = -1;
+  while(lo <= hi){ const m = (lo + hi) >> 1, pg = paginaPal(seg, m, base, paso); if(pg >= 0 && pg <= ult){ res = m; lo = m + 1; } else hi = m - 1; }
+  return res;
+}
+// Devuelve false si aún queda texto que dice el sacerdote en voz alta en lo que se ve; si no, los milisegundos
+// que hay que esperar: lo que diga el pueblo (negrita) y las oraciones secretas no se oyen, se les da un momento.
+// Si un párrafo sigue en la página siguiente, basta con decir las últimas palabras que se ven.
 function finDePagina(i, pos){
+  if(LB.page + LB.span > LB.n - 1) return false;
   const fl = $("#lb-flow"), base = fl.getBoundingClientRect().left, paso = LB.W + LB.G, ult = ultimaVista();
-  const pag = el => [...el.getClientRects()].filter(r => r.height).map(r => ({p: Math.round((r.left - base) / paso), h: r.height}));
-  let secretas = 0;
+  const seg = SEGS[i], last = ultimaVisible(seg, ult, base, paso); if(last < 0) return false;
+  let sacer = -1; for(let k = last; k >= 0; k--) if(!seg.pal[k].bold){ sacer = k; break; }
+  if(pos < (sacer >= 0 ? sacer : last) - 1) return false;
+  let pueblo = Math.max(0, last - Math.max(sacer, pos)), secretas = 0;   // si se oye al pueblo, lo ya dicho no cuenta
   for(let j = i + 1; j < SEGS.length; j++){
-    const rs = pag(SEGS[j].el); if(!rs.length) continue;
-    if(rs[0].p > ult) break;
-    if(!SEGS[j].sec) return false;
-    secretas += SEGS[j].w.length;
+    const s = SEGS[j], lv = ultimaVisible(s, ult, base, paso); if(lv < 0) break;
+    const vis = s.pal.slice(0, lv + 1);
+    if(!s.sec && vis.some(p => !p.bold)) return false;
+    if(s.sec) secretas += vis.length; else pueblo += vis.length;
   }
-  const rs = pag(SEGS[i].el), tot = rs.reduce((a, r) => a + r.h, 0); if(!tot) return false;
-  const aqui = rs.filter(r => r.p <= ult).reduce((a, r) => a + r.h, 0) / tot;
-  const listo = aqui >= 0.999 ? (SEGS[i].w.length - pos <= 2 && LB.page + LB.span <= LB.n - 1) : (aqui * SEGS[i].w.length - pos <= 1.5);
-  if(!listo) return false;
-  return secretas ? Math.min(15000, 1500 + secretas * 380) : 1;
+  if(!pueblo && !secretas) return 1;
+  return Math.min(15000, (pueblo ? 1200 + pueblo * 300 : 0) + (secretas ? 1500 + secretas * 380 : 0));
 }
 const posX = p => `translateX(${-p * (LB.W + LB.G)}px)`;
 const numero = p => LB.span > 1 ? p : p + 1;   // la guarda del libro abierto no lleva número
@@ -2224,7 +2242,7 @@ function cerrarLibro(){
   SEGS = hacerSegs($("#lectura"));
   if(plain){ const el = [...document.querySelectorAll("#lectura p.s")].find(e => e.dataset.plain === plain); if(el) el.scrollIntoView({block:"center"}); }
 }
-function pararAutoLibro(){ LB.auto = false; clearInterval(LB.autoT); LB.autoT = null; $("#lb-auto").setAttribute("aria-pressed", "false"); }
+function pararAutoLibro(){ LB.auto = false; clearInterval(LB.autoT); LB.autoT = null; }
 function pantallaCompleta(on){
   const lb = $("#libro"), a = anclaActual();
   lb.classList.toggle("lb-full", on); $("#lb-full").setAttribute("aria-pressed", String(on));
@@ -2257,15 +2275,6 @@ $("#lb-voz").onclick = async () => {
   vozOn = true; oidas = []; $("#lb-voz").setAttribute("aria-pressed", "true");
   mostrarOido("", "Escuchando…"); iniciarVoz(); pedirWakeLock();
 };
-$("#lb-auto").onclick = () => {
-  if(LB.auto){ pararAutoLibro(); return; }
-  if(vozOn) pararVoz();
-  LB.auto = true; $("#lb-auto").setAttribute("aria-pressed", "true");
-  LB.autoT = setInterval(() => { if(LB.page + LB.span > LB.n - 1) pararAutoLibro(); else siguiente(); }, LB.seg * LB.span * 1000);
-  toast(`Página cada ${LB.seg} s`);
-};
-const ritmo = d => { LB.seg = Math.max(10, Math.min(180, LB.seg + d)); store.set("misa.lbseg", LB.seg); toast(`Página cada ${LB.seg} s`); if(LB.auto){ pararAutoLibro(); $("#lb-auto").onclick(); } };
-$("#lb-lento").onclick = () => ritmo(5); $("#lb-rapido").onclick = () => ritmo(-5);
 document.addEventListener("keydown", e => {
   if(!LB.on) return;
   if(["ArrowRight","ArrowDown","PageDown"," "].includes(e.key)){ e.preventDefault(); siguiente(); }
