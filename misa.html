@@ -2589,7 +2589,7 @@ let lbRs = 0;
 addEventListener("resize", () => { if(!LB.on) return; clearTimeout(lbRs); const a = anclaActual(); lbRs = setTimeout(() => paginar(a), 150); });
 
 /* Calendario litúrgico CEE, en una ventana dentro de la página */
-const CAL_URL = "https://javierscervera-rgb.github.io/Herramientas/calendario/index.html";
+const CAL_URL = "https://javierscervera-rgb.github.io/Herramientas/index.html";
 function verDia(fecha){
   const f = $("#calFrame");
   if(f.getAttribute("src")) f.contentWindow.postMessage({fecha}, "*");   // ya cargado: solo cambia de día
