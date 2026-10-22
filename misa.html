@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Compositor de la Misa</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -155,6 +155,10 @@ select:disabled{opacity:.55}
 .dock button{width:52px;height:52px;border-radius:12px;border:1px solid var(--line);background:var(--btn);display:grid;place-items:center;color:var(--fg);font-family:var(--f-ui);font-weight:700;font-size:17px}
 .dock button[aria-pressed="true"]{background:var(--acc);color:#171310;border-color:var(--acc)}
 .dock button:disabled{opacity:.35}
+.dock{transition:opacity .6s ease}
+.dock.tenue{opacity:.3}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media (pointer:coarse){input,select,textarea{font-size:max(16px,1em)}}
 .dock svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .hear{max-width:min(86vw,420px);font-size:14px;color:var(--fg2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 .hear b{color:var(--acc2);font-weight:500}
@@ -1913,6 +1917,7 @@ function mostrar(v){
   document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === v)));
   ["componer","celebrar","biblioteca"].forEach(x => $("#v-" + x).hidden = x !== v);
   $("#dock").hidden = v !== "celebrar";
+  despertarDock();
   if(v === "componer") renderComponer();
   if(v === "celebrar"){ renderCelebrar(); pedirWakeLock(); }
   else { pararAuto(); pararVoz(); }
@@ -2608,6 +2613,19 @@ function cerrarCalendario(){ $("#calModal").style.display = "none"; }
 $("#calCerrar").onclick = cerrarCalendario;
 $("#calModal").addEventListener("click", e => { if(e.target.id === "calModal") cerrarCalendario(); });
 document.addEventListener("keydown", e => { if(e.key === "Escape" && $("#calModal").style.display === "flex") cerrarCalendario(); });
+/* Botonera de Celebrar: se vuelve tenue (30 %) tras 6 s sin tocar; un toque la recupera */
+let dockT = 0;
+function despertarDock(){
+  const d = $("#dock"); d.classList.remove("tenue"); clearTimeout(dockT);
+  if(!d.hidden) dockT = setTimeout(() => d.classList.add("tenue"), 6000);
+}
+document.addEventListener("pointerdown", () => { if(!$("#dock").hidden) despertarDock(); }, true);
+document.addEventListener("keydown", () => { if(!$("#dock").hidden) despertarDock(); }, true);
+/* Sin zoom: pellizco (iOS ignora user-scalable) y Ctrl + rueda o teclas; el doble toque lo quita touch-action */
+["gesturestart","gesturechange","gestureend"].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive:false}));
+document.addEventListener("touchmove", e => { if(e.touches.length > 1) e.preventDefault(); }, {passive:false});
+addEventListener("wheel", e => { if(e.ctrlKey) e.preventDefault(); }, {passive:false});
+addEventListener("keydown", e => { if((e.ctrlKey || e.metaKey) && ["+","-","=","0"].includes(e.key)) e.preventDefault(); });
 $("#b-ayuda").onclick = () => $("#ayuda").showModal();
 $("#ay-cerrar").onclick = () => $("#ayuda").close();
 $("#ayuda").addEventListener("click", e => { if(e.target.id === "ayuda") $("#ayuda").close(); });
