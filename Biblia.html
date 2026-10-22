@@ -99,14 +99,14 @@ details[open] summary{border-bottom:1px solid var(--line)}
 #catm .cb{overflow:auto;-webkit-overflow-scrolling:touch;padding:6px 16px 18px}
 #catm .cs{margin-top:12px}
 #catm .cl{font:600 .75rem system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}
-#catm .cv{display:none;margin:8px 0;padding:8px 12px;border-left:3px solid var(--accent);color:var(--text);line-height:1.6}
+#catm .cv{display:none;margin:8px 0;padding:8px 12px;border-left:3px solid var(--accent);color:var(--text);line-height:1.6;font-size:var(--fs,1.1rem)}
 #catm.showv .cv{display:block}
 #catm .cc{border-top:1px solid var(--line);padding:10px 0 4px}
 #catm .cc:first-of-type{border-top:0}
-#catm .au{font:600 .82rem system-ui,sans-serif;color:var(--accent2);margin-bottom:3px}
-#catm .cc p{margin:0 0 .6em;line-height:1.6;font-size:1rem}
+#catm .au{font:600 calc(var(--fs,1.1rem)*.78) system-ui,sans-serif;color:var(--accent2);margin-bottom:3px}
+#catm .cc p{margin:0 0 .6em;line-height:1.6;font-size:var(--fs,1.1rem)}
 #catm sup{font:600 .65em system-ui,sans-serif;color:var(--accent)}
-#catm .cn{margin:10px 0 0;padding-left:1.3em;font:.82rem/1.5 system-ui,sans-serif;color:var(--muted)}
+#catm .cn{margin:10px 0 0;padding-left:1.3em;font:calc(var(--fs,1.1rem)*.78)/1.5 system-ui,sans-serif;color:var(--muted)}
 #catm .ld{padding:28px 0;text-align:center;color:var(--muted);font-family:system-ui,sans-serif}
 .empty{color:var(--muted);text-align:center;padding:24px 0}
 .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -142,6 +142,8 @@ body.mapoff .mapi{display:none}
 @media (max-width:440px){.bar .lbl{display:none}}
 .hl1 .help-btn{position:absolute;right:0;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--chip);color:var(--accent2);font:700 1.05rem/1 system-ui,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .hl1 .help-btn:hover{border-color:var(--accent)}
+#catm .ch .fsb,#dicm .ch .fsb{padding:8px 9px;min-width:2.3em}
+@media (max-width:440px){#catm .ch,#dicm .ch{gap:5px;padding:10px 10px}#catm .ch button,#dicm .ch button{padding:7px 8px}}
 #helpm .cb h3{margin:16px 0 4px;font-size:1.08rem;color:var(--accent2);font-weight:600}
 #helpm .cb h3:first-child{margin-top:8px}
 #helpm .cb p{margin:0 0 .6em;line-height:1.6}
@@ -161,9 +163,9 @@ body.mapoff .mapi{display:none}
 #dicm .cb,#helpm .cb{overflow:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 20px;overscroll-behavior:contain}
 #dicm .ds{border-top:1px solid var(--line);padding-top:6px;margin-top:10px}
 #dicm .ds:first-child,#dicm .dsee+.ds{border-top:0;margin-top:0}
-#dicm h3{margin:10px 0 4px;font-size:1.15rem;color:var(--accent2);font-weight:600}
-#dicm .dety{font:italic .9rem Georgia,serif;color:var(--muted);margin-bottom:6px}
-#dicm .db p{margin:0 0 .75em;line-height:1.65;font-size:1rem}
+#dicm h3{margin:10px 0 4px;font-size:calc(var(--fs,1.1rem)*1.08);color:var(--accent2);font-weight:600}
+#dicm .dety{font:italic calc(var(--fs,1.1rem)*.85) Georgia,serif;color:var(--muted);margin-bottom:6px}
+#dicm .db p{margin:0 0 .75em;line-height:1.65;font-size:var(--fs,1.1rem)}
 #dicm .dsee{margin:12px 0 2px;font:.85rem system-ui,sans-serif;color:var(--muted)}
 #dicm .dref{font:inherit;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
 #dicm .dgo{display:inline-block;margin-top:4px;font:500 .8rem system-ui,sans-serif;color:var(--muted);border-bottom:1px solid var(--line)}
@@ -546,7 +548,7 @@ function catOpen(bid,ch,n){
   }).catch(()=>{body.replaceChildren(ce('div','ld','No se pudieron cargar los comentarios.'))});
 }
 (function catInit(){
-  document.body.insertAdjacentHTML('beforeend','<div id="catm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Catena Aurea"><div class="ch"><div class="tt"><div class="k">Catena Aurea</div><div class="r"></div></div><button id="catv">Texto</button><button id="catx" aria-label="Cerrar">✕</button></div><div class="cb"></div></div></div>');
+  document.body.insertAdjacentHTML('beforeend','<div id="catm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Catena Aurea"><div class="ch"><div class="tt"><div class="k">Catena Aurea</div><div class="r"></div></div><button id="catv">Texto</button><button class="fsb" data-fs="-1" aria-label="Reducir letra">A−</button><button class="fsb" data-fs="1" aria-label="Aumentar letra">A+</button><button id="catx" aria-label="Cerrar">✕</button></div><div class="cb"></div></div></div>');
   const m=document.getElementById('catm');
   document.getElementById('catx').onclick=catClose;
   document.getElementById('catv').onclick=e=>{m.classList.toggle('showv');e.currentTarget.classList.toggle('on',m.classList.contains('showv'))};
@@ -766,7 +768,7 @@ function dicToggle(){
 }
 (function dicInit(){
   document.body.classList.toggle('dicoff',!dicOn);
-  document.body.insertAdjacentHTML('beforeend','<div id="dicm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Diccionario bíblico"><div class="ch"><button id="dicb" aria-label="Volver" hidden>‹</button><div class="tt"><div class="k">Diccionario bíblico</div><div class="r"></div></div><button id="dicx" aria-label="Cerrar">✕</button></div><div class="cb"></div></div></div>');
+  document.body.insertAdjacentHTML('beforeend','<div id="dicm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Diccionario bíblico"><div class="ch"><button id="dicb" aria-label="Volver" hidden>‹</button><div class="tt"><div class="k">Diccionario bíblico</div><div class="r"></div></div><button class="fsb" data-fs="-1" aria-label="Reducir letra">A−</button><button class="fsb" data-fs="1" aria-label="Aumentar letra">A+</button><button id="dicx" aria-label="Cerrar">✕</button></div><div class="cb"></div></div></div>');
   const m=document.getElementById('dicm');
   document.getElementById('dicx').onclick=dicClose;
   document.getElementById('dicb').onclick=()=>{if(dicStack.length>1){dicStack.pop();dicRender()}};
@@ -791,6 +793,9 @@ function dicToggle(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
   document.addEventListener('click',e=>{if(e.target.closest('#helpb')){m.hidden=false;m.querySelector('.cb').scrollTop=0;document.body.style.overflow='hidden'}});
 })();
+function fsSet(d){fs=Math.min(1.8,Math.max(.9,+(fs+d).toFixed(2)));document.documentElement.style.setProperty('--fs',fs+'rem');try{localStorage.setItem('fs',fs)}catch(e){}}
+document.documentElement.style.setProperty('--fs',fs+'rem');
+document.addEventListener('click',e=>{const b=e.target.closest('.fsb');if(b)fsSet(+b.dataset.fs*.1)});
 function route(){
   catClose();dicClose();helpClose();
   window.onscroll=null;window.onresize=null;
