@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#171310">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Biblia">
+<link rel="apple-touch-icon" sizes="180x180" href="https://javierscervera-rgb.github.io/Herramientas/apple-touch-icon.png">
+<link rel="icon" href="https://javierscervera-rgb.github.io/Herramientas/logo.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sagrada Biblia · Biblia de Jerusalén</title>
 <style>
@@ -116,6 +123,7 @@ details[open] summary{border-bottom:1px solid var(--line)}
 .pn .btn[aria-disabled="true"]{opacity:.35;pointer-events:none}
 .foot{text-align:center;color:var(--muted);font:.75rem system-ui,sans-serif;margin-top:36px}
 [hidden]{display:none!important}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:40;pointer-events:none}
 .dw{text-decoration:underline dotted rgba(205,139,117,.62);text-decoration-thickness:1px;text-underline-offset:.24em;cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:3px;transition:background .15s}
 .dw:hover{text-decoration-color:var(--accent);background:rgba(205,139,117,.10)}
 body.dicoff .dw{text-decoration:none;cursor:auto;background:none}
@@ -623,6 +631,7 @@ function mapToggle(){
 document.body.classList.toggle('mapoff',!mapOn);
 document.addEventListener('click',e=>{const b=e.target.closest('.mapi');if(!b||!mapOn)return;e.preventDefault();mapOpen(b.dataset.lugar)});
 /* ===== Diccionario bíblico ===== */
+const DICAPP=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 const DICPAGE='https://javierscervera-rgb.github.io/Herramientas/diccionario-biblico.html';
 let dicOn=true;try{dicOn=localStorage.getItem('dic')!=='0'}catch(e){}
 const DICPH={};for(const k in DIC.p){const t=k.split(' ');(DICPH[t[0]]=DICPH[t[0]]||[]).push([t,DIC.p[k]])}
@@ -721,7 +730,7 @@ function dicSection(i,lead){
     const {ety,paras}=dicParas(c);
     if(ety){const t=ety.replace(/^\(|\)\.?$/g,'').toLowerCase().replace(/\bdios\b/g,'Dios');body.append(ce('div','dety',t.charAt(0).toUpperCase()+t.slice(1)))}
     paras.forEach(p=>{const el=ce('p');dicRich(el,p,i);body.append(el)});
-    const go=document.createElement('a');go.className='dgo';go.href=DICPAGE+'?voz='+encodeURIComponent(DIC.v[i][1]);go.target='_blank';go.rel='noopener';go.textContent='Abrir en el diccionario ↗';body.append(go);
+    if(!DICAPP){const go=document.createElement('a');go.className='dgo';go.href=DICPAGE+'?voz='+encodeURIComponent(DIC.v[i][1]);go.target='_blank';go.rel='noopener';go.textContent='Abrir en el diccionario ↗';body.append(go)}
   }).catch(()=>body.replaceChildren(ce('div','ld','No se pudo mostrar la voz.')));
   return sec;
 }

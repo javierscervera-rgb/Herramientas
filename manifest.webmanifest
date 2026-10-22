@@ -1,0 +1,13 @@
+{
+  "name": "HerramientaSacerdotal",
+  "short_name": "Sacerdotal",
+  "lang": "es",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171310",
+  "theme_color": "#171310",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
