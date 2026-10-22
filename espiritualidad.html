@@ -2,47 +2,99 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Espiritualidad digital</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Comentario del día</title>
 <style>
   :root{
     --bg:#171310; --panel:#201D18; --accent:#CD8B75; --btn2:#292420;
     --text:#F0E8DC; --text2:#AA9D8F; --border:#37312B; --accent2:#D88972;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);
-    font-family:Georgia,"Times New Roman",serif;line-height:1.65}
-  header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:16px;
-    padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);overflow:hidden;
+    font-family:Georgia,"Times New Roman",serif;line-height:1.6;
+    display:flex;flex-direction:column;height:100dvh}
+
+  /* Cabecera */
+  header{display:flex;align-items:center;gap:12px;padding:10px 16px;
+    border-bottom:1px solid var(--border);flex:0 0 auto}
   .logo-btn{display:inline-flex;align-items:center;text-decoration:none}
   .logo{display:block;height:clamp(32px,5vw,48px);width:auto;max-width:200px}
-  .head-title{font-family:system-ui,sans-serif;font-size:.95rem;color:var(--text2);margin-left:auto}
-  main{max-width:760px;margin:0 auto;padding:24px 16px 64px}
-  h1{color:var(--accent2);font-size:clamp(1.6rem,4vw,2.2rem);margin:.2em 0 .1em}
-  .sub{color:var(--text2);margin:0 0 20px;font-family:system-ui,sans-serif;font-size:.95rem}
-  .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;font-family:system-ui,sans-serif}
-  .btn{background:var(--btn2);color:var(--text);border:1px solid var(--border);
-    padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;text-decoration:none}
+  .day-label{margin-left:auto;text-align:right;font-family:system-ui,sans-serif;
+    font-size:.85rem;color:var(--text2);line-height:1.3}
+  .day-label b{display:block;color:var(--text);font-weight:600;text-transform:capitalize}
+
+  /* Brillo del logo al cargar */
+  a:has(> .logo){position:relative}
+  a > .logo{position:relative;z-index:1}
+  a:has(> .logo)::before{content:"";position:absolute;inset:-16px;border-radius:50%;
+    background:radial-gradient(circle,rgba(216,137,114,.75) 0%,rgba(216,137,114,.3) 42%,rgba(216,137,114,0) 70%);
+    opacity:0;pointer-events:none;animation:brillo-logo 1.8s ease-in-out .5s 1 both}
+  @keyframes brillo-logo{0%{opacity:0;transform:scale(.6)}45%{opacity:1;transform:scale(1.1)}100%{opacity:0;transform:scale(1.3)}}
+  @media (prefers-reduced-motion: reduce){a:has(> .logo)::before{animation:none}}
+
+  /* Pestañas de fuente */
+  .tabs{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex:0 0 auto;
+    scrollbar-width:none;font-family:system-ui,sans-serif}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;background:var(--btn2);color:var(--text2);border:1px solid var(--border);
+    border-radius:999px;padding:6px 14px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+  .tab.active{background:var(--accent2);color:#171310;border-color:var(--accent2);font-weight:600}
+
+  /* Escenario: horizontal = fuentes, vertical = días */
+  .stage{flex:1 1 auto;min-height:0;display:flex;overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+  .stage::-webkit-scrollbar{display:none}
+  .column{flex:0 0 100%;height:100%;overflow-y:auto;overflow-x:hidden;
+    scroll-snap-align:start;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior-y:contain}
+  .column::-webkit-scrollbar{display:none}
+  .slot{height:100%;padding:6px 16px 14px;scroll-snap-align:start;scroll-snap-stop:always}
+
+  /* Pastilla */
+  .pill{height:100%;max-width:760px;margin:0 auto;background:var(--panel);
+    border:1px solid var(--border);border-radius:24px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .banner{flex:0 0 20%;min-height:0;background:var(--btn2)}
+  .banner img{width:100%;height:100%;object-fit:cover;display:block}
+  .pill-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 20px 22px;
+    overscroll-behavior-y:auto}
+  .meta{font-family:system-ui,sans-serif;font-size:.78rem;color:var(--text2);
+    text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .pill h2{margin:0 0 12px;font-size:clamp(1.25rem,3.5vw,1.6rem);line-height:1.25;color:var(--accent2)}
+  .pill h2 a{color:inherit;text-decoration:none}
+  .sec{font-family:system-ui,sans-serif;font-size:.78rem;font-weight:600;color:var(--accent);
+    text-transform:uppercase;letter-spacing:.08em;margin:18px 0 6px;
+    padding-top:12px;border-top:1px solid var(--border)}
+  .sec:first-of-type{border-top:0;padding-top:0;margin-top:4px}
+  .txt p{margin:0 0 .85em}
+  .txt h4{margin:1em 0 .4em;color:var(--accent2);font-size:1.02rem}
+  .txt em{color:var(--accent)}
+  .gospel p{color:var(--text2);font-style:italic}
+  .foot{margin-top:16px;font-family:system-ui,sans-serif}
+  .btn{display:inline-block;background:var(--btn2);color:var(--text);border:1px solid var(--border);
+    padding:8px 14px;border-radius:999px;font-size:.85rem;text-decoration:none;cursor:pointer}
   .btn:hover{border-color:var(--accent)}
-  .btn.active{background:var(--accent2);color:#171310;border-color:var(--accent2)}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;
-    overflow:hidden;margin-bottom:20px}
-  .card img.cover{width:100%;max-height:260px;object-fit:cover;display:block}
-  .card-body{padding:18px 20px 20px}
-  .meta{font-family:system-ui,sans-serif;font-size:.82rem;color:var(--text2);
-    text-transform:capitalize;margin-bottom:4px}
-  .card h2{margin:0 0 10px;font-size:1.35rem;line-height:1.3}
-  .card h2 a{color:var(--accent2);text-decoration:none}
-  .card h2 a:hover{text-decoration:underline}
-  .content em{color:var(--accent)}
-  .content p{margin:0 0 .9em}
-  .content img{max-width:100%;height:auto;border-radius:8px}
-  .content.collapsed{max-height:9.5em;overflow:hidden;
-    -webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
-  .actions{display:flex;gap:8px;margin-top:12px;font-family:system-ui,sans-serif}
-  .status{color:var(--text2);text-align:center;padding:40px 0;font-family:system-ui,sans-serif}
-  footer{color:var(--text2);font-size:.8rem;text-align:center;font-family:system-ui,sans-serif}
-  footer a{color:var(--accent)}
+  .status{color:var(--text2);font-family:system-ui,sans-serif;font-size:.95rem;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;height:100%;text-align:center;padding:20px}
+  .spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--border);
+    border-top-color:var(--accent2);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Pista de gestos */
+  .hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;
+    background:var(--btn2);border:1px solid var(--border);color:var(--text);
+    font-family:system-ui,sans-serif;font-size:.82rem;padding:8px 14px;border-radius:999px;
+    transition:opacity .6s;pointer-events:none;white-space:nowrap}
+  .hint.hide{opacity:0}
+
+  /* Flechas en escritorio */
+  .nav{position:fixed;right:18px;bottom:50%;transform:translateY(50%);display:none;
+    flex-direction:column;gap:8px;z-index:15}
+  .nav button{width:40px;height:40px;border-radius:50%;background:var(--btn2);color:var(--text);
+    border:1px solid var(--border);cursor:pointer;font-size:1rem}
+  .nav button:hover{border-color:var(--accent)}
+  @media (hover:hover) and (min-width:900px){.nav{display:flex}}
 </style>
 </head>
 <body>
@@ -50,131 +102,305 @@
   <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" aria-label="Volver a Herramientas">
     <img class="logo" src="logo.svg" alt="Herramientas">
   </a>
-  <span class="head-title">Brevísima homilía diaria</span>
+  <div class="day-label"><span id="srcName">Comentario del día</span><b id="dayName"></b></div>
 </header>
 
-<main>
-  <h1>Espiritualidad digital</h1>
-  <p class="sub">Últimas entradas de José-Fernando Rey Ballesteros</p>
+<nav class="tabs" id="tabs" aria-label="Fuentes"></nav>
+<main class="stage" id="stage"></main>
 
-  <div class="toolbar">
-    <button class="btn active" data-n="5">5 entradas</button>
-    <button class="btn" data-n="10">10 entradas</button>
-    <button class="btn" data-n="20">20 entradas</button>
-    <button class="btn" id="toggleAll">Expandir todo</button>
-  </div>
-
-  <div id="posts"><p class="status">Cargando entradas…</p></div>
-
-  <footer>Contenido de <a href="https://www.espiritualidaddigital.com" target="_blank" rel="noopener">espiritualidaddigital.com</a> · cada entrada enlaza al original</footer>
-</main>
+<div class="nav" aria-hidden="true">
+  <button id="prevSrc" title="Fuente anterior">←</button>
+  <button id="prevDay" title="Día siguiente">↑</button>
+  <button id="nextDay" title="Día anterior">↓</button>
+  <button id="nextSrc" title="Fuente siguiente">→</button>
+</div>
+<div class="hint" id="hint">← → cambia de fuente · ↓ días anteriores</div>
 
 <script>
-const SITE = "https://www.espiritualidaddigital.com";
-const PROXY = "https://api.allorigins.win/raw?url=";
-const box = document.getElementById("posts");
-let expandedAll = false;
+/* ---------- utilidades de fecha ---------- */
+const TODAY = new Date(); TODAY.setHours(12,0,0,0);
+const dayDate = i => { const d = new Date(TODAY); d.setDate(d.getDate() - i); return d; };
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const longDate = d => d.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"});
+const relDay = i => i===0 ? "Hoy" : i===1 ? "Ayer" : longDate(dayDate(i));
 
-const fmtDate = d => new Date(d).toLocaleDateString("es-ES",
-  {weekday:"long", day:"numeric", month:"long", year:"numeric"});
-
-// Limpia el HTML del blog: quita scripts, iframes y botones de compartir
-function clean(html){
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  doc.querySelectorAll("script,style,iframe,form,.addtoany_share_save_container,.a2a_kit,.sharedaddy")
-     .forEach(el => el.remove());
-  doc.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener"; });
-  return doc.body.innerHTML;
+/* ---------- red: directo y, si falla, por proxies CORS ---------- */
+const PROXIES = [
+  u => u,
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u)
+];
+let goodProxy = 0;
+async function fetchText(url){
+  const order = [goodProxy, ...PROXIES.keys()].filter((v,i,a)=>a.indexOf(v)===i);
+  let last;
+  for(const i of order){
+    try{
+      const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 12000);
+      const r = await fetch(PROXIES[i](url), {signal:ctl.signal});
+      clearTimeout(t);
+      if(r.ok){ const txt = await r.text(); if(txt && txt.trim().length){ if(i) goodProxy = i; return txt; } }
+      last = new Error("HTTP " + r.status);
+    }catch(e){ last = e; }
+  }
+  throw last || new Error("Sin conexión");
 }
+const cacheGet = k => { try{ return JSON.parse(sessionStorage.getItem(k)); }catch(e){ return null; } };
+const cacheSet = (k,v) => { try{ sessionStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
 
-// 1) API REST de WordPress (directa)
-async function fromRest(n){
-  const url = `${SITE}/wp-json/wp/v2/posts?per_page=${n}&_embed=wp:featuredmedia`;
-  const r = await fetch(url);
-  if(!r.ok) throw new Error("REST " + r.status);
-  const data = await r.json();
-  return data.map(p => ({
-    title: new DOMParser().parseFromString(p.title.rendered,"text/html").body.textContent,
-    link: p.link,
-    date: p.date,
-    html: p.content.rendered,
-    img: p._embedded?.["wp:featuredmedia"]?.[0]?.media_details?.sizes?.medium_large?.source_url
-         || p._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null
-  }));
-}
+/* ---------- extracción de texto ---------- */
+const STOP = /Otros eventos|Evangelio para niños|Comentario bíblico|Te puede interesar|Compartir|Suscr[ií]b/i;
+const parseHTML = h => new DOMParser().parseFromString(h, "text/html");
+const level = h => +h.tagName[1];
 
-// 2) Respaldo: feed RSS a través de un proxy CORS
-async function fromRss(n){
-  const r = await fetch(PROXY + encodeURIComponent(SITE + "/feed/"));
-  if(!r.ok) throw new Error("RSS " + r.status);
-  const xml = new DOMParser().parseFromString(await r.text(), "text/xml");
-  return [...xml.querySelectorAll("item")].slice(0, n).map(it => {
-    const full = it.getElementsByTagName("content:encoded")[0]?.textContent
-              || it.querySelector("description")?.textContent || "";
-    return {
-      title: it.querySelector("title")?.textContent || "",
-      link: it.querySelector("link")?.textContent || SITE,
-      date: it.querySelector("pubDate")?.textContent,
-      html: full, img: null
-    };
+// Devuelve los bloques de texto que siguen a un encabezado, hasta el siguiente del mismo nivel o superior
+function section(doc, startRe){
+  const hs = [...doc.querySelectorAll("h1,h2,h3,h4,h5")];
+  const i = hs.findIndex(h => startRe.test(h.textContent.trim()));
+  if(i < 0) return [];
+  const h = hs[i];
+  const end = hs.slice(i+1).find(x => !h.contains(x) && (level(x) <= level(h) || STOP.test(x.textContent)));
+  const range = doc.createRange();
+  range.setStartAfter(h);
+  if(end) range.setEndBefore(end); else range.setEndAfter(doc.body.lastChild);
+  const frag = range.cloneContents();
+  frag.querySelectorAll("script,style,nav,form,button,figure,aside,iframe").forEach(e=>e.remove());
+  const out = [];
+  frag.querySelectorAll("h3,h4,h5,h6,p,blockquote,li").forEach(el=>{
+    if(el.closest("li") && el.tagName!=="LI") return;
+    if(el.tagName==="BLOCKQUOTE" && el.querySelector("p")) return;
+    const t = el.textContent.replace(/\s+/g," ").trim();
+    if(t.length > 1) out.push({t, h: /^H\d$/.test(el.tagName)});
   });
+  if(!out.length){
+    frag.textContent.split(/\n\s*\n|\n/).map(s=>s.replace(/\s+/g," ").trim())
+      .filter(s=>s.length>1).forEach(t=>out.push({t, h:false}));
+  }
+  return out;
 }
 
-function render(posts){
-  if(!posts.length){ box.innerHTML = '<p class="status">No hay entradas.</p>'; return; }
-  box.innerHTML = "";
-  posts.forEach(p => {
-    const card = document.createElement("article");
-    card.className = "card";
-    card.innerHTML = `
-      ${p.img ? `<img class="cover" src="${p.img}" alt="" loading="lazy">` : ""}
-      <div class="card-body">
-        <div class="meta">${p.date ? fmtDate(p.date) : ""}</div>
-        <h2><a href="${p.link}" target="_blank" rel="noopener"></a></h2>
-        <div class="content ${expandedAll ? "" : "collapsed"}">${clean(p.html)}</div>
-        <div class="actions">
-          <button class="btn more">${expandedAll ? "Leer menos" : "Leer más"}</button>
-          <a class="btn" href="${p.link}" target="_blank" rel="noopener">Ver en el blog</a>
-        </div>
-      </div>`;
-    card.querySelector("h2 a").textContent = p.title;
-    const content = card.querySelector(".content"), more = card.querySelector(".more");
-    more.onclick = () => {
-      const c = content.classList.toggle("collapsed");
-      more.textContent = c ? "Leer más" : "Leer menos";
-    };
-    box.appendChild(card);
-  });
-}
-
-async function load(n){
-  box.innerHTML = '<p class="status">Cargando entradas…</p>';
-  try { render(await fromRest(n)); }
-  catch(e1){
-    try { render(await fromRss(n)); }
-    catch(e2){
-      box.innerHTML = `<p class="status">No se pudieron cargar las entradas.<br>
-        <a class="btn" href="${SITE}" target="_blank" rel="noopener">Abrir el blog</a></p>`;
-      console.error(e1, e2);
+/* ---------- fuentes ---------- */
+const SOURCES = [
+  {
+    id:"ed", name:"Espiritualidad digital", site:"https://www.espiritualidaddigital.com",
+    async load(i){
+      const d = iso(dayDate(i));
+      const api = `${this.site}/wp-json/wp/v2/posts?after=${d}T00:00:00&before=${d}T23:59:59&per_page=1&_embed=wp:featuredmedia`;
+      let p;
+      try{ p = JSON.parse(await fetchText(api))[0]; }
+      catch(e){ p = await this.fromRss(d); }
+      if(!p) return null;
+      const doc = parseHTML(p.content.rendered);
+      doc.querySelectorAll(".addtoany_share_save_container,.a2a_kit,.sharedaddy,script,style,iframe,img,figure").forEach(e=>e.remove());
+      const media = p._embedded?.["wp:featuredmedia"]?.[0];
+      return {
+        title: parseHTML(p.title.rendered).body.textContent,
+        link: p.link,
+        img: media?.media_details?.sizes?.medium_large?.source_url || media?.source_url || null,
+        sections: [{label:null, html: doc.body.innerHTML}]
+      };
+    },
+    async fromRss(d){
+      let items = this._rss;
+      if(!items){
+        const xml = new DOMParser().parseFromString(await fetchText(this.site + "/feed/"), "text/xml");
+        items = this._rss = [...xml.querySelectorAll("item")].map(it=>({
+          date: iso(new Date(it.querySelector("pubDate")?.textContent)),
+          title:{rendered: it.querySelector("title")?.textContent || ""},
+          link: it.querySelector("link")?.textContent,
+          content:{rendered: it.getElementsByTagName("content:encoded")[0]?.textContent || it.querySelector("description")?.textContent || ""}
+        }));
+      }
+      return items.find(x => x.date === d);
+    }
+  },
+  {
+    id:"vn", name:"Vatican News", site:"https://www.vaticannews.va/es/evangelio-de-hoy.html",
+    async load(i){
+      const d = dayDate(i);
+      const url = `https://www.vaticannews.va/es/evangelio-de-hoy/${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}.html`;
+      const doc = parseHTML(await fetchText(url));
+      const gospel = section(doc, /^Evangelio del D[ií]a/i);
+      const popes = section(doc, /palabras de los Papas/i);
+      if(!gospel.length && !popes.length) return null;
+      return {
+        title: "Las palabras de los Papas", link: url, img: null,
+        sections: [
+          {label:"Evangelio del día", blocks:gospel, gospel:true},
+          {label:"Comentario", blocks:popes}
+        ]
+      };
+    }
+  },
+  {
+    id:"op", name:"Dominicos", site:"https://www.dominicos.org/predicacion/evangelio-del-dia/hoy/",
+    async load(i){
+      const d = dayDate(i);
+      const url = `https://www.dominicos.org/predicacion/evangelio-del-dia/${d.getDate()}-${d.getMonth()+1}-${d.getFullYear()}/`;
+      const doc = parseHTML(await fetchText(url));
+      const gospel = section(doc, /^Evangelio del d[ií]a$/i);
+      const refl = section(doc, /Reflexi[oó]n del Evangelio/i);
+      if(!gospel.length && !refl.length) return null;
+      const titleBlock = refl.find(b => b.h);
+      const og = doc.querySelector('meta[property="og:image"]')?.content;
+      return {
+        title: titleBlock ? titleBlock.t : "Reflexión del Evangelio",
+        link: url,
+        img: og && !/logo/i.test(og) ? og : null,
+        sections: [
+          {label:"Evangelio del día", blocks:gospel, gospel:true},
+          {label:"Reflexión", blocks: titleBlock ? refl.filter(b=>b!==titleBlock) : refl}
+        ]
+      };
     }
   }
+];
+
+/* ---------- render ---------- */
+const stage = document.getElementById("stage");
+const tabs = document.getElementById("tabs");
+const DAYS_STEP = 7;
+let curSrc = 0, curDay = 0;
+
+function blocksToHTML(blocks){
+  const wrap = document.createElement("div");
+  blocks.forEach(b=>{
+    const el = document.createElement(b.h ? "h4" : "p");
+    el.textContent = b.t; wrap.appendChild(el);
+  });
+  return wrap.innerHTML;
 }
 
-document.querySelectorAll(".btn[data-n]").forEach(b => b.onclick = () => {
-  document.querySelectorAll(".btn[data-n]").forEach(x => x.classList.remove("active"));
-  b.classList.add("active");
-  load(+b.dataset.n);
+function fillPill(slot, src, data){
+  const pill = slot.querySelector(".pill");
+  if(!data){
+    pill.innerHTML = `<div class="status">No hay entrada para este día.<a class="btn" target="_blank" rel="noopener"></a></div>`;
+    const a = pill.querySelector("a"); a.href = src.site; a.textContent = "Abrir " + src.name;
+    return;
+  }
+  pill.innerHTML = `
+    ${data.img ? `<div class="banner"><img alt="" loading="lazy"></div>` : ""}
+    <div class="pill-body">
+      <div class="meta"></div>
+      <h2><a target="_blank" rel="noopener"></a></h2>
+      <div class="secs"></div>
+      <div class="foot"><a class="btn" target="_blank" rel="noopener">Ver en ${src.name}</a></div>
+    </div>`;
+  if(data.img){ const img = pill.querySelector(".banner img"); img.src = data.img; img.onerror = () => img.parentElement.remove(); }
+  pill.querySelector(".meta").textContent = `${src.name} · ${longDate(dayDate(+slot.dataset.day))}`;
+  const h = pill.querySelector("h2 a"); h.textContent = data.title; h.href = data.link;
+  pill.querySelector(".foot a").href = data.link;
+  const secs = pill.querySelector(".secs");
+  data.sections.forEach(s=>{
+    if(s.blocks && !s.blocks.length) return;
+    if(s.label){ const l = document.createElement("div"); l.className="sec"; l.textContent = s.label; secs.appendChild(l); }
+    const t = document.createElement("div"); t.className = "txt" + (s.gospel ? " gospel" : "");
+    t.innerHTML = s.html ?? blocksToHTML(s.blocks);
+    t.querySelectorAll("a").forEach(a=>{ a.target="_blank"; a.rel="noopener"; });
+    secs.appendChild(t);
+  });
+}
+
+async function loadSlot(slot){
+  if(slot.dataset.loaded) return; slot.dataset.loaded = "1";
+  const src = SOURCES[+slot.dataset.src], day = +slot.dataset.day;
+  const key = `cd:${src.id}:${iso(dayDate(day))}`;
+  let data = cacheGet(key);
+  if(data === null){
+    try{ data = await src.load(day); if(data) cacheSet(key, data); }
+    catch(e){
+      console.error(src.id, day, e);
+      const pill = slot.querySelector(".pill");
+      pill.innerHTML = `<div class="status">No se pudo cargar.<button class="btn">Reintentar</button></div>`;
+      pill.querySelector("button").onclick = () => { delete slot.dataset.loaded; pill.innerHTML = loadingHTML; loadSlot(slot); };
+      return;
+    }
+  }
+  fillPill(slot, src, data);
+}
+
+const loadingHTML = `<div class="status"><div class="spinner"></div>Cargando…</div>`;
+const io = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) loadSlot(e.target); }),
+  {root: null, rootMargin: "100% 0px"});
+const tailIO = new IntersectionObserver(es => es.forEach(e => {
+  if(e.isIntersecting){ tailIO.unobserve(e.target); addDays(e.target.parentElement); }
+}), {rootMargin: "200% 0px"});
+
+function addDays(col){
+  const s = +col.dataset.src, start = col.children.length;
+  for(let d = start; d < start + DAYS_STEP; d++){
+    const slot = document.createElement("section");
+    slot.className = "slot"; slot.dataset.src = s; slot.dataset.day = d;
+    slot.innerHTML = `<article class="pill">${loadingHTML}</article>`;
+    col.appendChild(slot); io.observe(slot);
+  }
+  tailIO.observe(col.lastElementChild);
+}
+
+SOURCES.forEach((src, s)=>{
+  const b = document.createElement("button");
+  b.className = "tab"; b.textContent = src.name; b.onclick = () => goSrc(s);
+  tabs.appendChild(b);
+  const col = document.createElement("div");
+  col.className = "column"; col.dataset.src = s;
+  stage.appendChild(col); addDays(col);
+  col.addEventListener("scroll", () => {
+    if(s !== curSrc) return;
+    const d = Math.round(col.scrollTop / col.clientHeight);
+    if(d !== curDay){ curDay = d; updateLabels(); }
+  }, {passive:true});
 });
 
-document.getElementById("toggleAll").onclick = e => {
-  expandedAll = !expandedAll;
-  e.target.textContent = expandedAll ? "Contraer todo" : "Expandir todo";
-  e.target.classList.toggle("active", expandedAll);
-  document.querySelectorAll(".content").forEach(c => c.classList.toggle("collapsed", !expandedAll));
-  document.querySelectorAll(".more").forEach(m => m.textContent = expandedAll ? "Leer menos" : "Leer más");
-};
+function updateLabels(){
+  [...tabs.children].forEach((t,i)=>t.classList.toggle("active", i===curSrc));
+  tabs.children[curSrc].scrollIntoView({block:"nearest", inline:"nearest"});
+  document.getElementById("srcName").textContent = SOURCES[curSrc].name;
+  document.getElementById("dayName").textContent = relDay(curDay);
+}
 
-load(5);
+// Al cambiar de fuente se mantiene el mismo día
+function syncColumn(s){
+  const col = stage.children[s];
+  while(col.children.length <= curDay) addDays(col);
+  col.scrollTo({top: curDay * col.clientHeight, behavior: "instant"});
+}
+
+stage.addEventListener("scroll", () => {
+  const s = Math.round(stage.scrollLeft / stage.clientWidth);
+  if(s !== curSrc && s >= 0 && s < SOURCES.length){
+    curSrc = s; updateLabels();
+    SOURCES.forEach((_, i) => { if(i !== s) syncColumn(i); });
+  }
+}, {passive:true});
+
+function goSrc(s){
+  s = Math.max(0, Math.min(SOURCES.length-1, s));
+  syncColumn(s);
+  stage.scrollTo({left: s * stage.clientWidth, behavior: "smooth"});
+}
+function goDay(d){
+  d = Math.max(0, d);
+  const col = stage.children[curSrc];
+  while(col.children.length <= d) addDays(col);
+  col.scrollTo({top: d * col.clientHeight, behavior: "smooth"});
+}
+
+document.getElementById("prevSrc").onclick = () => goSrc(curSrc-1);
+document.getElementById("nextSrc").onclick = () => goSrc(curSrc+1);
+document.getElementById("prevDay").onclick = () => goDay(curDay-1);
+document.getElementById("nextDay").onclick = () => goDay(curDay+1);
+document.addEventListener("keydown", e => {
+  if(e.key==="ArrowLeft") goSrc(curSrc-1);
+  else if(e.key==="ArrowRight") goSrc(curSrc+1);
+  else if(e.key==="PageDown") { e.preventDefault(); goDay(curDay+1); }
+  else if(e.key==="PageUp") { e.preventDefault(); goDay(curDay-1); }
+});
+window.addEventListener("resize", () => { syncColumn(curSrc); stage.scrollLeft = curSrc * stage.clientWidth; });
+
+updateLabels();
+setTimeout(() => document.getElementById("hint").classList.add("hide"), 4000);
 </script>
 </body>
 </html>
