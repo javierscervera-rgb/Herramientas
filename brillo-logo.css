@@ -1,0 +1,20 @@
+/* Brillo del logo-botón al cargar la página: tras 0,5 s aparece una luz que se apaga sola.
+   Pegar dentro del <style> de cada página que tenga <a> con el logo (img o svg con class="logo"). */
+a:has(> .logo) { position: relative; }
+a > .logo { position: relative; z-index: 1; }
+a:has(> .logo)::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216,137,114,.75) 0%, rgba(216,137,114,.3) 42%, rgba(216,137,114,0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: brillo-logo 1.8s ease-in-out .5s 1 both;
+}
+@keyframes brillo-logo {
+  0%   { opacity: 0; transform: scale(.6); }
+  45%  { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@media (prefers-reduced-motion: reduce) { a:has(> .logo)::before { animation: none; } }
