@@ -99,6 +99,9 @@
   }
   @media (prefers-reduced-motion: reduce) { .logo-btn::before { animation: none; } }
   .ver { margin: 1.1rem 0 0; font: 0.8rem var(--sans); color: var(--muted); }
+  .nov { margin: 0 0 0.4rem; font-size: 0.95rem; }
+  .nov ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+  .nov li { margin: 0 0 0.25rem; }
   .sub { font-style: italic; color: var(--muted); margin: 0; }
   nav { display: grid; gap: 0.8rem; }
   .tool {
@@ -154,6 +157,8 @@
     border-radius: 12px;
     padding: 1.4rem 1.4rem 1.1rem;
     width: min(90vw, 28rem);
+    max-height: 85vh;
+    overflow-y: auto;
     font-family: var(--serif);
     line-height: 1.6;
   }
@@ -178,8 +183,15 @@
   <div id="acerca-txt">
     <p><strong>HerramientaSacerdotal</strong> es un proyecto para ayudar en el día a día a los sacerdotes especialmente en lo que tiene que ver con la lectura y el estudio de la Sagrada Escritura así como la celebración de la Santa Misa.</p>
     <p>Para cualquier sugerencia puedes pulsar <br><br> <a href="mailto:javierscervera@gmail.com" target="_self"> AQUÍ </a>.</p>
-    <!-- ACTUALIZAR versión y fecha en cada edición de este archivo -->
-    <p class="ver">v. 2.6, 22 oct 2026</p>
+    <div class="nov">
+      <strong>Novedades</strong>
+      <ul>
+        <li>Dos versiones de la Biblia.</li>
+        <li>Ocultación de los números de versículos, para citar los textos más fácilmente.</li>
+      </ul>
+    </div>
+    <!-- ACTUALIZAR versión, fecha y novedades en cada edición de este archivo -->
+    <p class="ver">v. 2.7, 24 oct 2026</p>
   </div>
   <button class="cerrar" type="button" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
