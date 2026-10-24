@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Entrevistas</title>
+<style>
+  :root {
+    --bg: #171310;        /* fondo principal: negro cálido */
+    --card: #201D18;      /* tarjetas y paneles: marrón carbón */
+    --accent: #CD8B75;    /* acento: salmón / terracota suave */
+    --btn2: #292420;      /* botones secundarios: marrón oscuro */
+    --tx: #F0E8DC;        /* texto principal: marfil cálido */
+    --tx2: #AA9D8F;       /* texto secundario: gris topo cálido */
+    --bd: #37312B;        /* bordes: marrón grisáceo */
+    --accent2: #D88972;   /* salmón alternativo: títulos y botones activos */
+    --danger: #E5806F;
+    --ok: #9DB58A;
+    --barh: 64px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--tx); -webkit-text-size-adjust: 100%; line-height: 1.45; }
+  .hidden { display: none !important; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+
+  /* ---------- Barra superior ---------- */
+  #bar {
+    position: sticky; top: 0; z-index: 30; height: var(--barh);
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--bg); border-bottom: 1px solid var(--bd);
+  }
+  #logoBtn { flex: none; display: flex; align-items: center; }
+  .logo { display: block; height: clamp(32px, 5vw, 48px); width: auto; max-width: 200px; }
+  #bar h1 { margin: 0; font-size: 1.2rem; color: var(--accent2); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #bar .sp { flex: 1; }
+  #sync { flex: none; display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--tx2); max-width: 46vw; }
+  #sync .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--tx2); }
+  #sync.ok .dot { background: var(--ok); }
+  #sync.busy .dot { background: var(--accent); animation: lat 1s ease-in-out infinite; }
+  #sync.err .dot { background: var(--danger); }
+  #sync span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @keyframes lat { 50% { opacity: .3; } }
+  .ibtn { flex: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx); font-size: 1.15rem; cursor: pointer; display: grid; place-items: center; }
+
+  /* ---------- Botones ---------- */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 42px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx); font-size: .95rem; cursor: pointer; text-decoration: none; white-space: nowrap; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+  .btn.danger { color: var(--danger); border-color: rgba(229,128,111,.45); }
+  .btn.small { height: 36px; padding: 0 12px; font-size: .88rem; }
+  .btn[aria-disabled="true"] { opacity: .4; pointer-events: none; }
+  .btn svg { width: 18px; height: 18px; flex: none; }
+
+  /* ---------- Lista de personas ---------- */
+  #lista { max-width: 1100px; margin: 0 auto; padding: 18px 16px 48px; }
+  .tools { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tools input[type=search] { flex: 1 1 200px; min-width: 0; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--card); }
+  .tools select { flex: 0 0 auto; height: 42px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--bd); background: var(--card); }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .pcard { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--bd); cursor: pointer; transition: border-color .15s; }
+  .pcard:hover, .pcard:focus-visible { border-color: var(--accent); outline: none; }
+  .pcard .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .pcard h2 { margin: 0; font-size: 1.12rem; color: var(--tx); overflow-wrap: anywhere; }
+  .lbl { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--tx2); margin-bottom: 2px; }
+  .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; overflow-wrap: anywhere; font-size: .93rem; }
+  .muted { color: var(--tx2); }
+  .pcard .acts { margin-top: auto; display: flex; gap: 8px; }
+  .chip { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: .78rem; border: 1px solid var(--bd); background: var(--btn2); color: var(--tx2); white-space: nowrap; }
+  .chip.hoy { background: var(--accent2); border-color: var(--accent2); color: var(--bg); font-weight: 600; }
+  .chip.vencida { color: var(--danger); border-color: rgba(229,128,111,.6); background: rgba(229,128,111,.12); font-weight: 600; }
+  .chip.fecha { background: rgba(216,137,114,.15); border-color: rgba(216,137,114,.45); color: var(--accent2); font-weight: 600; }
+  .vacio { text-align: center; padding: 48px 16px; color: var(--tx2); }
+  .vacio p { margin: 0 0 16px; }
+
+  /* ---------- Detalle ---------- */
+  #detalle { max-width: 900px; margin: 0 auto; padding: 14px 16px 0; height: calc(100dvh - var(--barh)); display: flex; flex-direction: column; gap: 14px; }
+  .ppanel { flex: none; padding: 16px; border-radius: 16px; background: var(--card); border: 1px solid var(--bd); }
+  .ppanel .hd { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .ppanel h2 { margin: 0; font-size: 1.45rem; color: var(--accent2); overflow-wrap: anywhere; }
+  .ppanel .meta { font-size: .88rem; color: var(--tx2); margin-top: 2px; }
+  .ppanel .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ppanel .desc { margin-top: 12px; max-height: 24vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .95rem; padding-right: 4px; }
+  .ehd { flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ehd h3 { margin: 0; font-size: 1.05rem; flex: 1; color: var(--tx); }
+  #entradas { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 24px; overscroll-behavior: contain; }
+  .entry { flex: none; padding: 14px 16px; border-radius: 20px; background: var(--card); border: 1px solid var(--bd); max-height: min(60vh, 520px); overflow: auto; cursor: pointer; transition: border-color .15s; }
+  .entry:hover, .entry:focus-visible { border-color: var(--accent); outline: none; }
+  .entry .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .entry .sec + .sec { margin-top: 12px; }
+  .entry .tx { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .95rem; }
+
+  /* ---------- Diálogos ---------- */
+  dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border-radius: 16px; border: 1px solid var(--bd); background: var(--card); color: var(--tx); box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog form { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  dialog h2 { margin: 0; font-size: 1.2rem; color: var(--accent2); }
+  .fld label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 5px; }
+  .fld input, .fld textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--bg); font-size: 1rem; }
+  .fld input { height: 44px; }
+  .fld textarea { min-height: 110px; resize: vertical; }
+  .fld .hint { font-size: .82rem; color: var(--tx2); margin-top: 5px; }
+  .row2 { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row2 > .fld { flex: 1 1 180px; }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .quick button { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--bd); background: var(--btn2); font-size: .82rem; cursor: pointer; }
+  .dacts { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .dacts .izq { margin-right: auto; }
+  .msg { min-height: 1.2em; margin: 0; font-size: .88rem; color: var(--danger); }
+  .msg.ok { color: var(--ok); }
+  .nota { font-size: .85rem; color: var(--tx2); margin: 0; }
+  .nota code { color: var(--accent2); }
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70; max-width: 90vw; padding: 12px 18px; border-radius: 12px; background: var(--card); border: 1px solid var(--bd); color: var(--tx); font-size: .95rem; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+
+  @media (max-width: 520px) {
+    #bar h1 { font-size: 1.05rem; }
+    #sync span { display: none; }
+    .ppanel h2 { font-size: 1.25rem; }
+    .ppanel .desc { max-height: 20vh; }
+  }
+
+  /* ---------- Brillo del logo al cargar ---------- */
+  a:has(> .logo) { position: relative; }
+  a > .logo { position: relative; z-index: 1; }
+  a:has(> .logo)::before {
+    content: ""; position: absolute; inset: -16px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(216,137,114,.75) 0%,
+      rgba(216,137,114,.3) 42%, rgba(216,137,114,0) 70%);
+    opacity: 0; pointer-events: none;
+    animation: brillo-logo 1.8s ease-in-out .5s 1 both;
+  }
+  @keyframes brillo-logo {
+    0%   { opacity: 0; transform: scale(.6); }
+    45%  { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.3); }
+  }
+  @media (prefers-reduced-motion: reduce) { a:has(> .logo)::before { animation: none; } }
+</style>
+<script>
+(function(a,b,c){if(c in b&&b[c]){var d,e=a.location,f=/^(a|html)$/i;a.addEventListener("click",function(a){d=a.target;while(!f.test(d.nodeName))d=d.parentNode;"href"in d&&(d.href.indexOf("http")||~d.href.indexOf(e.host))&&(a.preventDefault(),e.href=d.href)},!1)}})(document,window.navigator,"standalone")
+</script>
+</head>
+<body>
+
+<header id="bar">
+  <a id="logoBtn" href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" title="Ir a Herramientas" aria-label="Ir a Herramientas"><img class="logo" src="https://javierscervera-rgb.github.io/Herramientas/logo.svg" alt="Herramientas"></a>
+  <h1>Entrevistas</h1>
+  <div class="sp"></div>
+  <div id="sync" title=""><i class="dot"></i><span>Sin configurar</span></div>
+  <button class="ibtn" id="cfgBtn" title="Ajustes de GitHub" aria-label="Ajustes de GitHub">⚙︎</button>
+</header>
+
+<!-- ===================== LISTA ===================== -->
+<main id="lista">
+  <div class="tools">
+    <input type="search" id="buscar" placeholder="Buscar por nombre, teléfono o texto" autocomplete="off">
+    <select id="orden" aria-label="Ordenar">
+      <option value="alarma">Por alarma</option>
+      <option value="nombre">Por nombre</option>
+      <option value="reciente">Última entrevista</option>
+    </select>
+    <button class="btn primary" id="nuevaPersona">+ Persona</button>
+  </div>
+  <div id="grid"></div>
+</main>
+
+<!-- ===================== DETALLE ===================== -->
+<main id="detalle" class="hidden"></main>
+
+<!-- ===================== DIÁLOGO PERSONA ===================== -->
+<dialog id="dPersona">
+  <form method="dialog" id="fPersona">
+    <h2 id="tPersona">Nueva persona</h2>
+    <div class="fld"><label for="pNombre">Nombre</label><input id="pNombre" required maxlength="120" autocomplete="off"></div>
+    <div class="fld"><label for="pTel">Teléfono</label><input id="pTel" type="tel" maxlength="30" autocomplete="off" placeholder="600 000 000">
+      <div class="hint">Si empieza por 6 o 7 se añade 34 al abrir WhatsApp.</div></div>
+    <div class="fld"><label for="pDesc">Descripción</label><textarea id="pDesc" rows="5"></textarea></div>
+    <div class="dacts">
+      <button type="button" class="btn danger izq hidden" id="pBorrar">Eliminar</button>
+      <button type="button" class="btn" data-close>Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===================== DIÁLOGO ENTRADA ===================== -->
+<dialog id="dEntrada">
+  <form method="dialog" id="fEntrada">
+    <h2 id="tEntrada">Nueva entrada</h2>
+    <div class="row2">
+      <div class="fld"><label for="eFecha">Fecha de creación</label><input id="eFecha" type="date" required></div>
+      <div class="fld"><label for="eAlarma">Alarma</label><input id="eAlarma" type="date">
+        <div class="quick"><button type="button" data-dias="7">+1 sem</button><button type="button" data-dias="14">+2 sem</button><button type="button" data-dias="30">+1 mes</button><button type="button" data-dias="0">Quitar</button></div></div>
+    </div>
+    <div class="fld"><label for="eInforme">Informe</label><textarea id="eInforme" rows="7"></textarea></div>
+    <div class="fld"><label for="ePasos">Próximos pasos</label><textarea id="ePasos" rows="4"></textarea></div>
+    <div class="dacts">
+      <button type="button" class="btn danger izq hidden" id="eBorrar">Eliminar</button>
+      <button type="button" class="btn" data-close>Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===================== DIÁLOGO AJUSTES ===================== -->
+<dialog id="dCfg">
+  <form method="dialog" id="fCfg">
+    <h2>Almacenamiento en GitHub</h2>
+    <p class="nota">Los datos se guardan en un archivo JSON de un repositorio. Usa un repositorio <b>privado</b> distinto de <code>Herramientas</code> (que es público), y un token <i>fine-grained</i> con acceso solo a ese repositorio y permiso <i>Contents: Read and write</i>. El token se queda solo en este navegador.</p>
+    <div class="row2">
+      <div class="fld"><label for="cOwner">Usuario</label><input id="cOwner" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="fld"><label for="cRepo">Repositorio</label><input id="cRepo" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    </div>
+    <div class="fld"><label for="cPath">Archivo</label><input id="cPath" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="fld"><label for="cToken">Token</label><input id="cToken" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…"></div>
+    <p class="msg" id="cMsg"></p>
+    <div class="dacts">
+      <button type="button" class="btn small izq" id="cExport">Exportar copia</button>
+      <label class="btn small" for="cImport">Importar copia</label><input id="cImport" type="file" accept=".json,application/json" hidden>
+    </div>
+    <div class="dacts">
+      <button type="button" class="btn danger izq" id="cOlvidar">Olvidar token</button>
+      <button type="button" class="btn" data-close>Cerrar</button>
+      <button type="submit" class="btn primary">Conectar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const KEY_DB = "entrevistas.db", KEY_CFG = "entrevistas.gh", KEY_ORD = "entrevistas.orden", KEY_EORD = "entrevistas.eorden";
+  const FORMATO = "entrevistas";
+
+  /* ---------- Utilidades ---------- */
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+  const hoy = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+  const sumarDias = (iso, n) => { const [y, m, d] = iso.split("-").map(Number); const t = new Date(y, m - 1, d + n); return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0"); };
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  function fecha(iso) {
+    if (!ISO.test(iso || "")) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  }
+  const store = {
+    get(k, def) { try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch (_) { return def; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (_) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (_) {} }
+  };
+  let toastT = null;
+  function toast(m) {
+    let el = $("toast");
+    if (!el) { el = document.createElement("div"); el.id = "toast"; el.setAttribute("role", "status"); document.body.appendChild(el); }
+    el.textContent = m; clearTimeout(toastT); toastT = setTimeout(() => el.remove(), 3500);
+  }
+
+  /* ---------- WhatsApp ---------- */
+  function waNum(tel) {
+    let d = String(tel || "").replace(/[^\d+]/g, "");
+    if (d.startsWith("+")) d = d.slice(1); else if (d.startsWith("00")) d = d.slice(2);
+    d = d.replace(/\D/g, "");
+    if (/^[67]/.test(d)) d = "34" + d;
+    return d;
+  }
+  const WA_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>';
+  function waBtn(tel, small) {
+    const n = waNum(tel);
+    const cls = "btn" + (small ? " small" : "");
+    if (!n) return `<span class="${cls}" aria-disabled="true" title="Sin teléfono">${WA_ICON}WhatsApp</span>`;
+    return `<a class="${cls} wa" href="https://api.whatsapp.com/send/?phone=${encodeURIComponent(n)}&app_absent=0" target="_blank" rel="noopener" title="Escribir por WhatsApp">${WA_ICON}WhatsApp</a>`;
+  }
+
+  /* ---------- Datos ----------
+     { formato, version, personas:[{id,nombre,telefono,descripcion,creada,mod,
+         entradas:[{id,creada,ts,informe,pasos,alarma,mod}]}], borrados:{id:ms} } */
+  const vacio = () => ({ formato: FORMATO, version: 1, personas: [], borrados: {} });
+  const str = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
+  const num = v => (typeof v === "number" && isFinite(v)) ? v : 0;
+  function limpiar(d) {        // valida todo lo que viene de fuera
+    if (!d || typeof d !== "object" || !Array.isArray(d.personas)) throw new Error("formato");
+    const out = vacio();
+    if (d.borrados && typeof d.borrados === "object") for (const [k, v] of Object.entries(d.borrados)) out.borrados[String(k).slice(0, 80)] = num(v);
+    for (const p of d.personas.slice(0, 20000)) {
+      if (!p || typeof p.id !== "string") continue;
+      const q = { id: p.id.slice(0, 80), nombre: str(p.nombre, 200), telefono: str(p.telefono, 40), descripcion: str(p.descripcion, 50000),
+                  creada: ISO.test(p.creada) ? p.creada : hoy(), mod: num(p.mod), entradas: [] };
+      for (const e of (Array.isArray(p.entradas) ? p.entradas : []).slice(0, 20000)) {
+        if (!e || typeof e.id !== "string") continue;
+        q.entradas.push({ id: e.id.slice(0, 80), creada: ISO.test(e.creada) ? e.creada : hoy(), ts: num(e.ts), informe: str(e.informe, 200000),
+                          pasos: str(e.pasos, 50000), alarma: ISO.test(e.alarma) ? e.alarma : "", mod: num(e.mod) });
+      }
+      out.personas.push(q);
+    }
+    return out;
+  }
+  function normal(d) {         // orden estable para comparar versiones
+    const b = {}; Object.keys(d.borrados).sort().forEach(k => b[k] = d.borrados[k]);
+    return { formato: FORMATO, version: 1,
+      personas: d.personas.slice().sort((a, c) => a.id < c.id ? -1 : 1).map(p => Object.assign({}, p, { entradas: p.entradas.slice().sort((a, c) => a.id < c.id ? -1 : 1) })),
+      borrados: b };
+  }
+  function fusionar(a, b) {    // une dos versiones: gana la modificación más reciente; lo borrado no vuelve
+    const bor = Object.assign({}, a.borrados);
+    for (const [k, v] of Object.entries(b.borrados)) bor[k] = Math.max(bor[k] || 0, v);
+    const ma = new Map(a.personas.map(p => [p.id, p])), mb = new Map(b.personas.map(p => [p.id, p]));
+    const personas = [];
+    for (const id of new Set([...ma.keys(), ...mb.keys()])) {
+      if (bor[id]) continue;
+      const pa = ma.get(id), pb = mb.get(id);
+      const base = !pb ? pa : !pa ? pb : (pa.mod >= pb.mod ? pa : pb);
+      const ea = new Map((pa ? pa.entradas : []).map(e => [e.id, e])), eb = new Map((pb ? pb.entradas : []).map(e => [e.id, e]));
+      const entradas = [];
+      for (const eid of new Set([...ea.keys(), ...eb.keys()])) {
+        if (bor[eid]) continue;
+        const x = ea.get(eid), y = eb.get(eid);
+        entradas.push(!y ? x : !x ? y : (x.mod >= y.mod ? x : y));
+      }
+      personas.push(Object.assign({}, base, { entradas }));
+    }
+    return normal({ personas, borrados: bor });
+  }
+
+  let db;
+  try { db = limpiar(store.get(KEY_DB, null)); } catch (_) { db = vacio(); }
+  const guardarLocal = () => store.set(KEY_DB, db);
+  const persona = id => db.personas.find(p => p.id === id);
+  const cmpEntrada = (a, b) => a.creada === b.creada ? a.ts - b.ts : (a.creada < b.creada ? -1 : 1);
+  const ultima = p => p.entradas.length ? p.entradas.reduce((m, e) => cmpEntrada(e, m) > 0 ? e : m) : null;
+  const alarmaDe = p => { const u = ultima(p); return u ? u.alarma : ""; };   // alarma de la entrevista más reciente
+  function chipAlarma(iso) {
+    if (!iso) return `<span class="chip">Sin alarma</span>`;
+    const h = hoy(), cls = iso < h ? "vencida" : iso === h ? "hoy" : "";
+    return `<span class="chip ${cls}" title="Alarma">⏰ ${iso === h ? "Hoy" : esc(fecha(iso))}</span>`;
+  }
+
+  /* ---------- Cambios: se guardan aquí y se suben a GitHub ---------- */
+  let subirT = null;
+  function cambio() {
+    guardarLocal(); render();
+    clearTimeout(subirT); subirT = setTimeout(sync, 1200);
+  }
+
+  /* ---------- GitHub ---------- */
+  const defCfg = { owner: "javierscervera-rgb", repo: "Entrevistas-datos", path: "entrevistas.json", token: "" };
+  let cfg = Object.assign({}, defCfg, store.get(KEY_CFG, {}));
+  const configurado = () => !!(cfg.owner && cfg.repo && cfg.path && cfg.token);
+  const syncEl = $("sync");
+  function estado(clase, texto, titulo) {
+    syncEl.className = clase; syncEl.querySelector("span").textContent = texto; syncEl.title = titulo || texto;
+  }
+  const b64enc = s => { const b = new TextEncoder().encode(s); let r = ""; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(r); };
+  const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
+  function url() {
+    return "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) +
+           "/contents/" + cfg.path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+  }
+  async function gh(method, body, accept) {
+    const r = await fetch(url(), {
+      method, cache: "no-store",
+      headers: { "Authorization": "Bearer " + cfg.token, "Accept": accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
+                 ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) { const e = new Error("http " + r.status); e.status = r.status; throw e; }
+    return r;
+  }
+  async function bajar() {
+    try {
+      const j = await (await gh("GET")).json();
+      let txt = j.content ? b64dec(j.content) : "";
+      if (!txt && j.size > 0) txt = await (await gh("GET", null, "application/vnd.github.raw")).text();   // archivos de más de 1 MB
+      return { data: txt ? limpiar(JSON.parse(txt)) : vacio(), sha: j.sha };
+    } catch (e) {
+      if (e.status === 404) return { data: null, sha: null };
+      throw e;
+    }
+  }
+  async function subir(data, sha) {
+    const body = { message: "Entrevistas: " + new Date().toISOString(), content: b64enc(JSON.stringify(data, null, 1)) };
+    if (sha) body.sha = sha;
+    await gh("PUT", body);
+  }
+  function explicar(e) {
+    if (!navigator.onLine) return "Sin conexión: guardado en este dispositivo";
+    if (e.status === 401) return "Token no válido o caducado";
+    if (e.status === 403) return "El token no tiene permiso de escritura";
+    if (e.status === 404) return "No se encuentra el repositorio";
+    return "No se pudo sincronizar (" + (e.status || "red") + ")";
+  }
+  let sincronizando = false, otraVez = false;
+  async function sync() {
+    if (!configurado()) { estado("", "Solo en este dispositivo", "Configura GitHub en ⚙︎ para guardar allí los datos"); return false; }
+    if (sincronizando) { otraVez = true; return false; }
+    sincronizando = true; clearTimeout(subirT);
+    estado("busy", "Sincronizando…");
+    let ok = false;
+    try {
+      for (let intento = 0; intento < 3 && !ok; intento++) {
+        const r = await bajar();
+        const remoto = r.data ? normal(r.data) : null;
+        const unido = remoto ? fusionar(db, remoto) : normal(db);
+        if (JSON.stringify(unido) !== JSON.stringify(normal(db))) { db = unido; guardarLocal(); render(); }
+        if (remoto && JSON.stringify(unido) === JSON.stringify(remoto)) { ok = true; break; }
+        try { await subir(unido, r.sha); ok = true; }
+        catch (e) { if (e.status !== 409 && e.status !== 422) throw e; }   // otro dispositivo guardó antes: se vuelve a unir
+      }
+      if (ok) estado("ok", "Guardado en GitHub", "Sincronizado " + new Date().toLocaleTimeString("es-ES"));
+      else estado("err", "Conflicto al guardar");
+    } catch (e) {
+      estado("err", explicar(e));
+    } finally {
+      sincronizando = false;
+      if (otraVez) { otraVez = false; setTimeout(sync, 300); }
+    }
+    return ok;
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sync(); });
+  window.addEventListener("online", sync);
+
+  /* ---------- Vistas ---------- */
+  const lista = $("lista"), detalle = $("detalle"), grid = $("grid"), buscar = $("buscar"), orden = $("orden");
+  orden.value = store.get(KEY_ORD, "alarma");
+  let eOrden = store.get(KEY_EORD, "desc");
+  const ruta = () => { const m = location.hash.match(/^#\/p\/(.+)$/); return m ? decodeURIComponent(m[1]) : null; };
+
+  function render() {
+    const id = ruta(), p = id && persona(id);
+    if (id && !p) { history.replaceState(null, "", location.pathname + location.search); }
+    if (p) { lista.classList.add("hidden"); detalle.classList.remove("hidden"); renderDetalle(p); }
+    else { detalle.classList.add("hidden"); lista.classList.remove("hidden"); renderLista(); }
+  }
+
+  function renderLista() {
+    const q = buscar.value.trim().toLowerCase();
+    let ps = db.personas.filter(p => !q || [p.nombre, p.telefono, p.descripcion, ...p.entradas.map(e => e.informe + " " + e.pasos)].join(" ").toLowerCase().includes(q));
+    const nom = (a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
+    if (orden.value === "nombre") ps.sort(nom);
+    else if (orden.value === "reciente") ps.sort((a, b) => { const x = ultima(a), y = ultima(b); return (!x && !y) ? nom(a, b) : !x ? 1 : !y ? -1 : cmpEntrada(y, x); });
+    else ps.sort((a, b) => { const x = alarmaDe(a), y = alarmaDe(b); return x === y ? nom(a, b) : !x ? 1 : !y ? -1 : (x < y ? -1 : 1); });
+
+    if (!db.personas.length) {
+      grid.innerHTML = `<div class="vacio" style="grid-column:1/-1"><p>Todavía no hay personas.</p><button class="btn primary" data-accion="nueva">+ Añadir la primera</button></div>`;
+      return;
+    }
+    if (!ps.length) { grid.innerHTML = `<div class="vacio" style="grid-column:1/-1"><p>Nada coincide con la búsqueda.</p></div>`; return; }
+    grid.innerHTML = ps.map(p => {
+      const u = ultima(p);
+      return `<article class="pcard" tabindex="0" data-id="${esc(p.id)}">
+        <div class="top"><h2>${esc(p.nombre || "Sin nombre")}</h2>${chipAlarma(alarmaDe(p))}</div>
+        <div><span class="lbl">Descripción</span><div class="clamp ${p.descripcion.trim() ? "" : "muted"}">${esc(p.descripcion.trim() || "Sin descripción")}</div></div>
+        <div><span class="lbl">Último informe${u ? " · " + esc(fecha(u.creada)) : ""}</span><div class="clamp ${u && u.informe.trim() ? "" : "muted"}">${esc(u ? (u.informe.trim() || "Sin texto") : "Sin entrevistas")}</div></div>
+        <div class="acts">${waBtn(p.telefono, true)}</div>
+      </article>`;
+    }).join("");
+  }
+
+  function renderDetalle(p) {
+    const es = p.entradas.slice().sort(cmpEntrada);
+    if (eOrden === "desc") es.reverse();
+    const prevScroll = ($("entradas") || {}).scrollTop || 0;
+    detalle.innerHTML = `
+      <section class="ppanel">
+        <div class="hd">
+          <div>
+            <h2>${esc(p.nombre || "Sin nombre")}</h2>
+            <div class="meta">Creada el ${esc(fecha(p.creada))}${p.telefono ? " · " + esc(p.telefono) : ""}</div>
+          </div>
+          <div class="acts">${waBtn(p.telefono)}<button class="btn" data-accion="editarPersona">Editar</button></div>
+        </div>
+        <div class="desc ${p.descripcion.trim() ? "" : "muted"}">${esc(p.descripcion.trim() || "Sin descripción")}</div>
+      </section>
+      <div class="ehd">
+        <button class="btn small" data-accion="volver">← Personas</button>
+        <h3>Entradas (${es.length})</h3>
+        <button class="btn small" data-accion="ordenEntradas" title="Cambiar orden">${eOrden === "desc" ? "↓ Más recientes" : "↑ Más antiguas"}</button>
+        <button class="btn small primary" data-accion="nuevaEntrada">+ Entrada</button>
+      </div>
+      <div id="entradas">${es.length ? es.map(e => `
+        <article class="entry" tabindex="0" data-eid="${esc(e.id)}">
+          <div class="chips"><span class="chip fecha">${esc(fecha(e.creada))}</span>${e.alarma ? chipAlarma(e.alarma) : ""}</div>
+          <div class="sec"><span class="lbl">Informe</span><div class="tx ${e.informe.trim() ? "" : "muted"}">${esc(e.informe.trim() || "—")}</div></div>
+          <div class="sec"><span class="lbl">Próximos pasos</span><div class="tx ${e.pasos.trim() ? "" : "muted"}">${esc(e.pasos.trim() || "—")}</div></div>
+        </article>`).join("") : `<div class="vacio"><p>Aún no hay entradas.</p></div>`}
+      </div>`;
+    $("entradas").scrollTop = prevScroll;
+  }
+
+  /* ---------- Eventos de la lista ---------- */
+  buscar.addEventListener("input", renderLista);
+  orden.addEventListener("change", () => { store.set(KEY_ORD, orden.value); renderLista(); });
+  $("nuevaPersona").addEventListener("click", () => abrirPersona(null));
+  grid.addEventListener("click", e => {
+    if (e.target.closest(".wa, [aria-disabled]")) return;
+    if (e.target.closest("[data-accion=nueva]")) return abrirPersona(null);
+    const c = e.target.closest(".pcard"); if (c) irA(c.dataset.id);
+  });
+  grid.addEventListener("keydown", e => { const c = e.target.closest(".pcard"); if (c && e.target === c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); irA(c.dataset.id); } });
+  let vinoDeLista = false;
+  function irA(id) { vinoDeLista = !ruta(); location.hash = "#/p/" + encodeURIComponent(id); }
+  window.addEventListener("hashchange", () => { if (!ruta()) vinoDeLista = false; render(); window.scrollTo(0, 0); });
+
+  /* ---------- Eventos del detalle ---------- */
+  detalle.addEventListener("click", e => {
+    const a = e.target.closest("[data-accion]"), p = persona(ruta());
+    if (!p) return;
+    if (a) {
+      const acc = a.dataset.accion;
+      if (acc === "volver") { if (vinoDeLista) { vinoDeLista = false; history.back(); } else location.hash = ""; return; }
+      if (acc === "editarPersona") return abrirPersona(p);
+      if (acc === "nuevaEntrada") return abrirEntrada(p, null);
+      if (acc === "ordenEntradas") { eOrden = eOrden === "desc" ? "asc" : "desc"; store.set(KEY_EORD, eOrden); $("entradas").scrollTop = 0; renderDetalle(p); $("entradas").scrollTop = 0; return; }
+    }
+    const en = e.target.closest(".entry");
+    if (en && !window.getSelection().toString()) abrirEntrada(p, p.entradas.find(x => x.id === en.dataset.eid));
+  });
+  detalle.addEventListener("keydown", e => {
+    const en = e.target.closest(".entry");
+    if (en && e.target === en && e.key === "Enter") { const p = persona(ruta()); abrirEntrada(p, p.entradas.find(x => x.id === en.dataset.eid)); }
+  });
+
+  /* ---------- Diálogos ---------- */
+  document.querySelectorAll("dialog").forEach(d => {
+    d.addEventListener("click", e => { if (e.target === d || e.target.closest("[data-close]")) d.close(); });
+  });
+
+  // Persona
+  const dP = $("dPersona");
+  let editP = null;
+  function abrirPersona(p) {
+    editP = p;
+    $("tPersona").textContent = p ? "Editar persona" : "Nueva persona";
+    $("pNombre").value = p ? p.nombre : ""; $("pTel").value = p ? p.telefono : ""; $("pDesc").value = p ? p.descripcion : "";
+    $("pBorrar").classList.toggle("hidden", !p);
+    dP.showModal(); $("pNombre").focus();
+  }
+  $("fPersona").addEventListener("submit", e => {
+    e.preventDefault();
+    const nombre = $("pNombre").value.trim();
+    if (!nombre) { $("pNombre").focus(); return; }
+    const datos = { nombre, telefono: $("pTel").value.trim(), descripcion: $("pDesc").value.replace(/\s+$/, ""), mod: Date.now() };
+    if (editP) Object.assign(editP, datos);
+    else { const n = Object.assign({ id: uid(), creada: hoy(), entradas: [] }, datos); db.personas.push(n); dP.close(); cambio(); irA(n.id); return; }
+    dP.close(); cambio();
+  });
+  $("pBorrar").addEventListener("click", () => {
+    if (!editP) return;
+    const n = editP.entradas.length;
+    if (!confirm(`¿Eliminar a ${editP.nombre}${n ? ` y sus ${n} entrada${n > 1 ? "s" : ""}` : ""}? No se puede deshacer.`)) return;
+    const ahora = Date.now();
+    db.borrados[editP.id] = ahora; editP.entradas.forEach(x => db.borrados[x.id] = ahora);
+    db.personas = db.personas.filter(x => x !== editP);
+    dP.close(); location.hash = ""; cambio();
+  });
+
+  // Entrada
+  const dE = $("dEntrada");
+  let editE = null, editEP = null;
+  function abrirEntrada(p, en) {
+    editEP = p; editE = en || null;
+    $("tEntrada").textContent = en ? "Editar entrada" : "Nueva entrada";
+    $("eFecha").value = en ? en.creada : hoy(); $("eAlarma").value = en ? en.alarma : "";
+    $("eInforme").value = en ? en.informe : ""; $("ePasos").value = en ? en.pasos : "";
+    $("eBorrar").classList.toggle("hidden", !en);
+    dE.showModal(); if (!en) $("eInforme").focus();
+  }
+  dE.querySelector(".quick").addEventListener("click", e => {
+    const b = e.target.closest("[data-dias]"); if (!b) return;
+    const n = +b.dataset.dias;
+    $("eAlarma").value = n ? sumarDias(ISO.test($("eFecha").value) ? $("eFecha").value : hoy(), n) : "";
+  });
+  $("fEntrada").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = $("eFecha").value;
+    if (!ISO.test(f)) { $("eFecha").focus(); return; }
+    const al = $("eAlarma").value;
+    const datos = { creada: f, alarma: ISO.test(al) ? al : "", informe: $("eInforme").value.replace(/\s+$/, ""), pasos: $("ePasos").value.replace(/\s+$/, ""), mod: Date.now() };
+    if (editE) Object.assign(editE, datos);
+    else editEP.entradas.push(Object.assign({ id: uid(), ts: Date.now() }, datos));
+    dE.close(); cambio();
+  });
+  $("eBorrar").addEventListener("click", () => {
+    if (!editE || !confirm("¿Eliminar esta entrada? No se puede deshacer.")) return;
+    db.borrados[editE.id] = Date.now();
+    editEP.entradas = editEP.entradas.filter(x => x !== editE);
+    dE.close(); cambio();
+  });
+
+  // Ajustes
+  const dC = $("dCfg"), cMsg = $("cMsg");
+  $("cfgBtn").addEventListener("click", () => {
+    $("cOwner").value = cfg.owner; $("cRepo").value = cfg.repo; $("cPath").value = cfg.path; $("cToken").value = cfg.token;
+    cMsg.textContent = ""; cMsg.className = "msg"; dC.showModal();
+  });
+  syncEl.addEventListener("click", () => $("cfgBtn").click());
+  $("fCfg").addEventListener("submit", async e => {
+    e.preventDefault();
+    cfg = { owner: $("cOwner").value.trim(), repo: $("cRepo").value.trim(), path: $("cPath").value.trim().replace(/^\/+/, "") || defCfg.path, token: $("cToken").value.trim() };
+    store.set(KEY_CFG, cfg);
+    if (!configurado()) { cMsg.className = "msg"; cMsg.textContent = "Rellena todos los campos."; return; }
+    cMsg.className = "msg"; cMsg.textContent = "Conectando…";
+    const ok = await sync();
+    if (ok) { cMsg.className = "msg ok"; cMsg.textContent = "Conectado. Los datos están en GitHub."; setTimeout(() => dC.close(), 900); }
+    else cMsg.textContent = syncEl.querySelector("span").textContent;
+  });
+  $("cOlvidar").addEventListener("click", () => {
+    cfg.token = ""; store.set(KEY_CFG, cfg); $("cToken").value = "";
+    cMsg.className = "msg"; cMsg.textContent = "Token borrado de este navegador."; sync();
+  });
+  $("cExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(normal(db), null, 1)], { type: "application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "entrevistas-" + hoy() + ".json";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  });
+  $("cImport").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f) return;
+    try {
+      const d = limpiar(JSON.parse(await f.text()));
+      db = fusionar(db, normal(d)); cambio();
+      cMsg.className = "msg ok"; cMsg.textContent = `Copia importada (${d.personas.length} personas).`;
+    } catch (_) { cMsg.className = "msg"; cMsg.textContent = "El archivo no es una copia válida."; }
+  });
+
+  /* ---------- Inicio ---------- */
+  render();
+  sync();
+})();
+</script>
+</body>
+</html>
