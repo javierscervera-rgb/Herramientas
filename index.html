@@ -168,6 +168,7 @@
   dialog a { color: var(--accent); font-weight: 600; text-underline-offset: 3px; }
   .cerrar {
     display: block; margin-left: auto;
+    position: sticky; bottom: 0;
     background: var(--chip); color: var(--ink);
     border: 1px solid var(--line); border-radius: 12px;
     padding: 0.4rem 0.9rem;
@@ -191,10 +192,11 @@
         <li>Referencias cruzadas de la Biblia.</li>
         <li>Opción de avanzar y retroceder por los enlaces.</li>
         <li>Homilías de J. F. Rey incluidas en la Epacta.</li>
+        <li>Notas y referencias personales en la Biblia, sincronizadas con el Google Drive de cada usuario.</li>
       </ul>
     </div>
     <!-- ACTUALIZAR versión, fecha y novedades en cada edición de este archivo -->
-    <p class="ver">v. 2.7, 24 oct 2026</p>
+    <p class="ver">v. 2.8, 25 oct 2026</p>
   </div>
   <button class="cerrar" type="button" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
