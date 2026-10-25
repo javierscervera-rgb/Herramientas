@@ -161,7 +161,7 @@ body.mapoff .mapi{display:none}
 body.nonum .vs sup,body.nonum .hcell sup{display:none}
 .vs sup,.hcell sup,.mapi{-webkit-user-select:none;user-select:none}
 .vchip.numchip.off{color:var(--muted)}
-html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 @media (max-width:640px){select,input,textarea{font-size:16px!important}}
 .bar .btn.verb{font:700 .72rem/1 system-ui,sans-serif;letter-spacing:.04em;padding:6px 7px;min-width:36px;justify-content:center}
 .bar #bsel{flex:0 1 auto;min-width:0;width:10em;text-overflow:ellipsis}
@@ -174,23 +174,26 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adju
 .bar .tools{display:flex;gap:inherit;align-items:center;margin-left:auto}
 .bar .btn.ic{padding:6px 8px;line-height:0;display:inline-flex;align-items:center;align-self:stretch}
 .bar .btn.ic:disabled{opacity:.3;cursor:default}
-:root{--xm:118px}
-@media (max-width:640px){:root{--xm:50px}}
+:root{--xm:88px}
+@media (max-width:640px){:root{--xm:38px}}
 body:not(.xroff) .rt .vs,body:not(.xroff) .rt .miss{margin-left:var(--xm)}
 .rt .vs{position:relative}
 body:not(.xroff) .rt .vs[style*="--xn"]{min-height:calc(var(--xn) * (var(--xrf, .72rem) * 1.3 + 2px) + .3em)}
-.xr{position:absolute;left:calc(-1 * var(--xm));top:.3em;width:calc(var(--xm) - 12px);display:flex;flex-direction:column;align-items:flex-end;gap:2px;-webkit-user-select:none;user-select:none}
+.xr{position:absolute;left:calc(-1 * var(--xm));top:.3em;width:calc(var(--xm) - 8px);display:flex;flex-direction:column;align-items:flex-end;gap:2px;-webkit-user-select:none;user-select:none}
 body.xroff .xr{display:none}
 .xrb{max-width:100%;overflow:hidden;text-overflow:ellipsis;font:500 .72rem/1.25 system-ui,sans-serif;color:var(--muted);background:none;border:0;padding:1px 0;cursor:pointer;text-align:right;white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .xrb:hover{color:var(--accent)}
 .xrb .xs{display:none}
-@media (max-width:640px){.xrb .xl{display:none}.xrb .xs{display:inline}.xrb{font-size:var(--xrf,.66rem)}
+@media (max-width:640px){.xrb .xl{display:none}.xrb .xs{display:inline}.xrb{font-size:min(var(--xrf,.66rem),calc((var(--xm) + 4px) / (var(--ls) * .56)))}
+body.xrfull .xrb{font-size:min(var(--xrf,.66rem),calc((var(--xm) + 4px) / (var(--l) * .56)))}
+.xr{left:calc(-1 * var(--xm) - 12px);width:calc(var(--xm) + 4px)}
 body.xrfull .xrb .xl{display:inline}body.xrfull .xrb .xs{display:none}
 .xr{transition:none}}
 #xrh{display:none}
 @media (max-width:640px){
 #xrh{display:block;position:fixed;top:45vh;height:10vh;width:28px;margin-left:-14px;z-index:4;touch-action:none;cursor:ew-resize;-webkit-tap-highlight-color:transparent}
-#xrh::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:4px;border-radius:4px;background:var(--accent);opacity:.35;transition:opacity .15s,width .15s,left .15s}
+#xrh::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:4px;border-radius:4px;background:var(--accent);opacity:0;transition:opacity .5s,width .15s,left .15s}
+#xrh.show::before{opacity:.4;transition:opacity .15s,width .15s,left .15s}
 #xrh.drag::before,#xrh:active::before{opacity:.85;width:6px;left:11px}
 body.xroff #xrh,body.vselopen #xrh,body:has(details.vsel[open]) #xrh{display:none}}
 #xrm{position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
@@ -679,7 +682,7 @@ function xrLabel(p,short){const a=XAB[p.id]||p.id;if(short)return a+' '+p.c;
   return a+' '+p.c+','+p.v+(p.c2!==p.c?'-'+p.c2+','+p.v2:(p.v2!==p.v?'-'+p.v2:''))}
 function xrHtml(bid,c,k){
   const L=XREF[bid]&&XREF[bid][c]&&XREF[bid][c][k];if(!L||!L.length)return '';
-  return [`<span class="xr">${L.map(r=>{const p=xrParse(r);return p?`<button class="xrb" data-r="${r}"><span class="xl">${xrLabel(p)}</span><span class="xs">${xrLabel(p,1)}</span></button>`:''}).join('')}</span>`,L.length];
+  return [`<span class="xr">${L.map(r=>{const p=xrParse(r);return p?`<button class="xrb" data-r="${r}" style="--l:${xrLabel(p).length};--ls:${xrLabel(p,1).length}"><span class="xl">${xrLabel(p)}</span><span class="xs">${xrLabel(p,1)}</span></button>`:''}).join('')}</span>`,L.length];
 }
 function xrToggle(){
   xrOn=!xrOn;try{localStorage.setItem('xr',xrOn?'1':'0')}catch(e){}
@@ -741,20 +744,23 @@ function xrClose(now){
 })();
 /* ===== Sin zoom (pellizco y doble toque) ===== */
 ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
-document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
+['touchstart','touchmove'].forEach(t=>window.addEventListener(t,e=>{if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false}));
+window.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});
+window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].includes(e.key))e.preventDefault()});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
 let lastTouch=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTouch<300&&!e.target.closest('button,a,select,input,summary,.dw,.xrb,.mapi'))e.preventDefault();lastTouch=n},{passive:false});
 /* ===== Ancho del margen de referencias (móvil, deslizable) ===== */
 const XMQ=window.matchMedia?matchMedia('(max-width:640px)'):{matches:false,addEventListener(){}};
-let xmPx=50;try{xmPx=+localStorage.getItem('xm')||50}catch(e){}
+let xmPx=38;try{xmPx=+localStorage.getItem('xm')||38}catch(e){}
 function xmApply(px,save){
   const root=document.documentElement;
   if(!XMQ.matches){root.style.removeProperty('--xm');root.style.removeProperty('--xrf');document.body.classList.remove('xrfull');return}
-  const max=Math.round(window.innerWidth*.4);px=Math.max(50,Math.min(max,Math.round(px)));xmPx=px;
+  const max=Math.round(window.innerWidth*.3);px=Math.max(38,Math.min(max,Math.round(px)));xmPx=px;
   root.style.setProperty('--xm',px+'px');
-  const t=(px-50)/Math.max(1,max-50);
-  root.style.setProperty('--xrf',(10.5+t*14.5).toFixed(2)+'px');
+  const t=(px-38)/Math.max(1,max-38);
+  root.style.setProperty('--xrf',(9.5+t*15.5).toFixed(2)+'px');
   document.body.classList.toggle('xrfull',px>=85);
-  const h=document.getElementById('xrh');if(h)h.style.left=(16+px-6)+'px';
+  const h=document.getElementById('xrh');if(h)h.style.left=(16+px-4)+'px';
   if(save){try{localStorage.setItem('xm',px)}catch(e){}}
 }
 function xmAnchor(){
@@ -767,12 +773,16 @@ function xrHandleInit(){
   xmApply(xmPx);
   const vs=document.querySelector('details.vsel');document.body.classList.remove('vselopen');if(vs)vs.addEventListener('toggle',()=>document.body.classList.toggle('vselopen',vs.open));
   let on=false,anc=null,raf=0,lastX=0;
-  const move=()=>{raf=0;xmApply(lastX-16+6);if(anc){const d=anc[0].getBoundingClientRect().top-anc[1];if(Math.abs(d)>1)window.scrollBy(0,d)}};
-  h.addEventListener('pointerdown',e=>{on=true;anc=xmAnchor();h.classList.add('drag');h.setPointerCapture(e.pointerId);lastX=e.clientX;e.preventDefault()});
+  const move=()=>{raf=0;xmApply(lastX-16+4);if(anc){const d=anc[0].getBoundingClientRect().top-anc[1];if(Math.abs(d)>1)window.scrollBy(0,d)}};
+  h.addEventListener('pointerdown',e=>{xrhShow();on=true;anc=xmAnchor();h.classList.add('drag');h.setPointerCapture(e.pointerId);lastX=e.clientX;e.preventDefault()});
   h.addEventListener('pointermove',e=>{if(!on)return;lastX=e.clientX;if(!raf)raf=requestAnimationFrame(move)});
-  const end=e=>{if(!on)return;on=false;h.classList.remove('drag');xmApply(xmPx,true)};
+  const end=e=>{if(!on)return;on=false;h.classList.remove('drag');xmApply(xmPx,true);xrhShow()};
   h.addEventListener('pointerup',end);h.addEventListener('pointercancel',end);
 }
+let xrhT=0;
+function xrhShow(){const h=document.getElementById('xrh');if(!h)return;h.classList.add('show');clearTimeout(xrhT);
+  xrhT=setTimeout(()=>{if(!h.classList.contains('drag'))h.classList.remove('show')},2000)}
+window.addEventListener('scroll',xrhShow,{passive:true});
 XMQ.addEventListener&&XMQ.addEventListener('change',()=>xmApply(xmPx));
 window.addEventListener('resize',()=>xmApply(xmPx));
 /* ===== Números de versículo: mostrar/ocultar y no copiarlos ===== */
@@ -1010,7 +1020,7 @@ function dicToggle(){
 })();
 /* ===== Ayuda ===== */
 (function helpInit(){
-  document.body.insertAdjacentHTML('beforeend','<div id="helpm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Ayuda"><div class="ch"><div class="tt"><div class="k">Ayuda</div><div class="r">Qué encontrarás en esta web</div></div><button id="helpx" aria-label="Cerrar">✕</button></div><div class="cb">'+"<h3>La Biblia</h3>\n<p>En la portada puedes elegir la versión: <b>Biblia de Jerusalén</b> o <b>Biblia CEE</b> (Conferencia Episcopal Española). Mientras lees, el botón <b>BJ</b> / <b>CEE</b> de la barra superior cambia de una a otra sin perder el capítulo. Arriba tienes también el libro y el capítulo para moverte rápidamente. Al copiar un pasaje, los números nunca se copian.</p>\n<p>Elige un libro en el <b>Antiguo</b> o el <b>Nuevo Testamento</b> y pulsa el número del capítulo. Con <b>Ir a…</b> llegas directamente a cualquier versículo. Mientras lees, los botones <b>‹ Anterior</b> y <b>Siguiente ›</b> te llevan de un capítulo a otro, y <b>A−</b> / <b>A+</b> cambian el tamaño de la letra.</p>\n<h3>Evangelios en paralelo</h3>\n<p>En el Nuevo Testamento, el botón <b>Evangelios en paralelo</b> muestra los cuatro evangelios en columnas, uno junto a otro, para comparar cómo cuenta cada uno el mismo episodio.</p>\n<h3>Catena Aurea</h3>\n<p>En los evangelios, algunos números de versículo aparecen dentro de un círculo de color, así: <span class=\"num\">7</span>. Al pulsarlo se abren los comentarios de los Padres de la Iglesia reunidos por santo Tomás de Aquino en la <i>Catena Aurea</i>.</p>\n<h3>Diccionario bíblico</h3>\n<p>Algunas palabras del texto tienen un <span class=\"und\">subrayado de puntos</span>: son personas, lugares o términos que aparecen en el diccionario bíblico. Púlsalas para leer su explicación.</p>\n<h3>Lugares de los Evangelios</h3>\n<p>Junto al nombre de los principales lugares de la vida de Jesús verás una pequeña chincheta <span class=\"pin\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z\"/></svg></span>. Púlsala para ver en un mapa dónde está ese lugar.</p>\n<h3>Referencias cruzadas</h3>\n<p>En el margen izquierdo de muchos versículos aparecen citas de otros pasajes relacionados (en el móvil, solo el libro y el capítulo). Al pulsar una se abre el pasaje citado; con <b>Ir al texto</b> saltas a él, y las flechas <b>↶ ↷</b> de la barra superior te llevan de vuelta o adelante entre esos saltos. En el móvil, desliza la línea vertical entre las referencias y el texto para ensanchar el margen: verás las citas completas y en letra más grande (hasta el 40 % del ancho). Las referencias proceden de OpenBible.info.</p>\n<h3>Activar y desactivar</h3>\n<p>Si prefieres leer el texto limpio, puedes ocultar estas ayudas con los botones de la barra superior:</p>\n<p><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19\"/><path d=\"M9 7h6M9 10.5h4\"/></svg></span> muestra u oculta los subrayados del diccionario.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5L9 4z\"/><path d=\"M9 4v13M15 6.5v13\"/></svg></span> muestra u oculta las chinchetas del mapa.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg></span> muestra u oculta las referencias cruzadas del margen.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7.5 6 6v6\"/><path d=\"M4.5 12h3\"/><path d=\"M11 8h9M11 13h9M4 18h16\"/></svg></span> muestra u oculta los números de versículo.</p>\n<p>Cuando el botón está iluminado, esa opción está activada; púlsalo otra vez para desactivarla. La página recuerda tu elección para la próxima vez.</p>\n<p class=\"note\">Las ventanas de comentarios, diccionario y mapa se cierran con la ✕, con la tecla Esc o pulsando fuera de ellas.</p>"+'</div></div></div>');
+  document.body.insertAdjacentHTML('beforeend','<div id="helpm" hidden><div class="card" role="dialog" aria-modal="true" aria-label="Ayuda"><div class="ch"><div class="tt"><div class="k">Ayuda</div><div class="r">Qué encontrarás en esta web</div></div><button id="helpx" aria-label="Cerrar">✕</button></div><div class="cb">'+"<h3>La Biblia</h3>\n<p>En la portada puedes elegir la versión: <b>Biblia de Jerusalén</b> o <b>Biblia CEE</b> (Conferencia Episcopal Española). Mientras lees, el botón <b>BJ</b> / <b>CEE</b> de la barra superior cambia de una a otra sin perder el capítulo. Arriba tienes también el libro y el capítulo para moverte rápidamente. Al copiar un pasaje, los números nunca se copian.</p>\n<p>Elige un libro en el <b>Antiguo</b> o el <b>Nuevo Testamento</b> y pulsa el número del capítulo. Con <b>Ir a…</b> llegas directamente a cualquier versículo. Mientras lees, los botones <b>‹ Anterior</b> y <b>Siguiente ›</b> te llevan de un capítulo a otro, y <b>A−</b> / <b>A+</b> cambian el tamaño de la letra.</p>\n<h3>Evangelios en paralelo</h3>\n<p>En el Nuevo Testamento, el botón <b>Evangelios en paralelo</b> muestra los cuatro evangelios en columnas, uno junto a otro, para comparar cómo cuenta cada uno el mismo episodio.</p>\n<h3>Catena Aurea</h3>\n<p>En los evangelios, algunos números de versículo aparecen dentro de un círculo de color, así: <span class=\"num\">7</span>. Al pulsarlo se abren los comentarios de los Padres de la Iglesia reunidos por santo Tomás de Aquino en la <i>Catena Aurea</i>.</p>\n<h3>Diccionario bíblico</h3>\n<p>Algunas palabras del texto tienen un <span class=\"und\">subrayado de puntos</span>: son personas, lugares o términos que aparecen en el diccionario bíblico. Púlsalas para leer su explicación.</p>\n<h3>Lugares de los Evangelios</h3>\n<p>Junto al nombre de los principales lugares de la vida de Jesús verás una pequeña chincheta <span class=\"pin\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z\"/></svg></span>. Púlsala para ver en un mapa dónde está ese lugar.</p>\n<h3>Referencias cruzadas</h3>\n<p>En el margen izquierdo de muchos versículos aparecen citas de otros pasajes relacionados (en el móvil, solo el libro y el capítulo). Al pulsar una se abre el pasaje citado; con <b>Ir al texto</b> saltas a él, y las flechas <b>↶ ↷</b> de la barra superior te llevan de vuelta o adelante entre esos saltos. En el móvil, desliza la línea vertical entre las referencias y el texto para ensanchar el margen: verás las citas completas y en letra más grande (hasta el 30 % del ancho). Las referencias proceden de OpenBible.info.</p>\n<h3>Activar y desactivar</h3>\n<p>Si prefieres leer el texto limpio, puedes ocultar estas ayudas con los botones de la barra superior:</p>\n<p><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19\"/><path d=\"M9 7h6M9 10.5h4\"/></svg></span> muestra u oculta los subrayados del diccionario.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5L9 4z\"/><path d=\"M9 4v13M15 6.5v13\"/></svg></span> muestra u oculta las chinchetas del mapa.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg></span> muestra u oculta las referencias cruzadas del margen.<br><span class=\"ico\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7.5 6 6v6\"/><path d=\"M4.5 12h3\"/><path d=\"M11 8h9M11 13h9M4 18h16\"/></svg></span> muestra u oculta los números de versículo.</p>\n<p>Cuando el botón está iluminado, esa opción está activada; púlsalo otra vez para desactivarla. La página recuerda tu elección para la próxima vez.</p>\n<p class=\"note\">Las ventanas de comentarios, diccionario y mapa se cierran con la ✕, con la tecla Esc o pulsando fuera de ellas.</p>"+'</div></div></div>');
   const m=document.getElementById('helpm');
   const close=()=>{if(!m.hidden){m.hidden=true;document.body.style.overflow=''}};
   window.helpClose=close;
