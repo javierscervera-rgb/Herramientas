@@ -752,8 +752,8 @@ function xmApply(px,save){
   const max=Math.round(window.innerWidth*.4);px=Math.max(50,Math.min(max,Math.round(px)));xmPx=px;
   root.style.setProperty('--xm',px+'px');
   const t=(px-50)/Math.max(1,max-50);
-  root.style.setProperty('--xrf',(10.5+t*9.5).toFixed(2)+'px');
-  document.body.classList.toggle('xrfull',px>=96);
+  root.style.setProperty('--xrf',(10.5+t*14.5).toFixed(2)+'px');
+  document.body.classList.toggle('xrfull',px>=85);
   const h=document.getElementById('xrh');if(h)h.style.left=(16+px-6)+'px';
   if(save){try{localStorage.setItem('xm',px)}catch(e){}}
 }
