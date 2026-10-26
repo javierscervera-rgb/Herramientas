@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Condiciones de servicio · Herramientas</title>
+<meta name="description" content="Condiciones de servicio de las herramientas publicadas en javierscervera-rgb.github.io, incluido el uso de Google Cloud y las API de Google.">
+<style>
+  :root {
+    --bg: #171310;
+    --panel: #201D18;
+    --accent: #CD8B75;
+    --accent-alt: #D88972;
+    --btn2: #292420;
+    --text: #F0E8DC;
+    --text2: #AA9D8F;
+    --border: #37312B;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: #171310;
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.65;
+    font-size: 16px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    padding: 16px clamp(16px, 4vw, 32px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { display: block; height: clamp(32px, 5vw, 48px); width: auto; max-width: 200px; }
+
+  /* Animación del logo */
+  a:has(> .logo) { position: relative; }
+  a > .logo { position: relative; z-index: 1; }
+  a:has(> .logo)::before { content: ""; position: absolute; inset: -16px; border-radius: 50%; background: radial-gradient(circle, rgba(216,137,114,.75) 0%, rgba(216,137,114,.3) 42%, rgba(216,137,114,0) 70%); opacity: 0; pointer-events: none; animation: brillo-logo 1.8s ease-in-out .5s 1 both; }
+  @keyframes brillo-logo { 0% { opacity: 0; transform: scale(.6); } 45% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.3); } }
+  @media (prefers-reduced-motion: reduce) { a:has(> .logo)::before { animation: none; } }
+
+  main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 48px) 16px 64px;
+  }
+  h1 {
+    color: var(--accent-alt);
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    line-height: 1.2;
+    margin: 0 0 8px;
+  }
+  .meta { color: var(--text2); margin: 0 0 28px; font-size: .95rem; }
+  .intro {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 28px;
+  }
+  .intro p { margin: 0; }
+  nav.indice {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 36px;
+  }
+  nav.indice h2 { font-size: 1rem; margin: 0 0 8px; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
+  nav.indice ol { margin: 0; padding-left: 20px; columns: 2 240px; column-gap: 32px; }
+  nav.indice li { margin: 2px 0; break-inside: avoid; }
+  section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px clamp(16px, 4vw, 28px);
+    margin-bottom: 18px;
+    scroll-margin-top: 16px;
+  }
+  section h2 { color: var(--accent-alt); font-size: 1.25rem; margin: 0 0 10px; }
+  section h3 { font-size: 1.02rem; margin: 18px 0 6px; color: var(--text); }
+  section p, section ul { margin: 8px 0; }
+  section ul { padding-left: 22px; }
+  li { margin: 4px 0; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--accent-alt); }
+  strong { color: var(--text); }
+  .muted { color: var(--text2); }
+  .destacado {
+    background: var(--btn2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 12px 0;
+  }
+  .tabla { width: 100%; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; min-width: 480px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text2); font-weight: 600; }
+  .boton {
+    display: inline-block;
+    background: var(--btn2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    text-decoration: none;
+    margin-top: 6px;
+  }
+  .boton:hover { border-color: var(--accent); color: var(--accent-alt); }
+  footer { color: var(--text2); text-align: center; font-size: .9rem; padding: 24px 16px 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" aria-label="Ir al inicio de Herramientas">
+    <img src="logo.svg" alt="Herramientas" class="logo">
+  </a>
+</header>
+
+<main>
+  <h1>Condiciones de servicio</h1>
+  <p class="meta">Última actualización: 26 de octubre de 2026</p>
+
+  <div class="intro">
+    <p>Estas condiciones regulan el uso de las aplicaciones y páginas publicadas en <strong>javierscervera-rgb.github.io</strong> (en adelante, «las Herramientas»), incluidas las que se conectan a <strong>Google Cloud</strong>, a las <strong>API de Google</strong> y a otros servicios de terceros. Al usar las Herramientas aceptas estas condiciones. Si no estás de acuerdo, no las uses.</p>
+  </div>
+
+  <nav class="indice" aria-label="Índice">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#titular">Titular</a></li>
+      <li><a href="#servicio">El servicio</a></li>
+      <li><a href="#cuentas">Cuentas de Google y terceros</a></li>
+      <li><a href="#uso">Uso aceptable</a></li>
+      <li><a href="#contenido">Tu contenido</a></li>
+      <li><a href="#propiedad">Propiedad intelectual</a></li>
+      <li><a href="#terceros">Servicios de terceros</a></li>
+      <li><a href="#privacidad">Privacidad</a></li>
+      <li><a href="#garantias">Sin garantías</a></li>
+      <li><a href="#responsabilidad">Responsabilidad</a></li>
+      <li><a href="#suspension">Suspensión y fin</a></li>
+      <li><a href="#cambios">Cambios</a></li>
+      <li><a href="#ley">Ley aplicable</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ol>
+  </nav>
+
+  <section id="titular">
+    <h2>1. Titular</h2>
+    <p>Las Herramientas son un proyecto personal de <strong>Javier Sánchez-Cervera de los Santos</strong>, desarrollador independiente con residencia en España.</p>
+    <p>Contacto: <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a></p>
+  </section>
+
+  <section id="servicio">
+    <h2>2. El servicio</h2>
+    <p>Las Herramientas son utilidades web <strong>gratuitas</strong> que funcionan en tu navegador. Algunas permiten conectar tu cuenta de Google para leer o guardar información en servicios como Google Drive, Sheets o Calendar.</p>
+    <ul>
+      <li>No hay registro propio, suscripción ni pagos.</li>
+      <li>Las funciones pueden cambiar, ampliarse o retirarse en cualquier momento.</li>
+      <li>Es un proyecto personal sin compromiso de disponibilidad continua ni de soporte.</li>
+    </ul>
+  </section>
+
+  <section id="cuentas">
+    <h2>3. Cuentas de Google y de terceros</h2>
+    <ul>
+      <li>Para usar ciertas funciones debes iniciar sesión con tu cuenta de Google y aceptar los permisos que se muestran en la pantalla de consentimiento.</li>
+      <li>Eres responsable de la seguridad de tu cuenta y de lo que se haga con ella.</li>
+      <li>Al usar servicios de Google a través de las Herramientas también quedas sujeto a las <a href="https://policies.google.com/terms?hl=es" target="_blank" rel="noopener">Condiciones de servicio de Google</a>.</li>
+      <li>Puedes retirar el acceso en cualquier momento desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">los permisos de tu cuenta de Google</a>.</li>
+    </ul>
+  </section>
+
+  <section id="uso">
+    <h2>4. Uso aceptable</h2>
+    <p>Te comprometes a no usar las Herramientas para:</p>
+    <ul>
+      <li>Infringir la ley o los derechos de otras personas, incluidos los de propiedad intelectual y privacidad.</li>
+      <li>Tratar datos de terceros sin estar autorizado para ello.</li>
+      <li>Distribuir malware, spam o contenido ilícito.</li>
+      <li>Intentar acceder sin permiso a sistemas, cuentas o datos, o eludir medidas de seguridad.</li>
+      <li>Sobrecargar o abusar de las API de Google u otros servicios a través de las Herramientas, o saltarte sus límites de uso.</li>
+      <li>Hacerte pasar por otra persona o por el titular de las Herramientas.</li>
+    </ul>
+  </section>
+
+  <section id="contenido">
+    <h2>5. Tu contenido</h2>
+    <p>Todo lo que creas, introduces o guardas con las Herramientas <strong>sigue siendo tuyo</strong>. No adquirimos ningún derecho sobre ello; solo se procesa en la medida necesaria para que la herramienta funcione, tal como explica la <a href="privacidad.html" target="_self">Política de privacidad</a>.</p>
+    <p>Eres responsable de tener los derechos necesarios sobre el contenido que uses y de conservar tus propias copias de seguridad.</p>
+  </section>
+
+  <section id="propiedad">
+    <h2>6. Propiedad intelectual</h2>
+    <p>El diseño, el código, el logotipo y los textos propios de las Herramientas pertenecen a su titular, salvo que se indique otra licencia. Puedes usarlas libremente para fines personales, pero no copiarlas, redistribuirlas ni presentarlas como propias sin permiso.</p>
+    <p>Los nombres y marcas de terceros, como Google, Google Drive o GitHub, pertenecen a sus respectivos dueños. Su mención no implica patrocinio ni asociación.</p>
+  </section>
+
+  <section id="terceros">
+    <h2>7. Servicios de terceros</h2>
+    <p>Las Herramientas dependen de servicios externos como <strong>GitHub Pages</strong>, <strong>Google Cloud</strong> y otras <strong>API públicas</strong>. No controlamos esos servicios ni respondemos de sus fallos, cambios, interrupciones o de cómo tratan tus datos. Su uso se rige por sus propias condiciones y políticas.</p>
+  </section>
+
+  <section id="privacidad">
+    <h2>8. Privacidad</h2>
+    <p>El tratamiento de tus datos, incluidos los datos de usuario de Google, se describe en la <a href="privacidad.html" target="_self">Política de privacidad</a>, que forma parte de estas condiciones.</p>
+    <a class="boton" href="privacidad.html" target="_self">Leer la política de privacidad</a>
+  </section>
+
+  <section id="garantias">
+    <h2>9. Sin garantías</h2>
+    <div class="destacado">
+      <p style="margin:0">Las Herramientas se ofrecen gratis <strong>«tal cual» y «según disponibilidad»</strong>. En la medida en que lo permita la ley, no se garantiza que funcionen sin interrupciones ni errores, que los resultados sean exactos o completos, ni que sirvan para un fin concreto.</p>
+    </div>
+    <p>Revisa siempre los resultados antes de confiar en ellos para decisiones importantes.</p>
+  </section>
+
+  <section id="responsabilidad">
+    <h2>10. Limitación de responsabilidad</h2>
+    <p>En la medida máxima permitida por la ley, el titular no será responsable de daños indirectos, pérdida de datos, lucro cesante ni perjuicios derivados del uso o la imposibilidad de usar las Herramientas o los servicios de terceros de los que dependen.</p>
+    <p>Nada de lo anterior limita la responsabilidad que no pueda excluirse legalmente, como la derivada de dolo o negligencia grave, ni los derechos que te reconoce la normativa de consumidores y usuarios.</p>
+  </section>
+
+  <section id="suspension">
+    <h2>11. Suspensión y finalización</h2>
+    <p>Puedes dejar de usar las Herramientas cuando quieras y revocar los permisos concedidos. El titular puede limitar o bloquear el acceso a quien incumpla estas condiciones, así como suspender o cerrar cualquier herramienta. Tus datos guardados en tu cuenta de Google seguirán siendo tuyos y accesibles desde Google.</p>
+  </section>
+
+  <section id="cambios">
+    <h2>12. Cambios en estas condiciones</h2>
+    <p>Estas condiciones pueden actualizarse si cambian las Herramientas o la normativa. La fecha de «Última actualización» indica la versión vigente. Si sigues usando las Herramientas tras un cambio, se entiende que lo aceptas.</p>
+  </section>
+
+  <section id="ley">
+    <h2>13. Ley aplicable y jurisdicción</h2>
+    <p>Estas condiciones se rigen por la legislación española. Cualquier controversia se someterá a los juzgados y tribunales que correspondan conforme a la ley; si eres consumidor, a los de tu domicilio.</p>
+    <p>Si alguna cláusula resultara inválida, el resto seguirá vigente.</p>
+  </section>
+
+  <section id="contacto">
+    <h2>14. Contacto</h2>
+    <p>Para cualquier duda sobre estas condiciones: <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a></p>
+  </section>
+</main>
+
+<footer>
+  © 2026 Herramientas · <a href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self">Inicio</a> · <a href="privacidad.html" target="_self">Política de privacidad</a>
+</footer>
+
+</body>
+</html>
