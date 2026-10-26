@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Política de privacidad · Herramientas</title>
-<meta name="description" content="Política de privacidad de las herramientas publicadas en javierscervera-rgb.github.io, incluido el uso de Google Cloud y las API de Google.">
+<meta name="description" content="Política de privacidad de las herramientas publicadas en herramientasacerdotal.es, incluida la app Biblia y su uso de Google Drive.">
 <style>
   :root {
     --bg: #171310;
@@ -88,6 +88,7 @@
   a { color: var(--accent); text-underline-offset: 3px; }
   a:hover { color: var(--accent-alt); }
   strong { color: var(--text); }
+  code { background: var(--btn2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; font-size: .9em; }
   .muted { color: var(--text2); }
   .destacado {
     background: var(--btn2);
@@ -127,7 +128,7 @@
   <p class="meta">Última actualización: 26 de octubre de 2026</p>
 
   <div class="intro">
-    <p>Esta política explica qué datos tratan las aplicaciones y páginas publicadas en <strong>javierscervera-rgb.github.io</strong> (en adelante, «las Herramientas»), incluidas las que se conectan a <strong>Google Cloud</strong>, a las <strong>API de Google</strong> y a otros servicios de terceros. En resumen: no vendemos datos, no mostramos publicidad y solo usamos la información estrictamente necesaria para que cada herramienta funcione.</p>
+    <p>Esta política explica qué datos tratan las aplicaciones y páginas publicadas en <strong>herramientasacerdotal.es</strong> (en adelante, «las Herramientas»), entre ellas la aplicación <strong>Biblia</strong>, que puede conectarse a <strong>Google Drive</strong>. En resumen: no vendemos datos, no mostramos publicidad y solo usamos la información estrictamente necesaria para que cada herramienta funcione.</p>
   </div>
 
   <nav class="indice" aria-label="Índice">
@@ -135,6 +136,7 @@
     <ol>
       <li><a href="#responsable">Responsable</a></li>
       <li><a href="#datos">Datos que se tratan</a></li>
+      <li><a href="#biblia">App Biblia y Google Drive</a></li>
       <li><a href="#google">Datos de usuario de Google</a></li>
       <li><a href="#uso-limitado">Uso limitado</a></li>
       <li><a href="#terceros">Servicios de terceros</a></li>
@@ -152,7 +154,7 @@
 
   <section id="responsable">
     <h2>1. Responsable del tratamiento</h2>
-    <p>El responsable de las Herramientas es <strong>Javier Sánchez-Cervera de los Santos</strong>, desarrollador independiente con residencia en España.</p>
+    <p>El responsable de las Herramientas es <strong>Javier Sánchez-Cervera de los Santos</strong>, desarrollador independiente con residencia en España, titular del dominio <strong>herramientasacerdotal.es</strong>.</p>
     <p>Contacto: <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a></p>
   </section>
 
@@ -160,12 +162,12 @@
     <h2>2. Datos que se tratan</h2>
     <h3>Datos que proporcionas tú</h3>
     <ul>
-      <li>El contenido que introduces o cargas en una herramienta (textos, archivos, preferencias) para que esta lo procese.</li>
+      <li>El contenido que introduces en una herramienta (por ejemplo, notas personales y referencias bíblicas propias en la app Biblia) para que esta lo guarde o procese.</li>
       <li>Los datos que nos envíes si nos escribes por correo.</li>
     </ul>
     <h3>Datos de cuentas conectadas</h3>
     <ul>
-      <li>Si inicias sesión con Google u otro proveedor, los datos de perfil básicos (nombre, correo, foto) y los datos a los que concedas acceso explícitamente en la pantalla de consentimiento. Ver <a href="#google">apartado 3</a>.</li>
+      <li>Si conectas tu cuenta de Google, solo los datos a los que concedas acceso explícitamente en la pantalla de consentimiento de Google. Ver <a href="#biblia">apartado 3</a> y <a href="#google">apartado 4</a>.</li>
     </ul>
     <h3>Datos técnicos</h3>
     <ul>
@@ -174,23 +176,34 @@
     <p class="muted">Las Herramientas no usan analítica de terceros, píxeles de seguimiento ni publicidad.</p>
   </section>
 
-  <section id="google">
-    <h2>3. Datos de usuario de Google</h2>
-    <p>Algunas Herramientas usan el inicio de sesión de Google (OAuth 2.0) y las API de Google alojadas en Google Cloud. Solo solicitamos los permisos (<em>scopes</em>) mínimos necesarios para la función que pides, y la pantalla de consentimiento de Google te muestra exactamente cuáles son antes de aceptar.</p>
+  <section id="biblia">
+    <h2>3. App Biblia: notas y referencias en Google Drive</h2>
+    <p>La aplicación <strong>Biblia</strong> (<a href="https://herramientasacerdotal.es/Biblia.html">herramientasacerdotal.es/Biblia.html</a>) permite escribir notas personales y añadir referencias cruzadas propias a los versículos. Para que estén disponibles en todos tus dispositivos, se guardan en tu propia cuenta de Google Drive.</p>
     <div class="tabla">
       <table>
         <thead>
-          <tr><th>Dato</th><th>Para qué se usa</th></tr>
+          <tr><th>Qué</th><th>Detalle</th></tr>
         </thead>
         <tbody>
-          <tr><td>Perfil básico (nombre, correo, foto)</td><td>Identificar tu sesión y mostrarte con qué cuenta has entrado.</td></tr>
-          <tr><td>Archivos de Google Drive creados o abiertos con la herramienta</td><td>Guardar y recuperar tu propio trabajo en tu Drive.</td></tr>
-          <tr><td>Hojas de cálculo de Google Sheets que elijas</td><td>Leer o escribir los datos que la herramienta gestiona por ti.</td></tr>
-          <tr><td>Eventos de Google Calendar</td><td>Crear o consultar los eventos que tú indiques.</td></tr>
+          <tr><td>Permiso que se solicita</td><td><code>https://www.googleapis.com/auth/drive.appdata</code> («Ver, crear y eliminar sus propios datos de configuración en Google Drive»).</td></tr>
+          <tr><td>Qué guarda</td><td>Un único archivo, <code>notas-biblia.json</code>, con tus notas, tus referencias propias y la fecha de cada cambio.</td></tr>
+          <tr><td>Dónde lo guarda</td><td>En la <strong>carpeta de datos de aplicación</strong> de tu Drive: una carpeta oculta, reservada a esta app, que no aparece entre tus archivos.</td></tr>
+          <tr><td>Qué <strong>no</strong> puede ver</td><td>Ningún otro archivo ni carpeta de tu Drive, ni tu correo, contactos, calendario o perfil. Este permiso no da acceso a nada más.</td></tr>
+          <tr><td>Para qué se usa</td><td>Exclusivamente para guardar y sincronizar tus notas y referencias entre tus dispositivos.</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="muted">Cada herramienta solo pide los permisos que necesita; la mayoría no pide ninguno de esta lista salvo el perfil básico.</p>
+    <ul>
+      <li>La conexión con Google es <strong>opcional</strong>: la Biblia, el diccionario, los mapas y las referencias se pueden usar sin conectarse.</li>
+      <li>El archivo viaja <strong>directamente entre tu navegador y Google Drive</strong>. No pasa por ningún servidor nuestro y nosotros no podemos leerlo.</li>
+      <li>Para no tener que volver a conectarte en cada visita, el navegador guarda en su almacenamiento local un token de acceso temporal, que caduca en aproximadamente una hora, y una copia de trabajo de tus notas. Al pulsar «Desconectar» en la app se borran el token y la copia local.</li>
+      <li>Puedes borrar definitivamente los datos guardados en Drive desde Google Drive › Configuración › Gestionar aplicaciones › Biblia › «Eliminar datos de aplicación ocultos», o revocando el acceso (ver <a href="#revocar">apartado 11</a>).</li>
+    </ul>
+  </section>
+
+  <section id="google">
+    <h2>4. Datos de usuario de Google en general</h2>
+    <p>Las Herramientas que usan el inicio de sesión de Google (OAuth 2.0) solicitan solo los permisos (<em>scopes</em>) mínimos necesarios para la función que pides, y la pantalla de consentimiento de Google te muestra exactamente cuáles son antes de aceptar. Actualmente el único permiso de Google que se solicita es el de la app Biblia descrito en el apartado 3.</p>
     <h3>Cómo se tratan</h3>
     <ul>
       <li>Las solicitudes a las API de Google se hacen <strong>directamente desde tu navegador</strong> a los servidores de Google, con un token temporal.</li>
@@ -201,94 +214,94 @@
   </section>
 
   <section id="uso-limitado">
-    <h2>4. Política de uso limitado</h2>
+    <h2>5. Política de uso limitado</h2>
     <div class="destacado">
       <p style="margin:0">El uso y la transferencia a cualquier otra aplicación de la información recibida de las API de Google por parte de las Herramientas cumplirán la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de datos de usuario de los servicios de API de Google</a>, incluidos los requisitos de <strong>uso limitado</strong>.</p>
     </div>
     <p>En concreto:</p>
     <ul>
-      <li>Los datos de Google solo se usan para ofrecer o mejorar las funciones visibles para ti dentro de la herramienta.</li>
+      <li>Los datos de Google solo se usan para ofrecer las funciones visibles para ti dentro de la herramienta (en la Biblia, guardar y sincronizar tus notas).</li>
       <li>No se transfieren a terceros, salvo que sea necesario para prestar esas funciones, cumplir la ley o en caso de fusión o adquisición, con tu consentimiento previo.</li>
       <li>No se usan para publicidad, incluida la personalizada o el <em>retargeting</em>.</li>
       <li>Ninguna persona lee tus datos, salvo con tu consentimiento expreso, por motivos de seguridad o por obligación legal.</li>
-      <li>No se usan para entrenar modelos de inteligencia artificial generalizados.</li>
+      <li>No se usan para entrenar modelos de inteligencia artificial.</li>
     </ul>
   </section>
 
   <section id="terceros">
-    <h2>5. Servicios de terceros</h2>
+    <h2>6. Servicios de terceros</h2>
     <p>Las Herramientas se apoyan en los siguientes proveedores, cada uno con su propia política de privacidad:</p>
     <ul>
       <li><strong>GitHub Pages</strong> (alojamiento web) — <a href="https://docs.github.com/es/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">política de privacidad de GitHub</a>.</li>
-      <li><strong>Google Cloud y API de Google</strong> (inicio de sesión, Drive, Sheets, Calendar y otras) — <a href="https://policies.google.com/privacy?hl=es" target="_blank" rel="noopener">política de privacidad de Google</a>.</li>
-      <li><strong>Otras API públicas</strong> que una herramienta concreta pueda consultar (por ejemplo, servicios de datos abiertos). Solo reciben la consulta necesaria, nunca datos de tu cuenta de Google.</li>
+      <li><strong>Google</strong> (inicio de sesión y Google Drive) — <a href="https://policies.google.com/privacy?hl=es" target="_blank" rel="noopener">política de privacidad de Google</a>.</li>
+      <li><strong>Otras fuentes públicas</strong> que una herramienta concreta pueda consultar (por ejemplo, mapas). Solo reciben la consulta necesaria, nunca datos de tu cuenta de Google.</li>
     </ul>
     <p>Algunos de estos proveedores pueden tratar datos fuera del Espacio Económico Europeo. En esos casos se amparan en las garantías previstas por el RGPD, como el Marco de Privacidad de Datos UE‑EE. UU. o las cláusulas contractuales tipo.</p>
   </section>
 
   <section id="almacenamiento">
-    <h2>6. Almacenamiento y conservación</h2>
+    <h2>7. Almacenamiento y conservación</h2>
     <ul>
-      <li><strong>En tu navegador:</strong> preferencias y datos de trabajo se guardan localmente hasta que los borres o cierres sesión.</li>
-      <li><strong>En tu cuenta de Google:</strong> lo que la herramienta guarde en tu Drive, Sheets o Calendar permanece en tu cuenta bajo tu control.</li>
+      <li><strong>En tu navegador:</strong> preferencias (tamaño de letra, versión de la Biblia, opciones activadas) y, si te conectas a Google, el token temporal y una copia de trabajo de tus notas, hasta que los borres o pulses «Desconectar».</li>
+      <li><strong>En tu cuenta de Google:</strong> el archivo de notas de la Biblia permanece en la carpeta de datos de aplicación de tu Drive, bajo tu control, hasta que lo elimines o revoques el acceso.</li>
       <li><strong>Correos de contacto:</strong> se conservan el tiempo necesario para responderte y, como máximo, un año.</li>
     </ul>
   </section>
 
   <section id="cookies">
-    <h2>7. Cookies y almacenamiento local</h2>
+    <h2>8. Cookies y almacenamiento local</h2>
     <p>Las Herramientas no usan cookies propias de seguimiento. Pueden usar <code>localStorage</code> o <code>sessionStorage</code> para recordar tus preferencias y mantener la sesión; son técnicamente necesarios y no requieren consentimiento. Los servicios de Google pueden fijar sus propias cookies durante el inicio de sesión.</p>
   </section>
 
   <section id="base">
-    <h2>8. Base legal</h2>
+    <h2>9. Base legal</h2>
     <p>Conforme al Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), tratamos tus datos sobre la base de:</p>
     <ul>
-      <li><strong>Tu consentimiento</strong>, al conectar tu cuenta de Google o de otro servicio.</li>
+      <li><strong>Tu consentimiento</strong>, al conectar tu cuenta de Google.</li>
       <li><strong>La ejecución del servicio</strong> que solicitas al usar una herramienta.</li>
       <li><strong>El interés legítimo</strong> en mantener la seguridad y el funcionamiento del sitio.</li>
     </ul>
   </section>
 
   <section id="derechos">
-    <h2>9. Tus derechos</h2>
-    <p>Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad, así como retirar tu consentimiento, escribiendo a <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a>.</p>
+    <h2>10. Tus derechos</h2>
+    <p>Puedes ejercer en cualquier momento tus derechos de acceso, rectificación, supresión, oposición, limitación del tratamiento y portabilidad, así como retirar tu consentimiento, escribiendo a <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a>. Como tus notas están en tu propio Drive, también puedes consultarlas o borrarlas directamente tú.</p>
     <p>Si consideras que no se han respetado tus derechos, puedes presentar una reclamación ante la <a href="https://www.aepd.es" target="_blank" rel="noopener">Agencia Española de Protección de Datos</a>.</p>
   </section>
 
   <section id="revocar">
-    <h2>10. Revocar el acceso y borrar tus datos</h2>
+    <h2>11. Revocar el acceso y borrar tus datos</h2>
     <ul>
-      <li>Revoca el acceso de las Herramientas a tu cuenta de Google desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Tu cuenta de Google › Seguridad › Aplicaciones de terceros</a>.</li>
-      <li>Borra los datos locales eliminando los datos del sitio en la configuración de tu navegador.</li>
-      <li>Los archivos guardados en tu Drive puedes borrarlos tú directamente desde Google Drive.</li>
+      <li>Revoca el acceso de la app a tu cuenta de Google desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Tu cuenta de Google › Seguridad › Aplicaciones de terceros</a>.</li>
+      <li>Borra las notas guardadas en Drive desde <a href="https://drive.google.com/drive/settings" target="_blank" rel="noopener">Google Drive › Configuración › Gestionar aplicaciones</a> › Biblia › Opciones › «Eliminar datos de aplicación ocultos».</li>
+      <li>Borra los datos locales con el botón «Desconectar» de la app o eliminando los datos del sitio en la configuración de tu navegador.</li>
     </ul>
     <a class="boton" href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">Gestionar permisos de Google</a>
   </section>
 
   <section id="seguridad">
-    <h2>11. Seguridad</h2>
-    <p>Todas las comunicaciones se cifran mediante HTTPS. El acceso a las API de Google usa tokens OAuth 2.0 de corta duración y nunca se te pide la contraseña de Google. Aun así, ningún sistema es infalible: si detectas un problema de seguridad, avísanos.</p>
+    <h2>12. Seguridad</h2>
+    <p>Todas las comunicaciones se cifran mediante HTTPS. El acceso a Google Drive usa tokens OAuth 2.0 de corta duración y nunca se te pide la contraseña de Google. Aun así, ningún sistema es infalible: si detectas un problema de seguridad, avísanos.</p>
   </section>
 
   <section id="menores">
-    <h2>12. Menores</h2>
+    <h2>13. Menores</h2>
     <p>Las Herramientas no están dirigidas a menores de 14 años y no recogen conscientemente datos suyos. Si crees que un menor nos ha facilitado datos, escríbenos y los eliminaremos.</p>
   </section>
 
   <section id="cambios">
-    <h2>13. Cambios en esta política</h2>
+    <h2>14. Cambios en esta política</h2>
     <p>Podemos actualizar esta política si cambian las Herramientas o la normativa. La fecha de «Última actualización» indicará la versión vigente. Si un cambio afecta al uso de tus datos de Google, te lo indicaremos dentro de la herramienta antes de aplicarlo.</p>
   </section>
 
   <section id="contacto">
-    <h2>14. Contacto</h2>
+    <h2>15. Contacto</h2>
     <p>Para cualquier duda sobre esta política o sobre tus datos: <a href="mailto:javierscervera@gmail.com">javierscervera@gmail.com</a></p>
   </section>
 </main>
 
 <footer>
-  © 2026 Herramientas · <a href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self">Inicio</a>
+  © 2026 Herramientas · <a href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self">Inicio</a> · <a href="terminos.html" target="_self">Condiciones de servicio</a>
 </footer>
 
 </body>
