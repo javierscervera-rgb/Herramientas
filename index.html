@@ -99,6 +99,9 @@
   }
   @media (prefers-reduced-motion: reduce) { .logo-btn::before { animation: none; } }
   .ver { margin: 1.1rem 0 0; font: 0.8rem var(--sans); color: var(--muted); }
+  .ver-links { margin-top: 0.2rem; }
+  .ver a { color: inherit; font: inherit; text-decoration: underline; text-underline-offset: 3px; display: inline-block; padding: 0.15rem 0; }
+  .ver a:hover { color: var(--ink); }
   .nov { margin: 0 0 0.4rem; font-size: 0.95rem; }
   .nov ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
   .nov li { margin: 0 0 0.25rem; }
@@ -197,6 +200,10 @@
     </div>
     <!-- ACTUALIZAR versión, fecha y novedades en cada edición de este archivo -->
     <p class="ver">v. 2.8, 25 oct 2026</p>
+    <p class="ver ver-links">
+      <a href="https://javierscervera-rgb.github.io/Herramientas/privacidad.html" target="_self">Política de privacidad</a><br>
+      <a href="https://javierscervera-rgb.github.io/Herramientas/terminos.html" target="_self">Condiciones de servicio</a>
+    </p>
   </div>
   <button class="cerrar" type="button" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
