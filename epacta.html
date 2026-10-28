@@ -215,6 +215,8 @@
       color: var(--text);
     }
     .bible-reader-body .verse { margin-bottom: 0.7rem; }
+    .bible-reader-body .verse-gap { text-align: center; color: var(--muted); margin: -.2rem 0 .5rem; }
+    .bible-reader-body .bible-src { margin-top: 1.2rem; padding-top: .7rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .8rem; text-align: center; }
     .bible-reader-body .verse-num {
       font-weight: 700; color: var(--accent-alt); margin-right: 0.35rem;
       font-size: 0.9rem;
@@ -305,7 +307,7 @@
       <div class="modal-actions">
         <button class="btn-cancel" id="btnCloseBible" style="flex:1">Cerrar</button>
       </div>
-      <p class="hint">Las lecturas se abren en la <em>Biblia de Jerusalén</em>. Si alguna cita no se reconoce, búscala manualmente allí.</p>
+      <p class="hint">El texto es el de la <em>Sagrada Biblia de la Conferencia Episcopal Española</em>. Si alguna cita no se reconoce, búscala manualmente allí.</p>
     </div>
   </div>
 
@@ -351,7 +353,7 @@
     const BIBLIA_BASE = 'https://javierscervera-rgb.github.io/Herramientas/Biblia.html';
 
     const BOOK_MAP = {
-      'gn':'GN','gén':'GN','genesis':'GN','génesis':'GN',
+      'gn':'GN','gén':'GN','gen':'GN','1sam':'1S','2sam':'2S','1crón':'1CRO','2crón':'2CRO','1mac':'1M','2mac':'2M','neh':'NE','1pe':'1P','2pe':'2P','1jn':'1JN','flm':'FLM','jds':'JDS','jud':'JDS','genesis':'GN','génesis':'GN',
       'ex':'EX','éx':'EX','exodo':'EX','éxodo':'EX',
       'lv':'LV','lev':'LV','levítico':'LV','levitico':'LV',
       'nm':'NM','núm':'NM','num':'NM','números':'NM','numeros':'NM',
@@ -889,35 +891,47 @@
 
     function extractRefs(text) {
       if (!text) return [];
-      const re = /\b((?:1|2|3)?\s*[A-Za-záéíóúÁÉÍÓÚñÑ.]{1,8})\s+(\d{1,3})(?:\s*[,:]\s*(\d{1,3}[a-z]?)(?:\s*[-–]\s*(\d{1,3}[a-z]?))?)?/gi;
+      // Libro + capítulo + versículos completos (p. ej. "Mt 7, 21. 24-27", "Mt 9, 36 - 10, 8", "Sal 71")
+      const re = /(^|[^0-9A-Za-záéíóúÁÉÍÓÚñÑ])((?:[123]\s*)?[A-Za-záéíóúÁÉÍÓÚñÑ]{1,12}\.?)\s+(\d{1,3})(?:\s*[,:]\s*(\d{1,3}[a-d]?(?:\s*(?:[-–—]+|[.,])\s*\d{1,3}[a-d]?)*))?/g;
       const found = [];
       const seen = new Set();
       let m;
       while ((m = re.exec(text)) !== null) {
-        let bookRaw = m[1].replace(/\./g, '').trim().toLowerCase().replace(/\s+/g, '');
-        if (bookRaw === '1cor' || bookRaw === '1co') bookRaw = '1cor';
-        if (bookRaw === '2cor' || bookRaw === '2co') bookRaw = '2cor';
+        let bookRaw = m[2].replace(/\./g, '').trim().toLowerCase().replace(/\s+/g, '');
         if (bookRaw === 'salmo' || bookRaw === 'salmos') bookRaw = 'sal';
         if (bookRaw === 'romanos') bookRaw = 'rom';
         if (bookRaw === 'gálatas' || bookRaw === 'galatas') bookRaw = 'gal';
         const bookId = BOOK_MAP[bookRaw];
         if (!bookId) continue;
-        const chap = m[2];
-        let from = m[3] ? m[3].replace(/[a-z]/g, '') : null;
-        let to   = m[4] ? m[4].replace(/[a-z]/g, '') : from;
-        let display = bookRaw.toUpperCase();
-        if (display === '1COR') display = '1 Cor';
-        if (display === '2COR') display = '2 Cor';
-        display += ' ' + chap;
-        if (from) display += ',' + from + (to && to !== from ? '-' + to : '');
-        const key = bookId + '|' + chap + '|' + (from||'') + '|' + (to||'');
+        const chap = +m[3];
+        const spec = (m[4] || '').replace(/[.,]\s*$/, '').trim();
+        const bookTxt = m[2].replace(/\.$/, '').replace(/^([123])\s*/, '$1 ');
+        const display = bookTxt + ' ' + chap + (spec ? ', ' + spec : '');
+        const key = bookId + '|' + chap + '|' + spec.replace(/\s+/g, '');
         if (seen.has(key)) continue;
         seen.add(key);
+        const segs = parseSpec(chap, spec);
         let url = BIBLIA_BASE + '#/' + bookId + '/' + chap;
-        if (from) url += '/' + from;
-        found.push({ display, url });
+        if (segs.length && segs[0].v1) url += '/' + segs[0].v1;
+        found.push({ display, url, bookId, chap, segs });
       }
       return found;
+    }
+
+    // "21. 24-27" → [{c:7,v1:21,v2:21},{c:7,v1:24,v2:27}];  "36 - 10, 8" → [{c:9,v1:36,c2:10,v2:8}]
+    function parseSpec(chap, spec) {
+      if (!spec) return [{ c: chap }];               // capítulo entero
+      const segs = []; let c = chap;
+      for (let part of spec.split(/\s*\.\s*/)) {
+        part = part.trim(); if (!part) continue;
+        const mm = part.match(/^(?:(\d+)\s*,\s*)?(\d+)[a-d]?(?:\s*[-–—]+\s*(?:(\d+)\s*,\s*)?(\d+)[a-d]?)?$/);
+        if (!mm) continue;
+        if (mm[1]) c = +mm[1];
+        const v1 = +mm[2];
+        if (mm[3]) { segs.push({ c, v1, c2: +mm[3], v2: +mm[4] }); c = +mm[3]; }
+        else segs.push({ c, v1, v2: mm[4] ? +mm[4] : v1 });
+      }
+      return segs.length ? segs : [{ c: chap }];
     }
 
     btnPrev.addEventListener('click', async () => {
@@ -950,55 +964,78 @@
     const bibleReaderTitle = document.getElementById('bibleReaderTitle');
     const bibleReaderBody = document.getElementById('bibleReaderBody');
     const bibleExternalLink = document.getElementById('bibleExternalLink');
+    let currentRefs = [];
 
-    // Hidden iframe used only to call Biblia.getPassage (same-origin when possible)
-    let bibliaFrame = null;
-    function ensureBibliaFrame() {
-      if (bibliaFrame) return bibliaFrame;
-      bibliaFrame = document.createElement('iframe');
-      bibliaFrame.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden';
-      bibliaFrame.src = 'https://javierscervera-rgb.github.io/Herramientas/Biblia.html';
-      document.body.appendChild(bibliaFrame);
-      return bibliaFrame;
+    /* ---- Texto bíblico: Biblia de la Conferencia Episcopal (biblia.json, misma carpeta) ---- */
+    const BIBLIA_JSON_URL = './biblia.json';
+    const ID2KEY = {
+      GN:'Gén', EX:'Éx', LV:'Lev', NM:'Núm', DT:'Dt', JOS:'Jos', JC:'Jue', RT:'Rut', '1S':'1 Sam', '2S':'2 Sam',
+      '1R':'1 Re', '2R':'2 Re', '1CRO':'1 Crón', '2CRO':'2 Crón', ESD:'Esd', NE:'Neh', TB:'Tob', JDT:'Jdt', EST:'Est',
+      '1M':'1 Mac', '2M':'2 Mac', JB:'Job', SAL:'Sal', PR:'Prov', QO:'Ecl', CT:'Cant', SB:'Sab', SI:'Eclo', IS:'Is',
+      JR:'Jer', LM:'Lam', BA:'Bar', EZ:'Ez', DN:'Dan', OS:'Os', JL:'Jl', AM:'Am', AB:'Abd', JON:'Jon', MI:'Miq',
+      NA:'Nah', HA:'Hab', SO:'Sof', AG:'Ag', ZA:'Zac', ML:'Mal', MT:'Mt', MC:'Mc', LC:'Lc', JN:'Jn', HCH:'Hch',
+      RM:'Rom', '1CO':'1 Cor', '2CO':'2 Cor', GA:'Gal', EF:'Ef', FLP:'Flp', COL:'Col', '1TS':'1 Tes', '2TS':'2 Tes',
+      '1TM':'1 Tim', '2TM':'2 Tim', TT:'Tit', FLM:'Flm', HB:'Heb', ST:'Sant', '1P':'1 Pe', '2P':'2 Pe',
+      '1JN':'1 Jn', '2JN':'2 Jn', '3JN':'3 Jn', JDS:'Jds', AP:'Ap'
+    };
+    let bibliaPromise = null;
+    function loadBiblia() {
+      if (!bibliaPromise) {
+        bibliaPromise = fetch(BIBLIA_JSON_URL)
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .catch(e => { bibliaPromise = null; throw e; });
+      }
+      return bibliaPromise;
+    }
+    // Los libros litúrgicos citan los salmos con la numeración griega; biblia.json usa la hebrea
+    function salmoHebreo(n) {
+      if (n <= 8 || n >= 148) return n;
+      if (n === 9) return 9;            // 9-10 hebreos
+      if (n <= 112) return n + 1;
+      if (n === 113) return 114;        // 114-115 hebreos
+      if (n <= 115) return 116;
+      if (n <= 145) return n + 1;
+      return 147;                       // 146-147 griegos
+    }
+    const numSort = obj => Object.keys(obj).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+
+    function getPassageCEE(bible, ref) {
+      const book = bible[ID2KEY[ref.bookId]];
+      if (!book) return null;
+      const out = []; // {c, v, t} o {gap:true}
+      const isSal = ref.bookId === 'SAL';
+      const chapKey = c => String(isSal ? salmoHebreo(c) : c);
+      const pushRange = (c, from, to) => {
+        const ch = book[chapKey(c)]; if (!ch) return;
+        for (const v of numSort(ch)) if (v >= from && v <= to) out.push({ c: +chapKey(c), v, t: ch[v] });
+      };
+      ref.segs.forEach((sg, i) => {
+        if (i && out.length) out.push({ gap: true });
+        if (!sg.v1) pushRange(sg.c, 0, 9999);
+        else if (sg.c2) { pushRange(sg.c, sg.v1, 9999); pushRange(sg.c2, 0, sg.v2); }
+        else pushRange(sg.c, sg.v1, Math.max(sg.v1, sg.v2));
+      });
+      return out.length ? out : null;
     }
 
-    async function fetchPassage(refDisplay) {
-      // Try via hidden iframe (works when same-origin or relaxed)
-      try {
-        const frame = ensureBibliaFrame();
-        // Wait a bit for load if needed
-        for (let i = 0; i < 30; i++) {
-          if (frame.contentWindow && frame.contentWindow.Biblia) break;
-          await new Promise(r => setTimeout(r, 150));
-        }
-        if (frame.contentWindow && frame.contentWindow.Biblia) {
-          const p = frame.contentWindow.Biblia.getPassage(refDisplay);
-          if (p) return p;
-        }
-      } catch (e) { /* cross-origin or not ready */ }
-
-      // Fallback: return null so UI shows link
-      return null;
-    }
-
-    async function openReader(url, title) {
-      bibleReaderTitle.textContent = title || 'Lectura';
+    async function openReader(idx) {
+      const ref = currentRefs[idx]; if (!ref) return;
+      bibleReaderTitle.textContent = ref.display;
       bibleReaderBody.innerHTML = '<div class="loading">Cargando texto…</div>';
-      bibleExternalLink.href = url;
+      bibleExternalLink.href = ref.url;
       bibleReader.classList.add('open');
       bibleModal.classList.remove('open');
-
-      const passage = await fetchPassage(title);
-      if (passage && passage.verses && passage.verses.length) {
-        let html = '';
-        for (const v of passage.verses) {
-          html += '<div class="verse"><span class="verse-num">' + (v.label || v.n) + '</span>' +
-                  (v.text || '') + '</div>';
-        }
-        bibleReaderBody.innerHTML = html;
-      } else if (passage && passage.text) {
-        bibleReaderBody.innerHTML = '<div class="verse">' + passage.text + '</div>';
-      } else {
+      try {
+        const bible = await loadBiblia();
+        const verses = getPassageCEE(bible, ref);
+        if (!verses) throw new Error('cita no encontrada');
+        const multiChap = new Set(verses.filter(v => !v.gap).map(v => v.c)).size > 1;
+        bibleReaderBody.innerHTML = verses.map(v => v.gap
+          ? '<div class="verse-gap">…</div>'
+          : '<div class="verse"><span class="verse-num">' + (multiChap ? v.c + ',' : '') + v.v + '</span>' + esc(v.t) + '</div>'
+        ).join('') + '<div class="bible-src">Sagrada Biblia · Conferencia Episcopal Española</div>';
+        bibleReaderBody.scrollTop = 0;
+      } catch (e) {
         bibleReaderBody.innerHTML =
           '<div class="error">No se pudo cargar el texto aquí.<br>' +
           'Pulsa el enlace de abajo para verlo en la Biblia Interactiva.</div>';
@@ -1105,16 +1142,15 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && homilyReader.classList.contains('open')) closeHomilies(); });
 
     btnBible.addEventListener('click', () => {
-      const refs = extractRefs(lastExtractedText);
+      const refs = currentRefs = extractRefs(lastExtractedText);
       if (!refs.length) {
         bibleContent.innerHTML = '<div class="no-refs">No se detectaron citas bíblicas en esta página.<br>Prueba a pasar a la página anterior o siguiente del mismo día.</div>';
       } else {
         let html = '<ul class="ref-list">';
-        for (const r of refs) {
-          // Use button-like <a> that calls openReader instead of target=_blank
-          html += '<li><span class="ref-text">' + r.display + '</span>' +
-                  '<a href="#" data-url="' + r.url + '" data-title="' + r.display + '" class="open-reader">Leer</a></li>';
-        }
+        refs.forEach((r, i) => {
+          html += '<li><span class="ref-text">' + esc(r.display) + '</span>' +
+                  '<a href="#" data-i="' + i + '" class="open-reader">Leer</a></li>';
+        });
         html += '</ul>';
         bibleContent.innerHTML = html;
 
@@ -1122,7 +1158,7 @@
         bibleContent.querySelectorAll('.open-reader').forEach(a => {
           a.addEventListener('click', ev => {
             ev.preventDefault();
-            openReader(a.dataset.url, a.dataset.title);
+            openReader(+a.dataset.i);
           });
         });
       }
