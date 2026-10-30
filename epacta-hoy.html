@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Epacta · Hoy</title>
+  <meta name="description" content="Calendario litúrgico pastoral: la página de hoy, a pantalla completa.">
+  <meta name="theme-color" content="#171310">
+  <link rel="manifest" href="epacta-hoy.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-epacta-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Epacta">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+  <style>
+    :root {
+      --bg: #171310;
+      --card: #201D18;
+      --accent: #CD8B75;
+      --accent-alt: #D88972;
+      --btn2: #292420;
+      --text: #F0E8DC;
+      --muted: #AA9D8F;
+      --border: #37312B;
+      --btn: 88px;               /* diámetro de los botones: lo recalcula JS (radio = 12 % del ancho de la página) */
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%; overflow: hidden; overscroll-behavior: none;
+      background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      -webkit-user-select: none; user-select: none;
+    }
+
+    /* ---- Página ---- */
+    #stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+    #stage.dragging { cursor: grabbing; }
+    #sheet {
+      position: absolute; left: 0; top: 0; will-change: transform;
+      background: #fff; border-radius: 4px; overflow: hidden;
+      box-shadow: 0 6px 28px rgba(0,0,0,.45);
+    }
+    #sheet canvas { display: block; width: 100%; height: 100%; }
+    #sheet.anim { transition: transform .2s ease-out, opacity .2s ease-out; }
+
+    /* ---- Carga ---- */
+    #loader {
+      position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; background: var(--bg);
+      color: var(--muted); font-size: .95rem; text-align: center; padding: 24px;
+    }
+    #loader.hidden { display: none; }
+    .bar { width: min(260px, 70vw); height: 6px; border-radius: 3px; background: var(--btn2); overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+    #loader.error { color: var(--accent-alt); }
+
+    /* ---- Botones flotantes ---- */
+    .fabs {
+      position: fixed; z-index: 25; display: flex; gap: calc(var(--btn) * .14);
+      right: calc(env(safe-area-inset-right) + 16px);
+      bottom: calc(env(safe-area-inset-bottom) + 16px);
+    }
+    .fab {
+      position: relative; width: var(--btn); height: var(--btn); border-radius: 50%;
+      border: none; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; line-height: 1;
+      box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 2px 5px rgba(0,0,0,.35);
+      transition: transform .12s, box-shadow .12s;
+      font-family: inherit;
+    }
+    .fab:active { transform: scale(.93); box-shadow: 0 3px 10px rgba(0,0,0,.45); }
+    .fab:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+    .fab.today { background: var(--accent); color: var(--bg); }
+    .fab.today .d { font-size: calc(var(--btn) * .40); font-weight: 700; letter-spacing: -.02em; }
+    .fab.today .m { font-size: calc(var(--btn) * .15); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: calc(var(--btn) * .03); }
+    .fab.today.away { background: var(--btn2); color: var(--accent-alt); box-shadow: 0 6px 18px rgba(0,0,0,.45), 0 2px 5px rgba(0,0,0,.35), inset 0 0 0 2px var(--accent); }
+    .fab.cal { background: var(--btn2); color: var(--text); }
+    .fab.cal svg { width: 44%; height: 44%; }
+    /* El selector de fecha nativo va encima del botón del calendario, invisible */
+    .fab.cal input {
+      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0;
+      border: 0; cursor: pointer; font-size: 16px;
+    }
+
+    /* ---- Aviso breve ---- */
+    #toast {
+      position: fixed; z-index: 40; left: 50%; top: calc(env(safe-area-inset-top) + 14px);
+      transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
+      background: rgba(41,36,32,.95); color: var(--text); border: 1px solid var(--border);
+      padding: .5rem .9rem; border-radius: 999px; font-size: .88rem;
+      box-shadow: 0 4px 14px rgba(0,0,0,.4); transition: opacity .2s, transform .2s; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  </style>
+</head>
+<body>
+  <div id="stage" aria-label="Calendario litúrgico. Desliza para pasar página.">
+    <div id="sheet"></div>
+  </div>
+
+  <div id="loader"><div id="loaderText">Cargando calendario…</div><div class="bar"><i id="loaderBar"></i></div></div>
+
+  <div class="fabs">
+    <button class="fab today" id="btnToday" title="Ir a hoy" aria-label="Ir a la página de hoy">
+      <span class="d" id="todayDay">—</span><span class="m" id="todayMonth"></span>
+    </button>
+    <label class="fab cal" id="btnCal" title="Buscar un día" aria-label="Buscar un día">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>
+        <circle cx="8" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="13.5" r="1" fill="currentColor" stroke="none"/>
+        <circle cx="8" cy="17.2" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17.2" r="1" fill="currentColor" stroke="none"/>
+      </svg>
+      <input type="date" id="dateInput" aria-label="Elegir fecha">
+    </label>
+  </div>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    const { pdfjsLib } = globalThis;
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+
+    const PDF_URL = './Calendario-Liturgico-CEE-2026.pdf';
+    const MAP_URL = './date_to_page.json';
+    const RETURN_MS = 5 * 60 * 1000;          // volver a hoy tras 5 minutos fuera
+    const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+    const $ = id => document.getElementById(id);
+    const stage = $('stage'), sheet = $('sheet'), loader = $('loader');
+    const btnToday = $('btnToday'), dateInput = $('dateInput'), toastEl = $('toast');
+
+    let pdfDoc = null, dateMap = {}, dates = [], minPage = 1, maxPage = 1;
+    let page = null;                 // página mostrada
+    let lastNav = Date.now();        // última vez que el usuario cambió de página
+    let todayIso = isoToday();
+
+    /* ---------- Fechas ---------- */
+    function isoToday() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function pagesForDate(iso) {
+      if (dateMap[iso]) return dateMap[iso];
+      // Fuera del calendario: la fecha más cercana
+      if (!dates.length) return null;
+      if (iso < dates[0]) return dateMap[dates[0]];
+      if (iso > dates[dates.length - 1]) return dateMap[dates[dates.length - 1]];
+      return null;
+    }
+    function todayPages() { return pagesForDate(todayIso) || []; }
+    function isOnToday() { return todayPages().includes(page); }
+    function paintTodayBtn() {
+      const d = new Date();
+      $('todayDay').textContent = d.getDate();
+      $('todayMonth').textContent = MONTHS[d.getMonth()];
+      btnToday.classList.toggle('away', page !== null && !isOnToday());
+    }
+
+    let toastTimer;
+    function toast(msg) {
+      toastEl.textContent = msg; toastEl.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+    }
+
+    /* ---------- Geometría ---------- */
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+    document.body.appendChild(probe);
+    function safe() {
+      const cs = getComputedStyle(probe);
+      return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+    }
+    // La página (ya recortada) cabe entera en pantalla.
+    function layoutFor(r) {
+      const W = stage.clientWidth, H = stage.clientHeight, s = safe();
+      const top = s.t + 8;
+      const availW = W - s.l - s.r, availH = H - top - Math.max(s.b, 8);
+      const scale = Math.min(availW / r.w, availH / r.h);
+      const w = Math.floor(r.w * scale), h = Math.floor(r.h * scale);
+      return { scale, w, h, x: Math.round(s.l + (availW - w) / 2), y: Math.round(top) };
+    }
+
+    /* ---------- Recorte de márgenes blancos ---------- */
+    const cropCache = new Map();
+    async function getCrop(num, pg) {
+      if (cropCache.has(num)) return cropCache.get(num);
+      const vp1 = pg.getViewport({ scale: 1 });
+      const s = Math.min(2, 600 / vp1.width);
+      const vp = pg.getViewport({ scale: s });
+      const W = Math.ceil(vp.width), H = Math.ceil(vp.height);
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+      await pg.render({ canvas: c, canvasContext: ctx, viewport: vp }).promise;
+      const data = ctx.getImageData(0, 0, W, H).data;
+      const rows = new Uint32Array(H), cols = new Uint32Array(W);
+      for (let y = 0, i = 0; y < H; y++)
+        for (let x = 0; x < W; x++, i += 4)
+          if (data[i] < 236 || data[i + 1] < 236 || data[i + 2] < 236) { rows[y]++; cols[x]++; }
+      const first = a => { for (let k = 0; k < a.length; k++) if (a[k] >= 2) return k; return -1; };
+      const last = a => { for (let k = a.length - 1; k >= 0; k--) if (a[k] >= 2) return k; return -1; };
+      const x0 = first(cols), x1 = last(cols), y0 = first(rows), y1 = last(rows);
+      let crop = { x: 0, y: 0, w: vp1.width, h: vp1.height };
+      if (x0 >= 0 && y0 >= 0) {
+        const pad = Math.round(Math.max(W, H) * 0.012);
+        const ax = Math.max(0, x0 - pad), ay = Math.max(0, y0 - pad);
+        const bx = Math.min(W, x1 + 1 + pad), by = Math.min(H, y1 + 1 + pad);
+        crop = { x: ax / s, y: ay / s, w: (bx - ax) / s, h: (by - ay) / s };
+      }
+      cropCache.set(num, crop);
+      return crop;
+    }
+
+    /* ---------- Render (con caché de las páginas vecinas) ---------- */
+    const renders = new Map();       // num -> Promise<{canvas, lay}>
+    let layoutKey = '';
+    function currentLayoutKey() { return stage.clientWidth + 'x' + stage.clientHeight + '@' + (window.devicePixelRatio || 1); }
+    function renderPage(num) {
+      const key = currentLayoutKey();
+      if (key !== layoutKey) { renders.clear(); layoutKey = key; }
+      if (renders.has(num)) return renders.get(num);
+      const job = (async () => {
+        const pg = await pdfDoc.getPage(num);
+        const r = await getCrop(num, pg);
+        const lay = layoutFor(r);
+        const dpr = Math.min(window.devicePixelRatio || 1, 3);
+        let s = lay.scale * dpr;
+        s = Math.min(s, Math.sqrt(12e6 / (r.w * r.h)));          // límite de memoria del canvas
+        const vp = pg.getViewport({ scale: s, offsetX: -r.x * s, offsetY: -r.y * s });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(r.w * s));
+        canvas.height = Math.max(1, Math.round(r.h * s));
+        await pg.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        return { canvas, lay };
+      })();
+      job.catch(() => renders.delete(num));
+      renders.set(num, job);
+      // No guardar demasiadas páginas en memoria
+      if (renders.size > 6) for (const k of renders.keys()) { if (Math.abs(k - num) > 2 && k !== page) { renders.delete(k); if (renders.size <= 6) break; } }
+      return job;
+    }
+    function prefetchAround(num) {
+      const run = () => { if (num + 1 <= maxPage) renderPage(num + 1); if (num - 1 >= minPage) renderPage(num - 1); };
+      (window.requestIdleCallback || (f => setTimeout(f, 120)))(run);
+    }
+
+    function placeSheet(lay) {
+      sheet.style.width = lay.w + 'px'; sheet.style.height = lay.h + 'px';
+      sheet.style.left = lay.x + 'px'; sheet.style.top = lay.y + 'px';
+      // Radio del botón = 12 % del ancho de la página → diámetro = 24 %
+      document.documentElement.style.setProperty('--btn', Math.max(52, Math.round(lay.w * 0.24)) + 'px');
+    }
+
+    let showSeq = 0;
+    async function show(num, dir = 0) {
+      num = Math.max(minPage, Math.min(maxPage, num));
+      const seq = ++showSeq;
+      const pending = renderPage(num);
+      if (dir && page !== null) {           // sale la página actual
+        sheet.classList.add('anim');
+        sheet.style.transform = `translateX(${dir > 0 ? -110 : 110}vw)`;
+        await new Promise(r => setTimeout(r, 200));
+      }
+      let res;
+      try { res = await pending; } catch (e) { if (seq === showSeq) toast('Error al mostrar la página'); return; }
+      if (seq !== showSeq) return;
+      page = num;
+      sheet.replaceChildren(res.canvas);
+      placeSheet(res.lay);
+      sheet.classList.remove('anim');
+      sheet.style.transform = dir ? `translateX(${dir > 0 ? 110 : -110}vw)` : 'none';
+      if (dir) { sheet.offsetWidth; sheet.classList.add('anim'); sheet.style.transform = 'none'; }
+      paintTodayBtn();
+      prefetchAround(num);
+    }
+
+    /* ---------- Navegación ---------- */
+    function userNav() { lastNav = Date.now(); }
+    function next() { if (page < maxPage) { userNav(); show(page + 1, +1); } else bounce(-1); }
+    function prev() { if (page > minPage) { userNav(); show(page - 1, -1); } else bounce(+1); }
+    function goToday(dir = 0) {
+      todayIso = isoToday();
+      const p = todayPages()[0];
+      if (p) show(p, dir || (page === null ? 0 : Math.sign(p - page)));
+    }
+    function goDate(iso) {
+      const ps = dateMap[iso];
+      if (!ps) { toast('Esa fecha no está en el calendario'); return; }
+      userNav();
+      show(ps[0], Math.sign(ps[0] - page));
+    }
+    function bounce(sign) {
+      sheet.classList.add('anim'); sheet.style.transform = `translateX(${sign * 24}px)`;
+      setTimeout(() => { sheet.style.transform = 'none'; }, 160);
+    }
+
+    btnToday.addEventListener('click', () => { if (isOnToday()) toast('Ya estás en hoy'); goToday(); });
+
+    // Calendario: selector de fecha nativo
+    $('btnCal').addEventListener('click', e => {
+      if (e.target !== dateInput) { e.preventDefault(); }
+      try { dateInput.showPicker(); } catch (_) { dateInput.focus(); dateInput.click(); }
+    });
+    dateInput.addEventListener('change', () => { if (dateInput.value) goDate(dateInput.value); });
+
+    // Volver solo a hoy al cabo de 5 minutos (también al volver de segundo plano)
+    function checkReturn() {
+      const t = isoToday();
+      const dayChanged = t !== todayIso;
+      if (dayChanged) { const wasOnToday = isOnToday(); todayIso = t; paintTodayBtn(); if (wasOnToday) { goToday(); return; } }
+      if (page !== null && !isOnToday() && Date.now() - lastNav >= RETURN_MS) { goToday(); toast('De vuelta a hoy'); }
+    }
+    setInterval(checkReturn, 15000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) checkReturn(); });
+    window.addEventListener('pageshow', checkReturn);
+
+    // Deslizar con el dedo (o arrastrar con el ratón)
+    let drag = null;
+    stage.addEventListener('pointerdown', e => {
+      if (page === null || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      drag = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, dx: 0 };
+      sheet.classList.remove('anim');
+      stage.setPointerCapture(e.pointerId);
+      stage.classList.add('dragging');
+    });
+    stage.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.dx = e.clientX - drag.x;
+      const edge = (drag.dx > 0 && page <= minPage) || (drag.dx < 0 && page >= maxPage);
+      sheet.style.transform = `translateX(${edge ? drag.dx * 0.25 : drag.dx}px)`;
+    });
+    function endDrag(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = drag.dx, dt = performance.now() - drag.t;
+      drag = null; stage.classList.remove('dragging');
+      const fast = Math.abs(dx) > 30 && dt < 250;
+      if (Math.abs(dx) > Math.min(90, stage.clientWidth * 0.18) || fast) { dx < 0 ? next() : prev(); }
+      else { sheet.classList.add('anim'); sheet.style.transform = 'none'; }
+    }
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+
+    document.addEventListener('keydown', e => {
+      if (e.target === dateInput) return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') next();
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
+      else if (e.key === 'Home' || e.key === 't') goToday();
+    });
+    document.addEventListener('gesturestart', e => e.preventDefault());
+
+    let resizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => { if (page !== null) show(page); }, 150);
+    });
+
+    /* ---------- Carga ---------- */
+    async function fetchWithProgress(url, onProgress) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const total = +res.headers.get('Content-Length') || 0;
+      if (!res.body || !total) return new Uint8Array(await res.arrayBuffer());
+      const reader = res.body.getReader(); const chunks = []; let got = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); got += value.length; onProgress(got / total);
+      }
+      const out = new Uint8Array(got); let o = 0;
+      for (const c of chunks) { out.set(c, o); o += c.length; }
+      return out;
+    }
+
+    async function init() {
+      paintTodayBtn();
+      try {
+        dateMap = await (await fetch(MAP_URL)).json();
+        dates = Object.keys(dateMap).sort();
+        const all = dates.flatMap(d => dateMap[d]);
+        minPage = Math.min(...all); maxPage = Math.max(...all);
+        dateInput.min = dates[0]; dateInput.max = dates[dates.length - 1];
+        const data = await fetchWithProgress(PDF_URL, f => { $('loaderBar').style.width = Math.round(f * 100) + '%'; });
+        $('loaderText').textContent = 'Preparando la página de hoy…';
+        pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+        await renderPage(todayPages()[0] || minPage);
+        goToday();
+        await new Promise(r => setTimeout(r, 30));
+        loader.classList.add('hidden');
+      } catch (e) {
+        loader.classList.add('error');
+        $('loaderText').textContent = 'No se pudo cargar el calendario. ' + (navigator.onLine ? '' : 'Sin conexión. ') + (e.message || '');
+      }
+    }
+    init();
+
+    /* ---------- PWA ---------- */
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw-epacta-hoy.js', { scope: './epacta-hoy.html' }).catch(() => {});
+      // Guardar el PDF para usarlo sin conexión desde la primera visita
+      navigator.serviceWorker.ready.then(reg => reg.active && reg.active.postMessage({ type: 'cache', urls: [PDF_URL] })).catch(() => {});
+    }
+  </script>
+</body>
+</html>
