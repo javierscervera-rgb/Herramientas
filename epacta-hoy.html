@@ -24,7 +24,7 @@
       --text: #F0E8DC;
       --muted: #AA9D8F;
       --border: #37312B;
-      --btn: 88px;               /* diámetro de los botones: lo recalcula JS (radio = 12 % del ancho de la página) */
+      --btn: 50px;               /* diámetro fijo de los botones */
       color-scheme: dark;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -59,10 +59,12 @@
 
     /* ---- Botones flotantes ---- */
     .fabs {
+      opacity: .4; transition: opacity .5s ease;
       position: fixed; z-index: 25; display: flex; gap: calc(var(--btn) * .14);
       right: calc(env(safe-area-inset-right) + 16px);
       bottom: calc(env(safe-area-inset-bottom) + 16px);
     }
+    .fabs.active { opacity: 1; transition-duration: .15s; }
     .fab {
       position: relative; width: var(--btn); height: var(--btn); border-radius: 50%;
       border: none; cursor: pointer; display: flex; flex-direction: column;
@@ -251,8 +253,6 @@
     function placeSheet(lay) {
       sheet.style.width = lay.w + 'px'; sheet.style.height = lay.h + 'px';
       sheet.style.left = lay.x + 'px'; sheet.style.top = lay.y + 'px';
-      // Radio del botón = 12 % del ancho de la página → diámetro = 24 %
-      document.documentElement.style.setProperty('--btn', Math.max(52, Math.round(lay.w * 0.24)) + 'px');
     }
 
     let showSeq = 0;
@@ -319,6 +319,19 @@
     window.addEventListener('pageshow', checkReturn);
 
     // Deslizar con el dedo (o arrastrar con el ratón)
+    // Botones traslúcidos salvo mientras se toca la pantalla (y un momento después)
+    const fabs = document.querySelector('.fabs');
+    let fadeT;
+    function wake() { clearTimeout(fadeT); fabs.classList.add('active'); }
+    function sleepSoon() { clearTimeout(fadeT); fadeT = setTimeout(() => fabs.classList.remove('active'), 1500); }
+    document.addEventListener('pointerdown', wake, true);
+    document.addEventListener('pointerup', sleepSoon, true);
+    document.addEventListener('pointercancel', sleepSoon, true);
+    document.addEventListener('keydown', () => { wake(); sleepSoon(); });
+    dateInput.addEventListener('change', sleepSoon);
+    dateInput.addEventListener('blur', sleepSoon);
+    window.addEventListener('focus', sleepSoon);
+
     let drag = null;
     stage.addEventListener('pointerdown', e => {
       if (page === null || (e.pointerType === 'mouse' && e.button !== 0)) return;
