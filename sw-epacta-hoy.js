@@ -1,6 +1,6 @@
 /* Service worker de epacta-hoy.html (solo controla esa página).
    Si cambias el PDF del calendario, sube la versión para que se descargue de nuevo. */
-const VERSION = 'epacta-hoy-v3';
+const VERSION = 'epacta-hoy-v4';
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/';
 const PRECACHE = [
   './epacta-hoy.html',

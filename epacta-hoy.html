@@ -38,8 +38,9 @@
     /* ---- Página ---- */
     #stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
     #stage.dragging { cursor: grabbing; }
+    #stage.zoomed { cursor: move; }
     #sheet {
-      position: absolute; left: 0; top: 0; will-change: transform;
+      position: absolute; left: 0; top: 0; will-change: transform; transform-origin: 0 0;
       background: #fff; border-radius: 4px; overflow: hidden;
       box-shadow: 0 6px 28px rgba(0,0,0,.45);
     }
@@ -99,7 +100,7 @@
   </style>
 </head>
 <body>
-  <div id="stage" aria-label="Calendario litúrgico. Desliza para pasar página.">
+  <div id="stage" aria-label="Calendario litúrgico. Desliza para pasar página; pellizca o toca dos veces para ampliar.">
     <div id="sheet"></div>
   </div>
 
@@ -229,21 +230,26 @@
         const pg = await pdfDoc.getPage(num);
         const r = await getCrop(num, pg);
         const lay = layoutFor(r);
-        const dpr = Math.min(window.devicePixelRatio || 1, 3);
-        let s = lay.scale * dpr;
-        s = Math.min(s, Math.sqrt(12e6 / (r.w * r.h)));          // límite de memoria del canvas
-        const vp = pg.getViewport({ scale: s, offsetX: -r.x * s, offsetY: -r.y * s });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(r.w * s));
-        canvas.height = Math.max(1, Math.round(r.h * s));
-        await pg.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-        return { canvas, lay };
+        const s = scaleFor(r, lay.scale);
+        const canvas = await drawPage(pg, r, s);
+        return { canvas, lay, r, s };
       })();
       job.catch(() => renders.delete(num));
       renders.set(num, job);
       // No guardar demasiadas páginas en memoria
       if (renders.size > 6) for (const k of renders.keys()) { if (Math.abs(k - num) > 2 && k !== page) { renders.delete(k); if (renders.size <= 6) break; } }
       return job;
+    }
+    const DPR = () => Math.min(window.devicePixelRatio || 1, 3);
+    // Escala de render: la necesaria para la pantalla, con límite de memoria del canvas
+    function scaleFor(r, cssScale) { return Math.min(cssScale * DPR(), Math.sqrt(12e6 / (r.w * r.h))); }
+    async function drawPage(pg, r, s) {
+      const vp = pg.getViewport({ scale: s, offsetX: -r.x * s, offsetY: -r.y * s });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(r.w * s));
+      canvas.height = Math.max(1, Math.round(r.h * s));
+      await pg.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      return canvas;
     }
     function prefetchAround(num) {
       const run = () => { if (num + 1 <= maxPage) renderPage(num + 1); if (num - 1 >= minPage) renderPage(num - 1); };
@@ -269,6 +275,8 @@
       try { res = await pending; } catch (e) { if (seq === showSeq) toast('Error al mostrar la página'); return; }
       if (seq !== showSeq) return;
       page = num;
+      cur = { num, lay: res.lay, r: res.r, s: res.s };
+      zv.z = 1; zv.tx = 0; zv.ty = 0; stage.classList.remove('zoomed'); sharpSeq++;
       sheet.replaceChildren(res.canvas);
       placeSheet(res.lay);
       sheet.classList.remove('anim');
@@ -332,36 +340,151 @@
     dateInput.addEventListener('blur', sleepSoon);
     window.addEventListener('focus', sleepSoon);
 
-    let drag = null;
+    /* ---------- Zoom (pellizco, doble toque, Ctrl + rueda) y deslizar ---------- */
+    const MAX_Z = 5;
+    const zv = { z: 1, tx: 0, ty: 0 };     // zoom y desplazamiento sobre la posición base
+    let cur = null;                         // página mostrada: { num, lay, r, s }
+    const zoomed = () => zv.z > 1.01;
+
+    function applyZ(anim = false) {
+      sheet.classList.toggle('anim', anim);
+      sheet.style.transform = (zv.z === 1 && !zv.tx && !zv.ty) ? 'none'
+        : `translate(${zv.tx}px, ${zv.ty}px) scale(${zv.z})`;
+      stage.classList.toggle('zoomed', zoomed());
+    }
+    // La página ampliada no puede dejar huecos: se mantiene dentro de la pantalla
+    function clampZ() {
+      if (!cur) return;
+      const { lay } = cur, vw = stage.clientWidth, vh = stage.clientHeight;
+      const fit = (pos, size, view) => size <= view ? Math.min(Math.max(pos, 0), view - size) : Math.min(0, Math.max(view - size, pos));
+      zv.tx = fit(lay.x + zv.tx, lay.w * zv.z, vw) - lay.x;
+      zv.ty = fit(lay.y + zv.ty, lay.h * zv.z, vh) - lay.y;
+    }
+    function zoomAt(z, px, py, anim = false) {
+      if (!cur) return;
+      const { lay } = cur;
+      const cx = (px - lay.x - zv.tx) / zv.z, cy = (py - lay.y - zv.ty) / zv.z;
+      zv.z = Math.min(MAX_Z, Math.max(1, z));
+      if (zv.z <= 1.01) { resetZoom(anim); return; }
+      zv.tx = px - lay.x - cx * zv.z; zv.ty = py - lay.y - cy * zv.z;
+      clampZ(); applyZ(anim); scheduleSharp();
+    }
+    function resetZoom(anim = true) { zv.z = 1; zv.tx = 0; zv.ty = 0; applyZ(anim); }
+
+    // Al terminar de ampliar, se vuelve a dibujar la página con más resolución (texto nítido)
+    let sharpT, sharpSeq = 0;
+    function scheduleSharp() { clearTimeout(sharpT); sharpT = setTimeout(sharpen, 250); }
+    async function sharpen() {
+      if (!cur || !zoomed()) return;
+      const target = scaleFor(cur.r, cur.lay.scale * zv.z);
+      if (cur.s >= target * 0.95) return;
+      const seq = ++sharpSeq, num = cur.num;
+      try {
+        const pg = await pdfDoc.getPage(num);
+        const canvas = await drawPage(pg, cur.r, target);
+        if (seq !== sharpSeq || !cur || cur.num !== num) return;
+        sheet.replaceChildren(canvas); cur.s = target;
+      } catch (_) {}
+    }
+
+    const pts = new Map();
+    let drag = null, pinch = null, lastTap = { t: 0, x: 0, y: 0 };
+    const mid = () => { const [a, b] = [...pts.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; };
+    function startDrag(x, y, id) {
+      drag = { x, y, t: performance.now(), id, dx: 0, dy: 0, moved: 0, pan: zoomed(), tx0: zv.tx, ty0: zv.ty };
+    }
+
     stage.addEventListener('pointerdown', e => {
       if (page === null || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      drag = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId, dx: 0 };
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { stage.setPointerCapture(e.pointerId); } catch (_) {}
       sheet.classList.remove('anim');
-      stage.setPointerCapture(e.pointerId);
-      stage.classList.add('dragging');
+      if (pts.size === 2 && cur) {                       // empieza el pellizco
+        if (drag && !drag.pan) sheet.style.transform = zv.z === 1 ? 'none' : sheet.style.transform;
+        drag = null;
+        const m = mid();
+        pinch = { d0: m.d, z0: zv.z, cx: (m.x - cur.lay.x - zv.tx) / zv.z, cy: (m.y - cur.lay.y - zv.ty) / zv.z };
+      } else if (pts.size === 1) {
+        startDrag(e.clientX, e.clientY, e.pointerId);
+        stage.classList.add('dragging');
+      }
     });
+
     stage.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pinch && pts.size >= 2) {
+        const m = mid();
+        zv.z = Math.min(MAX_Z, Math.max(1, pinch.z0 * m.d / pinch.d0));
+        zv.tx = m.x - cur.lay.x - pinch.cx * zv.z;
+        zv.ty = m.y - cur.lay.y - pinch.cy * zv.z;
+        clampZ(); applyZ(false);
+        return;
+      }
       if (!drag || e.pointerId !== drag.id) return;
-      drag.dx = e.clientX - drag.x;
-      const edge = (drag.dx > 0 && page <= minPage) || (drag.dx < 0 && page >= maxPage);
-      sheet.style.transform = `translateX(${edge ? drag.dx * 0.25 : drag.dx}px)`;
+      drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y;
+      drag.moved = Math.max(drag.moved, Math.hypot(drag.dx, drag.dy));
+      if (drag.pan) {                                    // con zoom: mover la página
+        zv.tx = drag.tx0 + drag.dx; zv.ty = drag.ty0 + drag.dy; clampZ(); applyZ(false);
+      } else {                                           // sin zoom: deslizar para pasar página
+        const edge = (drag.dx > 0 && page <= minPage) || (drag.dx < 0 && page >= maxPage);
+        sheet.style.transform = `translateX(${edge ? drag.dx * 0.25 : drag.dx}px)`;
+      }
     });
-    function endDrag(e) {
+
+    function endPointer(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (pinch) {
+        if (pts.size < 2) {
+          pinch = null;
+          if (zv.z <= 1.03) resetZoom(true); else scheduleSharp();
+          // si queda un dedo, sigue moviendo la página sin saltos
+          if (pts.size === 1) { const [id, p] = [...pts.entries()][0]; startDrag(p.x, p.y, id); drag.pan = true; }
+        }
+        return;
+      }
       if (!drag || e.pointerId !== drag.id) return;
-      const dx = drag.dx, dt = performance.now() - drag.t;
-      drag = null; stage.classList.remove('dragging');
-      const fast = Math.abs(dx) > 30 && dt < 250;
-      if (Math.abs(dx) > Math.min(90, stage.clientWidth * 0.18) || fast) { dx < 0 ? next() : prev(); }
+      const d = drag; drag = null; stage.classList.remove('dragging');
+      const dt = performance.now() - d.t;
+      // ¿Toque? (doble toque = ampliar / volver)
+      if (d.moved < 10 && dt < 300 && e.type === 'pointerup') {
+        if (!d.pan) { sheet.style.transform = 'none'; }
+        const now = performance.now();
+        if (now - lastTap.t < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 40) {
+          lastTap.t = 0;
+          if (zoomed()) resetZoom(true); else zoomAt(2.5, e.clientX, e.clientY, true);
+        } else lastTap = { t: now, x: e.clientX, y: e.clientY };
+        return;
+      }
+      if (d.pan) return;
+      const fast = Math.abs(d.dx) > 30 && dt < 250 && Math.abs(d.dx) > Math.abs(d.dy);
+      if ((Math.abs(d.dx) > Math.min(90, stage.clientWidth * 0.18) && Math.abs(d.dx) > Math.abs(d.dy)) || fast) { d.dx < 0 ? next() : prev(); }
       else { sheet.classList.add('anim'); sheet.style.transform = 'none'; }
     }
-    stage.addEventListener('pointerup', endDrag);
-    stage.addEventListener('pointercancel', endDrag);
+    stage.addEventListener('pointerup', endPointer);
+    stage.addEventListener('pointercancel', endPointer);
+
+    // Ordenador: Ctrl + rueda (o pellizco en el trackpad) amplía; con zoom, la rueda mueve la página
+    stage.addEventListener('wheel', e => {
+      if (!cur) return;
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        const d = Math.max(-25, Math.min(25, e.deltaY * (e.deltaMode === 1 ? 16 : 1)));
+        zoomAt(zv.z * Math.exp(-d * 0.01), e.clientX, e.clientY);
+      } else if (zoomed()) {
+        zv.tx -= e.deltaX; zv.ty -= e.deltaY; clampZ(); applyZ(false);
+      }
+    }, { passive: false });
 
     document.addEventListener('keydown', e => {
       if (e.target === dateInput) return;
       if (e.key === 'ArrowRight' || e.key === 'PageDown') next();
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
       else if (e.key === 'Home' || e.key === 't') goToday();
+      else if (e.key === '+' || e.key === '=') zoomAt(zv.z * 1.4, stage.clientWidth / 2, stage.clientHeight / 2, true);
+      else if (e.key === '-') zoomAt(zv.z / 1.4, stage.clientWidth / 2, stage.clientHeight / 2, true);
+      else if (e.key === '0' || e.key === 'Escape') resetZoom(true);
     });
     document.addEventListener('gesturestart', e => e.preventDefault());
 
