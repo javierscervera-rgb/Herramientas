@@ -1,0 +1,19 @@
+{
+  "id": "./epacta-hoy.html",
+  "name": "Epacta · Calendario litúrgico",
+  "short_name": "Epacta",
+  "description": "La página de hoy del Calendario Litúrgico Pastoral, a pantalla completa.",
+  "lang": "es",
+  "start_url": "./epacta-hoy.html",
+  "scope": "./epacta-hoy.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icon-epacta-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-epacta-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-epacta-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
