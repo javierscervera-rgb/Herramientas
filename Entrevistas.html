@@ -90,6 +90,33 @@
   .entry .sec + .sec { margin-top: 12px; }
   .entry .tx { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .95rem; }
 
+  /* ---------- Alarma de la persona ---------- */
+  .alarmbar { flex: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--bd); }
+  .alarmbar .t { font-size: .9rem; color: var(--tx2); }
+  .alarmbar .chip { font-size: .9rem; padding: 5px 12px; }
+  .alarmbar .btn { margin-left: auto; }
+
+  /* ---------- Fotos ---------- */
+  .fotos { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+  .foto { flex: 0 0 auto; width: min(78%, 320px); margin: 0; scroll-snap-align: start; }
+  .fotos.una .foto { width: min(100%, 420px); }
+  .marco { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--btn2); border: 1px solid var(--bd); cursor: zoom-in; }
+  .marco img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .marco img:not([src]) { visibility: hidden; }
+  .marco.falta::after { content: "Foto no disponible"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--tx2); }
+  .foto figcaption { margin-top: 5px; font-size: .86rem; color: var(--tx2); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .fld label.btn { display: inline-flex; margin: 0; font-weight: 400; }
+  .efotos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .efotos:empty { display: none; }
+  .efoto { display: flex; align-items: center; gap: 10px; }
+  .efoto .marco { flex: none; width: 76px; cursor: default; }
+  .efoto input { flex: 1; min-width: 0; }
+  .efoto .x { flex: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(229,128,111,.45); background: var(--btn2); color: var(--danger); font-size: 1.2rem; cursor: pointer; }
+  dialog.visor { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 0; background: rgba(12,10,8,.97); box-shadow: none; }
+  dialog.visor figure { margin: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; cursor: zoom-out; }
+  dialog.visor img { max-width: 100%; max-height: calc(100% - 60px); object-fit: contain; border-radius: 8px; }
+  dialog.visor figcaption { max-width: 720px; text-align: center; color: var(--tx); white-space: pre-wrap; overflow-wrap: anywhere; }
+
   /* ---------- Diálogos ---------- */
   dialog { width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); padding: 0; border-radius: 16px; border: 1px solid var(--bd); background: var(--card); color: var(--tx); box-shadow: 0 20px 50px rgba(0,0,0,.5); }
   dialog::backdrop { background: rgba(0,0,0,.6); }
@@ -187,13 +214,13 @@
 <dialog id="dEntrada">
   <form method="dialog" id="fEntrada">
     <h2 id="tEntrada">Nueva entrada</h2>
-    <div class="row2">
-      <div class="fld"><label for="eFecha">Fecha de creación</label><input id="eFecha" type="date" required></div>
-      <div class="fld"><label for="eAlarma">Alarma</label><input id="eAlarma" type="date">
-        <div class="quick"><button type="button" data-dias="7">+1 sem</button><button type="button" data-dias="14">+2 sem</button><button type="button" data-dias="30">+1 mes</button><button type="button" data-dias="0">Quitar</button></div></div>
-    </div>
+    <p class="nota" id="eCreada"></p>
     <div class="fld"><label for="eInforme">Informe</label><textarea id="eInforme" rows="7"></textarea></div>
     <div class="fld"><label for="ePasos">Próximos pasos</label><textarea id="ePasos" rows="4"></textarea></div>
+    <div class="fld"><label>Fotos</label>
+      <div class="efotos" id="eFotos"></div>
+      <label class="btn small" for="eFotoIn" id="eFotoBtn">+ Añadir fotos</label><input id="eFotoIn" type="file" accept="image/*" multiple hidden>
+    </div>
     <div class="dacts">
       <button type="button" class="btn danger izq hidden" id="eBorrar">Eliminar</button>
       <button type="button" class="btn" data-close>Cancelar</button>
@@ -202,11 +229,28 @@
   </form>
 </dialog>
 
+<!-- ===================== DIÁLOGO ALARMA ===================== -->
+<dialog id="dAlarma">
+  <form method="dialog" id="fAlarma">
+    <h2 id="tAlarma">Alarma</h2>
+    <div class="fld"><label for="aFecha">Fecha</label><input id="aFecha" type="date">
+      <div class="quick"><button type="button" data-dias="1">Mañana</button><button type="button" data-dias="7">+1 sem</button><button type="button" data-dias="14">+2 sem</button><button type="button" data-dias="30">+1 mes</button></div></div>
+    <div class="dacts">
+      <button type="button" class="btn danger izq" id="aQuitar">Quitar alarma</button>
+      <button type="button" class="btn" data-close>Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ===================== VISOR DE FOTOS ===================== -->
+<dialog id="dFoto" class="visor" aria-label="Foto"><figure><img id="vImg" alt=""><figcaption id="vCap"></figcaption></figure></dialog>
+
 <!-- ===================== DIÁLOGO AJUSTES ===================== -->
 <dialog id="dCfg">
   <form method="dialog" id="fCfg">
     <h2>Almacenamiento en GitHub</h2>
-    <p class="nota">Los datos se guardan en un archivo JSON de un repositorio. Usa un repositorio <b>privado</b> distinto de <code>Herramientas</code> (que es público), y un token <i>fine-grained</i> con acceso solo a ese repositorio y permiso <i>Contents: Read and write</i>. El token se queda solo en este navegador.</p>
+    <p class="nota">Los datos se guardan en un archivo JSON de un repositorio, y las fotos en la carpeta <code>fotos/</code> junto a él. Usa un repositorio <b>privado</b> distinto de <code>Herramientas</code> (que es público), y un token <i>fine-grained</i> con acceso solo a ese repositorio y permiso <i>Contents: Read and write</i>. El token se queda solo en este navegador.</p>
     <div class="row2">
       <div class="fld"><label for="cOwner">Usuario</label><input id="cOwner" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
       <div class="fld"><label for="cRepo">Repositorio</label><input id="cRepo" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
@@ -273,11 +317,13 @@
   }
 
   /* ---------- Datos ----------
-     { formato, version, personas:[{id,nombre,telefono,descripcion,creada,mod,
-         entradas:[{id,creada,ts,informe,pasos,alarma,mod}]}], borrados:{id:ms} } */
+     { formato, version, personas:[{id,nombre,telefono,descripcion,creada,mod,alarma,amod,
+         entradas:[{id,creada,ts,informe,pasos,mod,fotos:[{id,desc}]}]}], borrados:{id:ms} } */
+  const cmpEntrada = (a, b) => a.creada === b.creada ? a.ts - b.ts : (a.creada < b.creada ? -1 : 1);
   const vacio = () => ({ formato: FORMATO, version: 1, personas: [], borrados: {} });
   const str = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
   const num = v => (typeof v === "number" && isFinite(v)) ? v : 0;
+  const FID = /^[A-Za-z0-9-]{1,80}$/;
   function limpiar(d) {        // valida todo lo que viene de fuera
     if (!d || typeof d !== "object" || !Array.isArray(d.personas)) throw new Error("formato");
     const out = vacio();
@@ -285,12 +331,18 @@
     for (const p of d.personas.slice(0, 20000)) {
       if (!p || typeof p.id !== "string") continue;
       const q = { id: p.id.slice(0, 80), nombre: str(p.nombre, 200), telefono: str(p.telefono, 40), descripcion: str(p.descripcion, 50000),
-                  creada: ISO.test(p.creada) ? p.creada : hoy(), mod: num(p.mod), entradas: [] };
+                  creada: ISO.test(p.creada) ? p.creada : hoy(), mod: num(p.mod), alarma: "", amod: num(p.amod), entradas: [] };
+      let vieja = null;      // versión anterior: la alarma estaba en las entradas; se hereda la de la más reciente
       for (const e of (Array.isArray(p.entradas) ? p.entradas : []).slice(0, 20000)) {
         if (!e || typeof e.id !== "string") continue;
-        q.entradas.push({ id: e.id.slice(0, 80), creada: ISO.test(e.creada) ? e.creada : hoy(), ts: num(e.ts), informe: str(e.informe, 200000),
-                          pasos: str(e.pasos, 50000), alarma: ISO.test(e.alarma) ? e.alarma : "", mod: num(e.mod) });
+        const en = { id: e.id.slice(0, 80), creada: ISO.test(e.creada) ? e.creada : hoy(), ts: num(e.ts), informe: str(e.informe, 200000),
+                     pasos: str(e.pasos, 50000), mod: num(e.mod), fotos: [] };
+        for (const f of (Array.isArray(e.fotos) ? e.fotos : []).slice(0, 200))
+          if (f && typeof f.id === "string" && FID.test(f.id)) en.fotos.push({ id: f.id, desc: str(f.desc, 2000) });
+        if (ISO.test(e.alarma) && (!vieja || cmpEntrada(en, vieja.en) > 0)) vieja = { en, al: e.alarma };
+        q.entradas.push(en);
       }
+      q.alarma = ISO.test(p.alarma) ? p.alarma : (!("alarma" in p) && vieja ? vieja.al : "");
       out.personas.push(q);
     }
     return out;
@@ -315,9 +367,11 @@
       for (const eid of new Set([...ea.keys(), ...eb.keys()])) {
         if (bor[eid]) continue;
         const x = ea.get(eid), y = eb.get(eid);
-        entradas.push(!y ? x : !x ? y : (x.mod >= y.mod ? x : y));
+        const ch = !y ? x : !x ? y : (x.mod >= y.mod ? x : y);
+        entradas.push(Object.assign({}, ch, { fotos: ch.fotos.filter(f => !bor[f.id]) }));
       }
-      personas.push(Object.assign({}, base, { entradas }));
+      const al = !pb ? pa : !pa ? pb : (pa.amod >= pb.amod ? pa : pb);   // la alarma se une por separado
+      personas.push(Object.assign({}, base, { alarma: al.alarma, amod: al.amod, entradas }));
     }
     return normal({ personas, borrados: bor });
   }
@@ -326,9 +380,8 @@
   try { db = limpiar(store.get(KEY_DB, null)); } catch (_) { db = vacio(); }
   const guardarLocal = () => store.set(KEY_DB, db);
   const persona = id => db.personas.find(p => p.id === id);
-  const cmpEntrada = (a, b) => a.creada === b.creada ? a.ts - b.ts : (a.creada < b.creada ? -1 : 1);
   const ultima = p => p.entradas.length ? p.entradas.reduce((m, e) => cmpEntrada(e, m) > 0 ? e : m) : null;
-  const alarmaDe = p => { const u = ultima(p); return u ? u.alarma : ""; };   // alarma de la entrevista más reciente
+  const alarmaDe = p => p.alarma;
   function chipAlarma(iso) {
     if (!iso) return `<span class="chip">Sin alarma</span>`;
     const h = hoy(), cls = iso < h ? "vencida" : iso === h ? "hoy" : "";
@@ -350,14 +403,17 @@
   function estado(clase, texto, titulo) {
     syncEl.className = clase; syncEl.querySelector("span").textContent = texto; syncEl.title = titulo || texto;
   }
-  const b64enc = s => { const b = new TextEncoder().encode(s); let r = ""; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(r); };
+  const bytesB64 = b => { let r = ""; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(r); };
+  const b64enc = s => bytesB64(new TextEncoder().encode(s));
+  const blobB64 = async b => bytesB64(new Uint8Array(await b.arrayBuffer()));
   const b64dec = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, "")), c => c.charCodeAt(0)));
-  function url() {
+  function url(path) {
     return "https://api.github.com/repos/" + encodeURIComponent(cfg.owner) + "/" + encodeURIComponent(cfg.repo) +
-           "/contents/" + cfg.path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+           "/contents/" + (path || cfg.path).split("/").filter(Boolean).map(encodeURIComponent).join("/");
   }
-  async function gh(method, body, accept) {
-    const r = await fetch(url(), {
+  const rutaFoto = id => { const i = cfg.path.lastIndexOf("/"); return (i >= 0 ? cfg.path.slice(0, i + 1) : "") + "fotos/" + id + ".jpg"; };
+  async function gh(method, body, accept, path) {
+    const r = await fetch(url(path), {
       method, cache: "no-store",
       headers: { "Authorization": "Bearer " + cfg.token, "Accept": accept || "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28",
                  ...(body ? { "Content-Type": "application/json" } : {}) },
@@ -389,6 +445,102 @@
     if (e.status === 404) return "No se encuentra el repositorio";
     return "No se pudo sincronizar (" + (e.status || "red") + ")";
   }
+  /* ---------- Fotos ----------
+     Cada foto se guarda en este navegador (IndexedDB) y se sube como fotos/<id>.jpg.
+     La cola recuerda qué falta subir o borrar en GitHub, también sin conexión. */
+  const fotosDB = (() => {
+    let abierta = null;
+    const abrir = () => abierta || (abierta = new Promise((res, rej) => {
+      const r = indexedDB.open("entrevistas-fotos", 1);
+      r.onupgradeneeded = () => { r.result.createObjectStore("blob"); r.result.createObjectStore("cola"); };
+      r.onsuccess = () => res(r.result); r.onerror = () => { abierta = null; rej(r.error); };
+    }));
+    const op = async (st, modo, fn) => {
+      const d = await abrir();
+      return new Promise((res, rej) => {
+        const t = d.transaction(st, modo), r = fn(t.objectStore(st));
+        t.oncomplete = () => res(r && r.result); t.onerror = t.onabort = () => rej(t.error);
+      });
+    };
+    return {
+      get: id => op("blob", "readonly", s => s.get(id)).catch(() => null),
+      put: (id, b) => op("blob", "readwrite", s => s.put(b, id)),
+      del: id => op("blob", "readwrite", s => s.delete(id)).catch(() => {}),
+      encolar: (id, que) => op("cola", "readwrite", s => s.put(que, id)),
+      desencolar: id => op("cola", "readwrite", s => s.delete(id)).catch(() => {}),
+      cola: async () => {
+        const d = await abrir();
+        return new Promise((res, rej) => {
+          const t = d.transaction("cola"), out = [];
+          t.objectStore("cola").openCursor().onsuccess = e => { const c = e.target.result; if (c) { out.push([c.key, c.value]); c.continue(); } };
+          t.oncomplete = () => res(out); t.onerror = () => rej(t.error);
+        });
+      }
+    };
+  })();
+  const urls = new Map(), pedidas = new Map();
+  function fotoURL(id) {
+    if (urls.has(id)) return Promise.resolve(urls.get(id));
+    if (pedidas.has(id)) return pedidas.get(id);
+    const pr = (async () => {
+      let b = await fotosDB.get(id);
+      if (!b && configurado()) {
+        try {
+          const r = await gh("GET", null, "application/vnd.github.raw", rutaFoto(id));
+          b = new Blob([await r.arrayBuffer()], { type: "image/jpeg" });
+          fotosDB.put(id, b).catch(() => {});
+        } catch (_) { b = null; }
+      }
+      if (!b) return null;
+      const u = URL.createObjectURL(b); urls.set(id, u); return u;
+    })();
+    pedidas.set(id, pr); pr.finally(() => pedidas.delete(id));
+    return pr;
+  }
+  function cargarFotos(root) {
+    root.querySelectorAll("img[data-fid]:not([src])").forEach(img => {
+      const m = img.closest(".marco"); if (m) m.classList.remove("falta");
+      fotoURL(img.dataset.fid).then(u => { if (u) img.src = u; else if (m) m.classList.add("falta"); });
+    });
+  }
+  const srcFoto = id => urls.has(id) ? ` src="${esc(urls.get(id))}"` : "";
+  function borrarFoto(id) {
+    db.borrados[id] = Date.now();
+    fotosDB.del(id); fotosDB.encolar(id, "borrar").catch(() => {});
+    if (urls.has(id)) { URL.revokeObjectURL(urls.get(id)); urls.delete(id); }
+  }
+  async function comprimir(file) {   // máx. 1600 px de lado, JPEG
+    let src, tmp = null;
+    try { src = await createImageBitmap(file, { imageOrientation: "from-image" }); }
+    catch (_) {
+      tmp = URL.createObjectURL(file);
+      src = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("imagen")); i.src = tmp; });
+    }
+    try {
+      const w0 = src.naturalWidth || src.width, h0 = src.naturalHeight || src.height;
+      const k = Math.min(1, 1600 / Math.max(w0, h0));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round(w0 * k)); c.height = Math.max(1, Math.round(h0 * k));
+      c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+      return await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("jpeg")), "image/jpeg", 0.82));
+    } finally { if (tmp) URL.revokeObjectURL(tmp); if (src.close) src.close(); }
+  }
+  async function procesarCola() {
+    let cola; try { cola = await fotosDB.cola(); } catch (_) { return; }
+    if (cola.length) estado("busy", "Subiendo fotos…");
+    for (const [id, que] of cola) {
+      const ruta = rutaFoto(id);
+      if (que === "subir") {
+        const b = await fotosDB.get(id);
+        if (b) { try { await gh("PUT", { message: "Foto " + id, content: await blobB64(b) }, null, ruta); } catch (e) { if (e.status !== 422) throw e; } }   // 422: ya estaba
+      } else {
+        try { const j = await (await gh("GET", null, null, ruta)).json(); await gh("DELETE", { message: "Borrar foto " + id, sha: j.sha }, null, ruta); }
+        catch (e) { if (e.status !== 404) throw e; }
+      }
+      await fotosDB.desencolar(id);
+    }
+  }
+
   let sincronizando = false, otraVez = false;
   async function sync() {
     if (!configurado()) { estado("", "Solo en este dispositivo", "Configura GitHub en ⚙︎ para guardar allí los datos"); return false; }
@@ -397,6 +549,8 @@
     estado("busy", "Sincronizando…");
     let ok = false;
     try {
+      await procesarCola();      // primero las fotos, para que el JSON nunca apunte a una foto que no está
+      estado("busy", "Sincronizando…");
       for (let intento = 0; intento < 3 && !ok; intento++) {
         const r = await bajar();
         const remoto = r.data ? normal(r.data) : null;
@@ -406,7 +560,7 @@
         try { await subir(unido, r.sha); ok = true; }
         catch (e) { if (e.status !== 409 && e.status !== 422) throw e; }   // otro dispositivo guardó antes: se vuelve a unir
       }
-      if (ok) estado("ok", "Guardado en GitHub", "Sincronizado " + new Date().toLocaleTimeString("es-ES"));
+      if (ok) { estado("ok", "Guardado en GitHub", "Sincronizado " + new Date().toLocaleTimeString("es-ES")); document.querySelectorAll(".marco.falta img[data-fid]").forEach(i => i.removeAttribute("src")); cargarFotos(document); }
       else estado("err", "Conflicto al guardar");
     } catch (e) {
       estado("err", explicar(e));
@@ -434,7 +588,7 @@
 
   function renderLista() {
     const q = buscar.value.trim().toLowerCase();
-    let ps = db.personas.filter(p => !q || [p.nombre, p.telefono, p.descripcion, ...p.entradas.map(e => e.informe + " " + e.pasos)].join(" ").toLowerCase().includes(q));
+    let ps = db.personas.filter(p => !q || [p.nombre, p.telefono, p.descripcion, ...p.entradas.map(e => e.informe + " " + e.pasos + " " + e.fotos.map(f => f.desc).join(" "))].join(" ").toLowerCase().includes(q));
     const nom = (a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
     if (orden.value === "nombre") ps.sort(nom);
     else if (orden.value === "reciente") ps.sort((a, b) => { const x = ultima(a), y = ultima(b); return (!x && !y) ? nom(a, b) : !x ? 1 : !y ? -1 : cmpEntrada(y, x); });
@@ -471,6 +625,10 @@
         </div>
         <div class="desc ${p.descripcion.trim() ? "" : "muted"}">${esc(p.descripcion.trim() || "Sin descripción")}</div>
       </section>
+      <div class="alarmbar">
+        <span class="t">Alarma</span>${chipAlarma(p.alarma)}
+        <button class="btn small" data-accion="alarma">${p.alarma ? "Cambiar alarma" : "Poner alarma"}</button>
+      </div>
       <div class="ehd">
         <button class="btn small" data-accion="volver">← Personas</button>
         <h3>Entradas (${es.length})</h3>
@@ -479,12 +637,16 @@
       </div>
       <div id="entradas">${es.length ? es.map(e => `
         <article class="entry" tabindex="0" data-eid="${esc(e.id)}">
-          <div class="chips"><span class="chip fecha">${esc(fecha(e.creada))}</span>${e.alarma ? chipAlarma(e.alarma) : ""}</div>
+          <div class="chips"><span class="chip fecha">${esc(fecha(e.creada))}</span></div>
           <div class="sec"><span class="lbl">Informe</span><div class="tx ${e.informe.trim() ? "" : "muted"}">${esc(e.informe.trim() || "—")}</div></div>
           <div class="sec"><span class="lbl">Próximos pasos</span><div class="tx ${e.pasos.trim() ? "" : "muted"}">${esc(e.pasos.trim() || "—")}</div></div>
+          ${e.fotos.length ? `<div class="sec"><span class="lbl">Fotos (${e.fotos.length})</span><div class="fotos ${e.fotos.length === 1 ? "una" : ""}">${e.fotos.map(f => `
+            <figure class="foto"><div class="marco" data-ver="${esc(f.id)}"><img data-fid="${esc(f.id)}"${srcFoto(f.id)} alt="${esc(f.desc || "Foto")}"></div>${f.desc.trim() ? `<figcaption>${esc(f.desc.trim())}</figcaption>` : ""}</figure>`).join("")}
+          </div></div>` : ""}
         </article>`).join("") : `<div class="vacio"><p>Aún no hay entradas.</p></div>`}
       </div>`;
     $("entradas").scrollTop = prevScroll;
+    cargarFotos(detalle);
   }
 
   /* ---------- Eventos de la lista ---------- */
@@ -509,8 +671,15 @@
       const acc = a.dataset.accion;
       if (acc === "volver") { if (vinoDeLista) { vinoDeLista = false; history.back(); } else location.hash = ""; return; }
       if (acc === "editarPersona") return abrirPersona(p);
+      if (acc === "alarma") return abrirAlarma(p);
       if (acc === "nuevaEntrada") return abrirEntrada(p, null);
       if (acc === "ordenEntradas") { eOrden = eOrden === "desc" ? "asc" : "desc"; store.set(KEY_EORD, eOrden); $("entradas").scrollTop = 0; renderDetalle(p); $("entradas").scrollTop = 0; return; }
+    }
+    const ver = e.target.closest("[data-ver]");
+    if (ver) {
+      const en0 = ver.closest(".entry"), x = p.entradas.find(y => y.id === en0.dataset.eid), f = x && x.fotos.find(y => y.id === ver.dataset.ver);
+      if (f && urls.has(f.id)) { $("vImg").src = urls.get(f.id); $("vImg").alt = f.desc || "Foto"; $("vCap").textContent = f.desc.trim(); $("dFoto").showModal(); }
+      return;
     }
     const en = e.target.closest(".entry");
     if (en && !window.getSelection().toString()) abrirEntrada(p, p.entradas.find(x => x.id === en.dataset.eid));
@@ -549,43 +718,108 @@
     const n = editP.entradas.length;
     if (!confirm(`¿Eliminar a ${editP.nombre}${n ? ` y sus ${n} entrada${n > 1 ? "s" : ""}` : ""}? No se puede deshacer.`)) return;
     const ahora = Date.now();
-    db.borrados[editP.id] = ahora; editP.entradas.forEach(x => db.borrados[x.id] = ahora);
+    db.borrados[editP.id] = ahora; editP.entradas.forEach(x => { db.borrados[x.id] = ahora; x.fotos.forEach(f => borrarFoto(f.id)); });
     db.personas = db.personas.filter(x => x !== editP);
     dP.close(); location.hash = ""; cambio();
   });
 
   // Entrada
   const dE = $("dEntrada");
-  let editE = null, editEP = null;
+  let editE = null, editEP = null, borrador = [], guardada = false, preparando = Promise.resolve();
   function abrirEntrada(p, en) {
-    editEP = p; editE = en || null;
+    editEP = p; editE = en || null; guardada = false;
     $("tEntrada").textContent = en ? "Editar entrada" : "Nueva entrada";
-    $("eFecha").value = en ? en.creada : hoy(); $("eAlarma").value = en ? en.alarma : "";
+    $("eCreada").textContent = en ? "Creada el " + fecha(en.creada) : "Se creará con fecha de hoy, " + fecha(hoy()) + ".";
     $("eInforme").value = en ? en.informe : ""; $("ePasos").value = en ? en.pasos : "";
+    borrador = en ? en.fotos.map(f => ({ id: f.id, desc: f.desc })) : [];
+    pintarBorrador();
     $("eBorrar").classList.toggle("hidden", !en);
     dE.showModal(); if (!en) $("eInforme").focus();
   }
-  dE.querySelector(".quick").addEventListener("click", e => {
-    const b = e.target.closest("[data-dias]"); if (!b) return;
-    const n = +b.dataset.dias;
-    $("eAlarma").value = n ? sumarDias(ISO.test($("eFecha").value) ? $("eFecha").value : hoy(), n) : "";
+  function pintarBorrador() {
+    const box = $("eFotos");
+    box.innerHTML = borrador.map((f, i) => `<div class="efoto">
+      <div class="marco"><img data-fid="${esc(f.id)}"${srcFoto(f.id)} alt=""></div>
+      <input type="text" maxlength="500" placeholder="Descripción (opcional)" value="${esc(f.desc)}" data-i="${i}" aria-label="Descripción de la foto ${i + 1}">
+      <button type="button" class="x" data-quitar="${i}" title="Quitar foto" aria-label="Quitar foto ${i + 1}">×</button></div>`).join("");
+    cargarFotos(box);
+  }
+  $("eFotos").addEventListener("input", e => { const i = e.target.dataset.i; if (i != null && borrador[i]) borrador[i].desc = e.target.value; });
+  $("eFotos").addEventListener("click", e => {
+    const b = e.target.closest("[data-quitar]"); if (!b) return;
+    const [f] = borrador.splice(+b.dataset.quitar, 1);
+    if (f && f.blob && urls.has(f.id)) { URL.revokeObjectURL(urls.get(f.id)); urls.delete(f.id); }
+    pintarBorrador();
   });
-  $("fEntrada").addEventListener("submit", e => {
+  $("eFotoIn").addEventListener("change", e => {
+    const files = Array.from(e.target.files || []); e.target.value = "";
+    if (!files.length) return;
+    const btn = $("eFotoBtn"); btn.setAttribute("aria-disabled", "true"); btn.textContent = "Preparando fotos…";
+    preparando = (async () => {
+      let mal = 0;
+      for (const file of files) {
+        try {
+          const blob = await comprimir(file), id = uid();
+          urls.set(id, URL.createObjectURL(blob));
+          borrador.push({ id, desc: "", blob });
+          pintarBorrador();
+        } catch (_) { mal++; }
+      }
+      if (mal) toast(mal === 1 ? "No se pudo leer una de las fotos." : `No se pudieron leer ${mal} fotos.`);
+    })().finally(() => { btn.removeAttribute("aria-disabled"); btn.textContent = "+ Añadir fotos"; });
+  });
+  dE.addEventListener("close", () => {   // al cancelar, las fotos nuevas se descartan
+    if (guardada) return;
+    borrador.forEach(f => { if (f.blob && urls.has(f.id)) { URL.revokeObjectURL(urls.get(f.id)); urls.delete(f.id); } });
+    borrador = [];
+  });
+  $("fEntrada").addEventListener("submit", async e => {
     e.preventDefault();
-    const f = $("eFecha").value;
-    if (!ISO.test(f)) { $("eFecha").focus(); return; }
-    const al = $("eAlarma").value;
-    const datos = { creada: f, alarma: ISO.test(al) ? al : "", informe: $("eInforme").value.replace(/\s+$/, ""), pasos: $("ePasos").value.replace(/\s+$/, ""), mod: Date.now() };
-    if (editE) Object.assign(editE, datos);
-    else editEP.entradas.push(Object.assign({ id: uid(), ts: Date.now() }, datos));
-    dE.close(); cambio();
+    await preparando;
+    try {
+      for (const f of borrador) if (f.blob) { await fotosDB.put(f.id, f.blob); await fotosDB.encolar(f.id, "subir"); }
+    } catch (_) { toast("No se pudieron guardar las fotos en este navegador."); return; }
+    const fotos = borrador.map(f => ({ id: f.id, desc: f.desc.trim() }));
+    const datos = { informe: $("eInforme").value.replace(/\s+$/, ""), pasos: $("ePasos").value.replace(/\s+$/, ""), fotos, mod: Date.now() };
+    if (editE) {
+      const quedan = new Set(fotos.map(f => f.id));
+      editE.fotos.forEach(f => { if (!quedan.has(f.id)) borrarFoto(f.id); });
+      Object.assign(editE, datos);
+    } else editEP.entradas.push(Object.assign({ id: uid(), creada: hoy(), ts: Date.now() }, datos));
+    guardada = true; dE.close(); cambio();
   });
   $("eBorrar").addEventListener("click", () => {
-    if (!editE || !confirm("¿Eliminar esta entrada? No se puede deshacer.")) return;
+    if (!editE || !confirm("¿Eliminar esta entrada" + (editE.fotos.length ? " y sus fotos" : "") + "? No se puede deshacer.")) return;
     db.borrados[editE.id] = Date.now();
+    editE.fotos.forEach(f => borrarFoto(f.id));
     editEP.entradas = editEP.entradas.filter(x => x !== editE);
     dE.close(); cambio();
   });
+
+  // Alarma (una por persona)
+  const dA = $("dAlarma");
+  let editA = null;
+  function abrirAlarma(p) {
+    editA = p;
+    $("tAlarma").textContent = "Alarma · " + p.nombre;
+    $("aFecha").value = p.alarma || "";
+    $("aQuitar").classList.toggle("hidden", !p.alarma);
+    dA.showModal();
+  }
+  dA.querySelector(".quick").addEventListener("click", e => {
+    const b = e.target.closest("[data-dias]"); if (b) $("aFecha").value = sumarDias(hoy(), +b.dataset.dias);
+  });
+  function ponerAlarma(v) { editA.alarma = v; editA.amod = Date.now(); dA.close(); cambio(); }
+  $("fAlarma").addEventListener("submit", e => {
+    e.preventDefault();
+    const v = $("aFecha").value;
+    if (!ISO.test(v)) { $("aFecha").focus(); return; }
+    ponerAlarma(v);
+  });
+  $("aQuitar").addEventListener("click", () => ponerAlarma(""));
+
+  // Visor
+  $("dFoto").addEventListener("click", () => $("dFoto").close());
 
   // Ajustes
   const dC = $("dCfg"), cMsg = $("cMsg");
@@ -608,8 +842,18 @@
     cfg.token = ""; store.set(KEY_CFG, cfg); $("cToken").value = "";
     cMsg.className = "msg"; cMsg.textContent = "Token borrado de este navegador."; sync();
   });
-  $("cExport").addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(normal(db), null, 1)], { type: "application/json" });
+  $("cExport").addEventListener("click", async () => {
+    const out = normal(db), fotosData = {};
+    cMsg.className = "msg"; cMsg.textContent = "Preparando copia…";
+    let faltan = 0;
+    for (const p of db.personas) for (const en of p.entradas) for (const f of en.fotos) {
+      await fotoURL(f.id);
+      const b = await fotosDB.get(f.id);
+      if (b) fotosData[f.id] = await blobB64(b); else faltan++;
+    }
+    out.fotosData = fotosData;
+    cMsg.className = faltan ? "msg" : "msg ok"; cMsg.textContent = faltan ? `Copia hecha, pero faltan ${faltan} fotos que no están en este dispositivo.` : "Copia exportada con las fotos.";
+    const blob = new Blob([JSON.stringify(out, null, 1)], { type: "application/json" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "entrevistas-" + hoy() + ".json";
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   });
@@ -617,7 +861,16 @@
     const f = e.target.files && e.target.files[0]; e.target.value = "";
     if (!f) return;
     try {
-      const d = limpiar(JSON.parse(await f.text()));
+      const raw = JSON.parse(await f.text()), d = limpiar(raw);
+      const fd = raw.fotosData && typeof raw.fotosData === "object" ? raw.fotosData : {};
+      for (const [id, b64] of Object.entries(fd)) {
+        if (!FID.test(id) || typeof b64 !== "string" || await fotosDB.get(id)) continue;
+        try {
+          const bin = atob(b64), u = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+          await fotosDB.put(id, new Blob([u], { type: "image/jpeg" })); await fotosDB.encolar(id, "subir");
+        } catch (_) {}
+      }
       db = fusionar(db, normal(d)); cambio();
       cMsg.className = "msg ok"; cMsg.textContent = `Copia importada (${d.personas.length} personas).`;
     } catch (_) { cMsg.className = "msg"; cMsg.textContent = "El archivo no es una copia válida."; }
