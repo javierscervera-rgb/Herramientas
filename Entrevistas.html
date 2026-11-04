@@ -105,6 +105,14 @@
   .marco img:not([src]) { visibility: hidden; }
   .marco.falta::after { content: "Foto no disponible"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--tx2); }
   .foto figcaption { margin-top: 5px; font-size: .86rem; color: var(--tx2); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .fotosp { flex: none; }
+  .fotosp > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(216,137,114,.15); border: 1px solid rgba(216,137,114,.45); color: var(--accent2); font-weight: 600; font-size: .9rem; cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .fotosp > summary::-webkit-details-marker { display: none; }
+  .fotosp > summary::after { content: "▾"; transition: transform .2s; }
+  .fotosp[open] > summary::after { transform: rotate(180deg); }
+  .fotosp .fotos { margin-top: 10px; }
+  .fotosp .foto { width: min(70%, 300px); }
+  .fotosp .fotos.una .foto { width: min(100%, 380px); }
   .fld label.btn { display: inline-flex; margin: 0; font-weight: 400; }
   .efotos { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
   .efotos:empty { display: none; }
@@ -202,6 +210,10 @@
     <div class="fld"><label for="pTel">Teléfono</label><input id="pTel" type="tel" maxlength="30" autocomplete="off" placeholder="600 000 000">
       <div class="hint">Si empieza por 6 o 7 se añade 34 al abrir WhatsApp.</div></div>
     <div class="fld"><label for="pDesc">Descripción</label><textarea id="pDesc" rows="5"></textarea></div>
+    <div class="fld"><label>Fotos</label>
+      <div class="efotos" id="pFotos"></div>
+      <label class="btn small" for="pFotoIn" id="pFotoBtn">+ Añadir fotos</label><input id="pFotoIn" type="file" accept="image/*" multiple hidden>
+    </div>
     <div class="dacts">
       <button type="button" class="btn danger izq hidden" id="pBorrar">Eliminar</button>
       <button type="button" class="btn" data-close>Cancelar</button>
@@ -217,10 +229,6 @@
     <p class="nota" id="eCreada"></p>
     <div class="fld"><label for="eInforme">Informe</label><textarea id="eInforme" rows="7"></textarea></div>
     <div class="fld"><label for="ePasos">Próximos pasos</label><textarea id="ePasos" rows="4"></textarea></div>
-    <div class="fld"><label>Fotos</label>
-      <div class="efotos" id="eFotos"></div>
-      <label class="btn small" for="eFotoIn" id="eFotoBtn">+ Añadir fotos</label><input id="eFotoIn" type="file" accept="image/*" multiple hidden>
-    </div>
     <div class="dacts">
       <button type="button" class="btn danger izq hidden" id="eBorrar">Eliminar</button>
       <button type="button" class="btn" data-close>Cancelar</button>
@@ -317,8 +325,8 @@
   }
 
   /* ---------- Datos ----------
-     { formato, version, personas:[{id,nombre,telefono,descripcion,creada,mod,alarma,amod,
-         entradas:[{id,creada,ts,informe,pasos,mod,fotos:[{id,desc}]}]}], borrados:{id:ms} } */
+     { formato, version, personas:[{id,nombre,telefono,descripcion,creada,mod,alarma,amod,fotos:[{id,desc}],
+         entradas:[{id,creada,ts,informe,pasos,mod}]}], borrados:{id:ms} } */
   const cmpEntrada = (a, b) => a.creada === b.creada ? a.ts - b.ts : (a.creada < b.creada ? -1 : 1);
   const vacio = () => ({ formato: FORMATO, version: 1, personas: [], borrados: {} });
   const str = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
@@ -331,14 +339,17 @@
     for (const p of d.personas.slice(0, 20000)) {
       if (!p || typeof p.id !== "string") continue;
       const q = { id: p.id.slice(0, 80), nombre: str(p.nombre, 200), telefono: str(p.telefono, 40), descripcion: str(p.descripcion, 50000),
-                  creada: ISO.test(p.creada) ? p.creada : hoy(), mod: num(p.mod), alarma: "", amod: num(p.amod), entradas: [] };
+                  creada: ISO.test(p.creada) ? p.creada : hoy(), mod: num(p.mod), alarma: "", amod: num(p.amod), fotos: [], entradas: [] };
+      const vistas = new Set();
+      const tomarFotos = arr => { for (const f of (Array.isArray(arr) ? arr : []).slice(0, 500))
+        if (f && typeof f.id === "string" && FID.test(f.id) && !vistas.has(f.id)) { vistas.add(f.id); q.fotos.push({ id: f.id, desc: str(f.desc, 2000) }); } };
+      tomarFotos(p.fotos);
       let vieja = null;      // versión anterior: la alarma estaba en las entradas; se hereda la de la más reciente
       for (const e of (Array.isArray(p.entradas) ? p.entradas : []).slice(0, 20000)) {
         if (!e || typeof e.id !== "string") continue;
         const en = { id: e.id.slice(0, 80), creada: ISO.test(e.creada) ? e.creada : hoy(), ts: num(e.ts), informe: str(e.informe, 200000),
-                     pasos: str(e.pasos, 50000), mod: num(e.mod), fotos: [] };
-        for (const f of (Array.isArray(e.fotos) ? e.fotos : []).slice(0, 200))
-          if (f && typeof f.id === "string" && FID.test(f.id)) en.fotos.push({ id: f.id, desc: str(f.desc, 2000) });
+                     pasos: str(e.pasos, 50000), mod: num(e.mod) };
+        tomarFotos(e.fotos);   // versión anterior: las fotos iban en las entradas; pasan a la persona
         if (ISO.test(e.alarma) && (!vieja || cmpEntrada(en, vieja.en) > 0)) vieja = { en, al: e.alarma };
         q.entradas.push(en);
       }
@@ -368,10 +379,10 @@
         if (bor[eid]) continue;
         const x = ea.get(eid), y = eb.get(eid);
         const ch = !y ? x : !x ? y : (x.mod >= y.mod ? x : y);
-        entradas.push(Object.assign({}, ch, { fotos: ch.fotos.filter(f => !bor[f.id]) }));
+        entradas.push(ch);
       }
       const al = !pb ? pa : !pa ? pb : (pa.amod >= pb.amod ? pa : pb);   // la alarma se une por separado
-      personas.push(Object.assign({}, base, { alarma: al.alarma, amod: al.amod, entradas }));
+      personas.push(Object.assign({}, base, { alarma: al.alarma, amod: al.amod, fotos: base.fotos.filter(f => !bor[f.id]), entradas }));
     }
     return normal({ personas, borrados: bor });
   }
@@ -588,7 +599,7 @@
 
   function renderLista() {
     const q = buscar.value.trim().toLowerCase();
-    let ps = db.personas.filter(p => !q || [p.nombre, p.telefono, p.descripcion, ...p.entradas.map(e => e.informe + " " + e.pasos + " " + e.fotos.map(f => f.desc).join(" "))].join(" ").toLowerCase().includes(q));
+    let ps = db.personas.filter(p => !q || [p.nombre, p.telefono, p.descripcion, ...p.fotos.map(f => f.desc), ...p.entradas.map(e => e.informe + " " + e.pasos)].join(" ").toLowerCase().includes(q));
     const nom = (a, b) => a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
     if (orden.value === "nombre") ps.sort(nom);
     else if (orden.value === "reciente") ps.sort((a, b) => { const x = ultima(a), y = ultima(b); return (!x && !y) ? nom(a, b) : !x ? 1 : !y ? -1 : cmpEntrada(y, x); });
@@ -610,7 +621,9 @@
     }).join("");
   }
 
+  let fotosAbiertas = false, fotosDe = null;
   function renderDetalle(p) {
+    if (fotosDe !== p.id) { fotosDe = p.id; fotosAbiertas = false; }   // al entrar en otra persona, cerrada
     const es = p.entradas.slice().sort(cmpEntrada);
     if (eOrden === "desc") es.reverse();
     const prevScroll = ($("entradas") || {}).scrollTop || 0;
@@ -629,6 +642,12 @@
         <span class="t">Alarma</span>${chipAlarma(p.alarma)}
         <button class="btn small" data-accion="alarma">${p.alarma ? "Cambiar alarma" : "Poner alarma"}</button>
       </div>
+      ${p.fotos.length ? `<details class="fotosp" id="fotosP"${fotosAbiertas ? " open" : ""}>
+        <summary>📷 ${p.fotos.length === 1 ? "1 foto" : p.fotos.length + " fotos"}</summary>
+        <div class="fotos ${p.fotos.length === 1 ? "una" : ""}">${p.fotos.map(f => `
+          <figure class="foto"><div class="marco" data-ver="${esc(f.id)}"><img data-fid="${esc(f.id)}"${srcFoto(f.id)} alt="${esc(f.desc || "Foto")}"></div>${f.desc.trim() ? `<figcaption>${esc(f.desc.trim())}</figcaption>` : ""}</figure>`).join("")}
+        </div>
+      </details>` : ""}
       <div class="ehd">
         <button class="btn small" data-accion="volver">← Personas</button>
         <h3>Entradas (${es.length})</h3>
@@ -640,9 +659,6 @@
           <div class="chips"><span class="chip fecha">${esc(fecha(e.creada))}</span></div>
           <div class="sec"><span class="lbl">Informe</span><div class="tx ${e.informe.trim() ? "" : "muted"}">${esc(e.informe.trim() || "—")}</div></div>
           <div class="sec"><span class="lbl">Próximos pasos</span><div class="tx ${e.pasos.trim() ? "" : "muted"}">${esc(e.pasos.trim() || "—")}</div></div>
-          ${e.fotos.length ? `<div class="sec"><span class="lbl">Fotos (${e.fotos.length})</span><div class="fotos ${e.fotos.length === 1 ? "una" : ""}">${e.fotos.map(f => `
-            <figure class="foto"><div class="marco" data-ver="${esc(f.id)}"><img data-fid="${esc(f.id)}"${srcFoto(f.id)} alt="${esc(f.desc || "Foto")}"></div>${f.desc.trim() ? `<figcaption>${esc(f.desc.trim())}</figcaption>` : ""}</figure>`).join("")}
-          </div></div>` : ""}
         </article>`).join("") : `<div class="vacio"><p>Aún no hay entradas.</p></div>`}
       </div>`;
     $("entradas").scrollTop = prevScroll;
@@ -677,13 +693,14 @@
     }
     const ver = e.target.closest("[data-ver]");
     if (ver) {
-      const en0 = ver.closest(".entry"), x = p.entradas.find(y => y.id === en0.dataset.eid), f = x && x.fotos.find(y => y.id === ver.dataset.ver);
+      const f = p.fotos.find(y => y.id === ver.dataset.ver);
       if (f && urls.has(f.id)) { $("vImg").src = urls.get(f.id); $("vImg").alt = f.desc || "Foto"; $("vCap").textContent = f.desc.trim(); $("dFoto").showModal(); }
       return;
     }
     const en = e.target.closest(".entry");
     if (en && !window.getSelection().toString()) abrirEntrada(p, p.entradas.find(x => x.id === en.dataset.eid));
   });
+  detalle.addEventListener("toggle", e => { if (e.target.id === "fotosP") fotosAbiertas = e.target.open; }, true);
   detalle.addEventListener("keydown", e => {
     const en = e.target.closest(".entry");
     if (en && e.target === en && e.key === "Enter") { const p = persona(ruta()); abrirEntrada(p, p.entradas.find(x => x.id === en.dataset.eid)); }
@@ -694,67 +711,28 @@
     d.addEventListener("click", e => { if (e.target === d || e.target.closest("[data-close]")) d.close(); });
   });
 
-  // Persona
-  const dP = $("dPersona");
-  let editP = null;
-  function abrirPersona(p) {
-    editP = p;
-    $("tPersona").textContent = p ? "Editar persona" : "Nueva persona";
-    $("pNombre").value = p ? p.nombre : ""; $("pTel").value = p ? p.telefono : ""; $("pDesc").value = p ? p.descripcion : "";
-    $("pBorrar").classList.toggle("hidden", !p);
-    dP.showModal(); $("pNombre").focus();
-  }
-  $("fPersona").addEventListener("submit", e => {
-    e.preventDefault();
-    const nombre = $("pNombre").value.trim();
-    if (!nombre) { $("pNombre").focus(); return; }
-    const datos = { nombre, telefono: $("pTel").value.trim(), descripcion: $("pDesc").value.replace(/\s+$/, ""), mod: Date.now() };
-    if (editP) Object.assign(editP, datos);
-    else { const n = Object.assign({ id: uid(), creada: hoy(), entradas: [] }, datos); db.personas.push(n); dP.close(); cambio(); irA(n.id); return; }
-    dP.close(); cambio();
-  });
-  $("pBorrar").addEventListener("click", () => {
-    if (!editP) return;
-    const n = editP.entradas.length;
-    if (!confirm(`¿Eliminar a ${editP.nombre}${n ? ` y sus ${n} entrada${n > 1 ? "s" : ""}` : ""}? No se puede deshacer.`)) return;
-    const ahora = Date.now();
-    db.borrados[editP.id] = ahora; editP.entradas.forEach(x => { db.borrados[x.id] = ahora; x.fotos.forEach(f => borrarFoto(f.id)); });
-    db.personas = db.personas.filter(x => x !== editP);
-    dP.close(); location.hash = ""; cambio();
-  });
-
-  // Entrada
-  const dE = $("dEntrada");
-  let editE = null, editEP = null, borrador = [], guardada = false, preparando = Promise.resolve();
-  function abrirEntrada(p, en) {
-    editEP = p; editE = en || null; guardada = false;
-    $("tEntrada").textContent = en ? "Editar entrada" : "Nueva entrada";
-    $("eCreada").textContent = en ? "Creada el " + fecha(en.creada) : "Se creará con fecha de hoy, " + fecha(hoy()) + ".";
-    $("eInforme").value = en ? en.informe : ""; $("ePasos").value = en ? en.pasos : "";
-    borrador = en ? en.fotos.map(f => ({ id: f.id, desc: f.desc })) : [];
-    pintarBorrador();
-    $("eBorrar").classList.toggle("hidden", !en);
-    dE.showModal(); if (!en) $("eInforme").focus();
-  }
+  // Editor de fotos (en el diálogo de persona)
+  let borrador = [], preparando = Promise.resolve();
+  const descartarNuevas = () => borrador.forEach(f => { if (f.blob && urls.has(f.id)) { URL.revokeObjectURL(urls.get(f.id)); urls.delete(f.id); } });
   function pintarBorrador() {
-    const box = $("eFotos");
+    const box = $("pFotos");
     box.innerHTML = borrador.map((f, i) => `<div class="efoto">
       <div class="marco"><img data-fid="${esc(f.id)}"${srcFoto(f.id)} alt=""></div>
       <input type="text" maxlength="500" placeholder="Descripción (opcional)" value="${esc(f.desc)}" data-i="${i}" aria-label="Descripción de la foto ${i + 1}">
       <button type="button" class="x" data-quitar="${i}" title="Quitar foto" aria-label="Quitar foto ${i + 1}">×</button></div>`).join("");
     cargarFotos(box);
   }
-  $("eFotos").addEventListener("input", e => { const i = e.target.dataset.i; if (i != null && borrador[i]) borrador[i].desc = e.target.value; });
-  $("eFotos").addEventListener("click", e => {
+  $("pFotos").addEventListener("input", e => { const i = e.target.dataset.i; if (i != null && borrador[i]) borrador[i].desc = e.target.value; });
+  $("pFotos").addEventListener("click", e => {
     const b = e.target.closest("[data-quitar]"); if (!b) return;
     const [f] = borrador.splice(+b.dataset.quitar, 1);
     if (f && f.blob && urls.has(f.id)) { URL.revokeObjectURL(urls.get(f.id)); urls.delete(f.id); }
     pintarBorrador();
   });
-  $("eFotoIn").addEventListener("change", e => {
+  $("pFotoIn").addEventListener("change", e => {
     const files = Array.from(e.target.files || []); e.target.value = "";
     if (!files.length) return;
-    const btn = $("eFotoBtn"); btn.setAttribute("aria-disabled", "true"); btn.textContent = "Preparando fotos…";
+    const btn = $("pFotoBtn"); btn.setAttribute("aria-disabled", "true"); btn.textContent = "Preparando fotos…";
     preparando = (async () => {
       let mal = 0;
       for (const file of files) {
@@ -768,30 +746,73 @@
       if (mal) toast(mal === 1 ? "No se pudo leer una de las fotos." : `No se pudieron leer ${mal} fotos.`);
     })().finally(() => { btn.removeAttribute("aria-disabled"); btn.textContent = "+ Añadir fotos"; });
   });
-  dE.addEventListener("close", () => {   // al cancelar, las fotos nuevas se descartan
-    if (guardada) return;
-    borrador.forEach(f => { if (f.blob && urls.has(f.id)) { URL.revokeObjectURL(urls.get(f.id)); urls.delete(f.id); } });
-    borrador = [];
-  });
-  $("fEntrada").addEventListener("submit", async e => {
+
+  // Persona
+  const dP = $("dPersona");
+  let editP = null, guardadaP = false;
+  function abrirPersona(p) {
+    editP = p; guardadaP = false;
+    $("tPersona").textContent = p ? "Editar persona" : "Nueva persona";
+    $("pNombre").value = p ? p.nombre : ""; $("pTel").value = p ? p.telefono : ""; $("pDesc").value = p ? p.descripcion : "";
+    borrador = p ? p.fotos.map(f => ({ id: f.id, desc: f.desc })) : [];
+    pintarBorrador();
+    $("pBorrar").classList.toggle("hidden", !p);
+    dP.showModal(); if (!p) $("pNombre").focus();
+  }
+  dP.addEventListener("close", () => { if (!guardadaP) descartarNuevas(); borrador = []; });   // al cancelar, las fotos nuevas se descartan
+  $("fPersona").addEventListener("submit", async e => {
     e.preventDefault();
+    const nombre = $("pNombre").value.trim();
+    if (!nombre) { $("pNombre").focus(); return; }
     await preparando;
     try {
       for (const f of borrador) if (f.blob) { await fotosDB.put(f.id, f.blob); await fotosDB.encolar(f.id, "subir"); }
     } catch (_) { toast("No se pudieron guardar las fotos en este navegador."); return; }
     const fotos = borrador.map(f => ({ id: f.id, desc: f.desc.trim() }));
-    const datos = { informe: $("eInforme").value.replace(/\s+$/, ""), pasos: $("ePasos").value.replace(/\s+$/, ""), fotos, mod: Date.now() };
-    if (editE) {
+    const datos = { nombre, telefono: $("pTel").value.trim(), descripcion: $("pDesc").value.replace(/\s+$/, ""), fotos, mod: Date.now() };
+    guardadaP = true;
+    if (editP) {
       const quedan = new Set(fotos.map(f => f.id));
-      editE.fotos.forEach(f => { if (!quedan.has(f.id)) borrarFoto(f.id); });
-      Object.assign(editE, datos);
-    } else editEP.entradas.push(Object.assign({ id: uid(), creada: hoy(), ts: Date.now() }, datos));
-    guardada = true; dE.close(); cambio();
+      editP.fotos.forEach(f => { if (!quedan.has(f.id)) borrarFoto(f.id); });
+      Object.assign(editP, datos);
+      dP.close(); cambio();
+    } else {
+      const n = Object.assign({ id: uid(), creada: hoy(), alarma: "", amod: 0, entradas: [] }, datos);
+      db.personas.push(n); dP.close(); cambio(); irA(n.id);
+    }
+  });
+  $("pBorrar").addEventListener("click", () => {
+    if (!editP) return;
+    const n = editP.entradas.length;
+    if (!confirm(`¿Eliminar a ${editP.nombre}${n ? ` y sus ${n} entrada${n > 1 ? "s" : ""}` : ""}${editP.fotos.length ? " y sus fotos" : ""}? No se puede deshacer.`)) return;
+    const ahora = Date.now();
+    db.borrados[editP.id] = ahora; editP.entradas.forEach(x => { db.borrados[x.id] = ahora; });
+    editP.fotos.forEach(f => borrarFoto(f.id));
+    db.personas = db.personas.filter(x => x !== editP);
+    dP.close(); location.hash = ""; cambio();
+  });
+
+  // Entrada
+  const dE = $("dEntrada");
+  let editE = null, editEP = null;
+  function abrirEntrada(p, en) {
+    editEP = p; editE = en || null;
+    $("tEntrada").textContent = en ? "Editar entrada" : "Nueva entrada";
+    $("eCreada").textContent = en ? "Creada el " + fecha(en.creada) : "Se creará con fecha de hoy, " + fecha(hoy()) + ".";
+    $("eInforme").value = en ? en.informe : ""; $("ePasos").value = en ? en.pasos : "";
+    $("eBorrar").classList.toggle("hidden", !en);
+    dE.showModal(); if (!en) $("eInforme").focus();
+  }
+  $("fEntrada").addEventListener("submit", e => {
+    e.preventDefault();
+    const datos = { informe: $("eInforme").value.replace(/\s+$/, ""), pasos: $("ePasos").value.replace(/\s+$/, ""), mod: Date.now() };
+    if (editE) Object.assign(editE, datos);
+    else editEP.entradas.push(Object.assign({ id: uid(), creada: hoy(), ts: Date.now() }, datos));
+    dE.close(); cambio();
   });
   $("eBorrar").addEventListener("click", () => {
-    if (!editE || !confirm("¿Eliminar esta entrada" + (editE.fotos.length ? " y sus fotos" : "") + "? No se puede deshacer.")) return;
+    if (!editE || !confirm("¿Eliminar esta entrada? No se puede deshacer.")) return;
     db.borrados[editE.id] = Date.now();
-    editE.fotos.forEach(f => borrarFoto(f.id));
     editEP.entradas = editEP.entradas.filter(x => x !== editE);
     dE.close(); cambio();
   });
@@ -846,7 +867,7 @@
     const out = normal(db), fotosData = {};
     cMsg.className = "msg"; cMsg.textContent = "Preparando copia…";
     let faltan = 0;
-    for (const p of db.personas) for (const en of p.entradas) for (const f of en.fotos) {
+    for (const p of db.personas) for (const f of p.fotos) {
       await fotoURL(f.id);
       const b = await fotosDB.get(f.id);
       if (b) fotosData[f.id] = await blobB64(b); else faltan++;
