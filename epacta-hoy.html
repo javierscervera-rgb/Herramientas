@@ -41,11 +41,27 @@
     #stage.zoomed { cursor: move; }
     #sheet {
       position: absolute; left: 0; top: 0; will-change: transform; transform-origin: 0 0;
-      background: #fff; border-radius: 4px; overflow: hidden;
+      background: #fff; border-radius: 4px;
       box-shadow: none;
     }
     #sheet canvas { display: block; width: 100%; height: 100%; }
     #sheet.anim { transition: transform .2s ease-out, opacity .2s ease-out; }
+    #sheet canvas { position: absolute; inset: 0; }
+    .marks { position: absolute; inset: 0; pointer-events: none; }
+    .mark {
+      position: absolute; border-radius: 3px;
+      background: rgba(216,137,114,.30); box-shadow: 0 0 0 1px rgba(205,139,117,.45);
+      animation: mark-in .9s ease-out .3s both;
+    }
+    .star {
+      position: absolute; text-align: center; color: #D88972;
+      text-shadow: 0 0 6px rgba(216,137,114,.8);
+      animation: star-in .6s ease-out .3s both, star-fade 1.8s ease-in-out .9s infinite;
+    }
+    @keyframes mark-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes star-in { from { opacity: 0; transform: scale(.3) rotate(-40deg); } to { opacity: 1; transform: none; } }
+    @keyframes star-fade { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .25; transform: scale(.82); } }
+    @media (prefers-reduced-motion: reduce) { .mark, .star { animation: none; } }
 
     /* ---- Carga ---- */
     #loader {
@@ -232,7 +248,8 @@
         const lay = layoutFor(r);
         const s = scaleFor(r, lay.scale);
         const canvas = await drawPage(pg, r, s);
-        return { canvas, lay, r, s };
+        const hits = await findWords(num, pg);
+        return { canvas, lay, r, s, hits };
       })();
       job.catch(() => renders.delete(num));
       renders.set(num, job);
@@ -251,6 +268,63 @@
       await pg.render({ canvas, canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
       return canvas;
     }
+    /* ---------- Resaltar «Madrid» ---------- */
+    const HIGHLIGHT = /madrid/gi;
+    const wordCache = new Map();
+    const measureCtx = document.createElement('canvas').getContext('2d');
+    // Devuelve los rectángulos (en unidades de página, escala 1) donde aparece la palabra
+    async function findWords(num, pg) {
+      if (wordCache.has(num)) return wordCache.get(num);
+      const out = [];
+      try {
+        const vp = pg.getViewport({ scale: 1 });
+        const tc = await pg.getTextContent();
+        for (const it of tc.items) {
+          const str = it.str || '';
+          HIGHLIGHT.lastIndex = 0;
+          if (!HIGHLIGHT.test(str)) continue;
+          const t = pdfjsLib.Util.transform(vp.transform, it.transform);
+          const fh = Math.hypot(t[2], t[3]) || 10;               // altura de la letra
+          const x = t[4], base = t[5];
+          const style = tc.styles && tc.styles[it.fontName];
+          measureCtx.font = '100px ' + ((style && style.fontFamily) || 'serif');
+          const full = measureCtx.measureText(str).width || 1;
+          HIGHLIGHT.lastIndex = 0;
+          let m;
+          while ((m = HIGHLIGHT.exec(str))) {
+            const a = measureCtx.measureText(str.slice(0, m.index)).width / full;
+            const b = measureCtx.measureText(str.slice(0, m.index + m[0].length)).width / full;
+            out.push({ x: x + it.width * a, y: base - fh * 0.82, w: it.width * (b - a), h: fh * 1.05 });
+          }
+        }
+      } catch (_) {}
+      wordCache.set(num, out);
+      return out;
+    }
+    function marksLayer(res) {
+      const layer = document.createElement('div');
+      layer.className = 'marks';
+      const k = res.lay.scale, r = res.r;
+      const starRows = [];
+      for (const h of res.hits || []) {
+        const x = (h.x - r.x) * k, y = (h.y - r.y) * k, w = h.w * k, hh = h.h * k;
+        const box = document.createElement('span');
+        box.className = 'mark';
+        box.style.cssText = `left:${x - 2}px;top:${y}px;width:${w + 4}px;height:${hh}px`;
+        layer.append(box);
+        // Una estrella por línea, en el margen izquierdo de la página
+        const cy = y + hh / 2;
+        if (starRows.some(v => Math.abs(v - cy) < hh * 0.6)) continue;
+        starRows.push(cy);
+        const sz = Math.max(10, hh * 1.05);
+        const star = document.createElement('span');
+        star.className = 'star'; star.textContent = '★';
+        star.style.cssText = `left:1px;top:${cy - sz / 2}px;font-size:${sz}px;width:${sz}px;height:${sz}px;line-height:${sz}px`;
+        layer.append(star);
+      }
+      return layer;
+    }
+
     function prefetchAround(num) {
       const run = () => { if (num + 1 <= maxPage) renderPage(num + 1); if (num - 1 >= minPage) renderPage(num - 1); };
       (window.requestIdleCallback || (f => setTimeout(f, 120)))(run);
@@ -277,7 +351,7 @@
       page = num;
       cur = { num, lay: res.lay, r: res.r, s: res.s };
       zv.z = 1; zv.tx = 0; zv.ty = 0; stage.classList.remove('zoomed'); sharpSeq++;
-      sheet.replaceChildren(res.canvas);
+      sheet.replaceChildren(res.canvas, marksLayer(res));
       placeSheet(res.lay);
       sheet.classList.remove('anim');
       sheet.style.transform = dir ? `translateX(${dir > 0 ? 110 : -110}vw)` : 'none';
@@ -383,7 +457,7 @@
         const pg = await pdfDoc.getPage(num);
         const canvas = await drawPage(pg, cur.r, target);
         if (seq !== sharpSeq || !cur || cur.num !== num) return;
-        sheet.replaceChildren(canvas); cur.s = target;
+        const old = sheet.querySelector('canvas'); if (old) old.replaceWith(canvas); cur.s = target;
       } catch (_) {}
     }
 
