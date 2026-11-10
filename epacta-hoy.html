@@ -104,6 +104,23 @@
       border: 0; cursor: pointer; font-size: 16px;
     }
 
+    /* ---- Reloj (hora de Madrid) ---- */
+    #clock {
+      position: fixed; z-index: 26;
+      top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 10px);
+      height: 32px; padding: 0 14px; border-radius: 999px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--btn2); color: var(--text);
+      font-size: 17px; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;
+      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+      transition: background-color .4s, color .4s;
+      pointer-events: none;
+    }
+    #clock.alert { background: #C62828; color: #fff; box-shadow: 0 0 0 3px rgba(198,40,40,.25), 0 3px 12px rgba(198,40,40,.45); }
+    #clock.alert span { display: inline-block; animation: clock-pulse 1s ease-in-out infinite; }
+    @keyframes clock-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.12); } }
+    @media (prefers-reduced-motion: reduce) { #clock.alert span { animation: none; } }
+
     /* ---- Aviso breve ---- */
     #toast {
       position: fixed; z-index: 40; left: 50%; top: calc(env(safe-area-inset-top) + 14px);
@@ -135,6 +152,8 @@
       <input type="date" id="dateInput" aria-label="Elegir fecha">
     </label>
   </div>
+
+  <div id="clock" aria-label="Hora en Madrid"><span id="clockText">--:--</span></div>
 
   <div id="toast" role="status" aria-live="polite"></div>
 
@@ -196,7 +215,7 @@
     // La página (ya recortada) cabe entera en pantalla.
     function layoutFor(r) {
       const W = stage.clientWidth, H = stage.clientHeight, s = safe();
-      const top = s.t + 8;
+      const top = s.t + 8 + 32 + 8;          // bajo el reloj
       const availW = W - s.l - s.r, availH = H - top - Math.max(s.b, 8);
       const scale = Math.min(availW / r.w, availH / r.h);
       const w = Math.floor(r.w * scale), h = Math.floor(r.h * scale);
@@ -606,6 +625,44 @@
       }
     }
     init();
+
+    /* ---------- Reloj: hora de Madrid y avisos ---------- */
+    // Septiembre-junio: L-S 9:55 y 19:25 · D 9:25, 10:55, 12:25 y 19:25
+    // Julio-agosto:     L-S 9:55 y 19:55 · D 9:25, 10:55 y 19:55
+    const AVISOS = {
+      curso:  { semana: ['09:55', '19:25'], domingo: ['09:25', '10:55', '12:25', '19:25'] },
+      verano: { semana: ['09:55', '19:55'], domingo: ['09:25', '10:55', '19:55'] }
+    };
+    const AVISO_MIN = 5;                        // minutos que dura el aviso
+    const madridFmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Madrid', hourCycle: 'h23',
+      year: 'numeric', month: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit'
+    });
+    function madridNow() {
+      const p = {}; for (const x of madridFmt.formatToParts(new Date())) p[x.type] = x.value;
+      return { hh: p.hour, mm: p.minute, month: +p.month, sunday: p.weekday === 'Sun' };
+    }
+    function enAviso(t) {
+      const tabla = (t.month === 7 || t.month === 8) ? AVISOS.verano : AVISOS.curso;
+      const lista = t.sunday ? tabla.domingo : tabla.semana;
+      const ahora = (+t.hh) * 60 + (+t.mm);
+      return lista.some(h => { const [H, M] = h.split(':').map(Number); const d = ahora - (H * 60 + M); return d >= 0 && d < AVISO_MIN; });
+    }
+    const clockEl = $('clock'), clockText = $('clockText');
+    let lastClock = '';
+    function tickClock() {
+      const t = madridNow();
+      const txt = t.hh + ':' + t.mm, alert = enAviso(t);
+      const key = txt + alert;
+      if (key === lastClock) return;
+      lastClock = key;
+      clockText.textContent = txt;
+      clockEl.classList.toggle('alert', alert);
+      clockEl.setAttribute('aria-label', 'Hora en Madrid: ' + txt + (alert ? ' (aviso)' : ''));
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tickClock(); });
 
     /* ---------- PWA ---------- */
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
