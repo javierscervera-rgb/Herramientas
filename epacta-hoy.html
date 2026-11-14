@@ -627,11 +627,11 @@
     init();
 
     /* ---------- Reloj: hora de Madrid y avisos ---------- */
-    // Septiembre-junio: L-V 9:55 y 19:25 · S 8:55, 9:55 y 19:25 · D 9:25, 10:55, 12:25 y 19:25
-    // Julio-agosto:     L-V 9:55 y 19:55 · S 8:55, 9:55 y 19:55 · D 9:25, 10:55 y 19:55
+    // Septiembre-junio: L-S 8:55 y 19:25 · D 9:25, 10:55, 12:25 y 19:25
+    // Julio-agosto:     L-S 8:55 y 19:55 · D 9:25, 10:55 y 19:55
     const AVISOS = {
-      curso:  { semana: ['09:55', '19:25'], sabado: ['08:55', '09:55', '19:25'], domingo: ['09:25', '10:55', '12:25', '19:25'] },
-      verano: { semana: ['09:55', '19:55'], sabado: ['08:55', '09:55', '19:55'], domingo: ['09:25', '10:55', '19:55'] }
+      curso:  { semana: ['08:55', '19:25'], domingo: ['09:25', '10:55', '12:25', '19:25'] },
+      verano: { semana: ['08:55', '19:55'], domingo: ['09:25', '10:55', '19:55'] }
     };
     const AVISO_MIN = 5;                        // minutos que dura el aviso
     const madridFmt = new Intl.DateTimeFormat('en-GB', {
@@ -640,11 +640,11 @@
     });
     function madridNow() {
       const p = {}; for (const x of madridFmt.formatToParts(new Date())) p[x.type] = x.value;
-      return { hh: p.hour, mm: p.minute, month: +p.month, sunday: p.weekday === 'Sun', saturday: p.weekday === 'Sat' };
+      return { hh: p.hour, mm: p.minute, month: +p.month, sunday: p.weekday === 'Sun' };
     }
     function enAviso(t) {
       const tabla = (t.month === 7 || t.month === 8) ? AVISOS.verano : AVISOS.curso;
-      const lista = t.sunday ? tabla.domingo : t.saturday ? tabla.sabado : tabla.semana;
+      const lista = t.sunday ? tabla.domingo : tabla.semana;
       const ahora = (+t.hh) * 60 + (+t.mm);
       return lista.some(h => { const [H, M] = h.split(':').map(Number); const d = ahora - (H * 60 + M); return d >= 0 && d < AVISO_MIN; });
     }
