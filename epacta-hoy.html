@@ -733,6 +733,8 @@
       'plata': 'cordon-plata.png',
       'dorado': 'cordon-dorado.png'
     };
+    // Orden de la lista: de mayor a menor categoría del cordón (los colores desconocidos, al final)
+    const RANGO = { 'dorado': 6, 'plata': 5, 'rojo y amarillo': 4, 'azul y blanco': 3, 'verde y blanco': 2, 'blanco': 1 };
     // Por si no hay conexión la primera vez
     const MONAG_RESPALDO = [
       ['MONAGUILLO 1', 'Blanco'], ['MONAGUILLO 2', 'Verde y blanco'], ['MONAGUILLO 3', 'Azul y blanco'],
@@ -763,6 +765,8 @@
     function pintarMonaguillos(filas) {
       const lista = $('monagLista');
       if (!filas.length) { lista.innerHTML = '<div class="vacio">No hay nombres en la lista.</div>'; return; }
+      filas = filas.map((f, i) => ({ f, i, r: RANGO[normColor(f[1])] || 0 }))
+        .sort((a, b) => b.r - a.r || a.i - b.i).map(x => x.f);   // si empatan, se respeta el orden de la hoja
       lista.replaceChildren(...filas.map(([nombre, color]) => {
         const fila = document.createElement('div'); fila.className = 'fila';
         const n = document.createElement('span'); n.className = 'nombre'; n.textContent = nombre;
