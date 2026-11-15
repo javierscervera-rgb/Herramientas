@@ -108,12 +108,13 @@
     #clock {
       position: fixed; z-index: 26;
       top: calc(env(safe-area-inset-top) + 8px); left: calc(env(safe-area-inset-left) + 10px);
-      height: 32px; padding: 0 14px; border-radius: 999px;
+      --k: 1;                                   /* tamaño: 1 normal, 2 o más durante el aviso */
+      height: calc(32px * var(--k)); padding: 0 calc(14px * var(--k)); border-radius: 999px;
       display: flex; align-items: center; justify-content: center;
       background: var(--btn2); color: var(--text);
-      font-size: 17px; font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;
+      font-size: calc(17px * var(--k)); font-weight: 600; letter-spacing: .03em; font-variant-numeric: tabular-nums;
       box-shadow: 0 3px 10px rgba(0,0,0,.25);
-      transition: background-color .4s, color .4s;
+      transition: background-color .4s, color .4s, height .6s ease, padding .6s ease, font-size .6s ease;
       pointer-events: none;
     }
     #clock.alert { background: #C62828; color: #fff; box-shadow: 0 0 0 3px rgba(198,40,40,.25), 0 3px 12px rgba(198,40,40,.45); }
@@ -646,18 +647,22 @@
       const tabla = (t.month === 7 || t.month === 8) ? AVISOS.verano : AVISOS.curso;
       const lista = t.sunday ? tabla.domingo : tabla.semana;
       const ahora = (+t.hh) * 60 + (+t.mm);
-      return lista.some(h => { const [H, M] = h.split(':').map(Number); const d = ahora - (H * 60 + M); return d >= 0 && d < AVISO_MIN; });
+      // Devuelve el minuto del aviso (0 = recién empezado … 4 = último) o -1 si no hay aviso
+      for (const h of lista) { const [H, M] = h.split(':').map(Number); const d = ahora - (H * 60 + M); if (d >= 0 && d < AVISO_MIN) return d; }
+      return -1;
     }
     const clockEl = $('clock'), clockText = $('clockText');
     let lastClock = '';
     function tickClock() {
       const t = madridNow();
-      const txt = t.hh + ':' + t.mm, alert = enAviso(t);
-      const key = txt + alert;
+      const txt = t.hh + ':' + t.mm, min = enAviso(t), alert = min >= 0;
+      const key = txt + min;
       if (key === lastClock) return;
       lastClock = key;
       clockText.textContent = txt;
       clockEl.classList.toggle('alert', alert);
+      // Al empezar el aviso, el doble de tamaño; cada minuto que pasa, un poco más
+      clockEl.style.setProperty('--k', alert ? String(2 + 0.15 * min) : '1');
       clockEl.setAttribute('aria-label', 'Hora en Madrid: ' + txt + (alert ? ' (aviso)' : ''));
     }
     tickClock();
