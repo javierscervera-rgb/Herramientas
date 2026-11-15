@@ -1,6 +1,6 @@
 /* Service worker de epacta-hoy.html (solo controla esa página).
    Si cambias el PDF del calendario, sube la versión para que se descargue de nuevo. */
-const VERSION = 'epacta-hoy-v10';
+const VERSION = 'epacta-hoy-v11';
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/';
 const PRECACHE = [
   './epacta-hoy.html',
@@ -8,6 +8,14 @@ const PRECACHE = [
   './date_to_page.json',
   './icon-epacta-192.png',
   './icon-epacta-512.png',
+  './monaguillos/icono.jpg',
+  './monaguillos/fondo.jpg',
+  './monaguillos/cordon-blanco.png',
+  './monaguillos/cordon-verde-y-blanco.png',
+  './monaguillos/cordon-azul-y-blanco.png',
+  './monaguillos/cordon-rojo-y-amarillo.png',
+  './monaguillos/cordon-plata.png',
+  './monaguillos/cordon-dorado.png',
   PDFJS + 'pdf.min.mjs',
   PDFJS + 'pdf.worker.min.mjs'
 ];
@@ -67,7 +75,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || req.headers.has('range')) return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
-  if (url.href.startsWith(PDFJS) || (sameOrigin && /\.(pdf|png|svg)$/i.test(url.pathname))) {
+  if (url.href.startsWith(PDFJS) || (sameOrigin && /\.(pdf|png|svg|jpe?g)$/i.test(url.pathname))) {
     e.respondWith(cacheFirst(req));
   } else if (sameOrigin && (req.mode === 'navigate' || /\.(json|webmanifest|html)$/i.test(url.pathname))) {
     e.respondWith(networkFirst(req));

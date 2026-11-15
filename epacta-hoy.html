@@ -122,6 +122,51 @@
     @keyframes clock-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.12); } }
     @media (prefers-reduced-motion: reduce) { #clock.alert span { animation: none; } }
 
+    /* ---- Monaguillos: icono y panel ---- */
+    #btnMonag {
+      position: fixed; z-index: 25;
+      left: calc(env(safe-area-inset-left) + 16px); bottom: calc(env(safe-area-inset-bottom) + 16px);
+      width: 50px; height: 50px; border-radius: 12px; border: none; padding: 3px; cursor: pointer;
+      background: #fff; box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 2px 5px rgba(0,0,0,.25);
+      opacity: .4; transition: opacity .5s ease, transform .12s;
+    }
+    #btnMonag.active, #btnMonag:focus-visible { opacity: 1; transition-duration: .15s; }
+    #btnMonag:active { transform: scale(.93); }
+    #btnMonag img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    #monag {
+      position: fixed; z-index: 24; left: 0; top: 0; bottom: 0; width: 50vw;
+      background: #2a211b url('monaguillos/fondo.jpg') center / cover no-repeat;
+      box-shadow: 6px 0 24px rgba(0,0,0,.35);
+      display: flex; align-items: center; justify-content: center;
+      padding: calc(env(safe-area-inset-top) + 56px) 10px calc(env(safe-area-inset-bottom) + 16px) calc(env(safe-area-inset-left) + 10px);
+      transform: translateX(-102%); transition: transform .35s ease; overflow-y: auto;
+    }
+    #monag.open { transform: none; }
+    #monag .lista {
+      display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; margin: auto;
+      background: rgba(23,19,16,.62); border-radius: 14px; padding: 12px;
+      -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    }
+    #monag .fila { display: flex; align-items: center; justify-content: center; gap: clamp(6px, 1.5vw, 10px); min-height: 30px; }
+    @media (max-width: 599px) {
+      #monag { padding-left: calc(env(safe-area-inset-left) + 6px); padding-right: 6px; }
+      #monag .lista { padding: 10px 8px; }
+    }
+    #monag .nombre {
+      flex: 1 1 auto; min-width: 0; text-align: right; color: #fff; font-weight: 700;
+      font-size: clamp(10px, 2.8vw, 20px); letter-spacing: .01em; text-shadow: 0 1px 3px rgba(0,0,0,.8);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #monag .cordon { flex: 0 0 auto; width: clamp(52px, 15vw, 150px); height: auto; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+    #monag .sin { flex: 0 0 auto; width: clamp(52px, 15vw, 150px); color: #F0E8DC; font-size: 12px; }
+    #monag .vacio { color: #F0E8DC; text-align: center; font-size: 14px; }
+    #btnMonagClose {
+      position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 10px;
+      width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer;
+      background: rgba(41,36,32,.9); color: #F0E8DC; font-size: 22px; line-height: 1;
+      box-shadow: 0 3px 10px rgba(0,0,0,.4);
+    }
+
     /* ---- Aviso breve ---- */
     #toast {
       position: fixed; z-index: 40; left: 50%; top: calc(env(safe-area-inset-top) + 14px);
@@ -155,6 +200,12 @@
   </div>
 
   <div id="clock" aria-label="Hora en Madrid"><span id="clockText">--:--</span></div>
+
+  <button id="btnMonag" title="Monaguillos" aria-label="Ver monaguillos y cordones"><img src="monaguillos/icono.jpg" alt=""></button>
+  <aside id="monag" aria-hidden="true" aria-label="Monaguillos">
+    <button id="btnMonagClose" title="Cerrar" aria-label="Cerrar">×</button>
+    <div class="lista" id="monagLista"></div>
+  </aside>
 
   <div id="toast" role="status" aria-live="polite"></div>
 
@@ -424,8 +475,9 @@
     // Botones traslúcidos salvo mientras se toca la pantalla (y un momento después)
     const fabs = document.querySelector('.fabs');
     let fadeT;
-    function wake() { clearTimeout(fadeT); fabs.classList.add('active'); }
-    function sleepSoon() { clearTimeout(fadeT); fadeT = setTimeout(() => fabs.classList.remove('active'), 1500); }
+    const btnMonag = $('btnMonag');
+    function wake() { clearTimeout(fadeT); fabs.classList.add('active'); btnMonag.classList.add('active'); }
+    function sleepSoon() { clearTimeout(fadeT); fadeT = setTimeout(() => { fabs.classList.remove('active'); btnMonag.classList.remove('active'); }, 1500); }
     document.addEventListener('pointerdown', wake, true);
     document.addEventListener('pointerup', sleepSoon, true);
     document.addEventListener('pointercancel', sleepSoon, true);
@@ -667,6 +719,95 @@
     }
     tickClock();
     setInterval(tickClock, 1000);
+
+    /* ---------- Monaguillos (Hoja 1 de la hoja de cálculo: A = nombre, B = color) ---------- */
+    const SHEET_ID = '13FyKPs9fXxEX5K3O3T-w76oYkV5S_8g4P4ghj5V_D_M';
+    const SHEET_TAB = 'Hoja 1';
+    const MONAG_MS = 60 * 1000;                  // se cierra solo al cabo de 1 minuto
+    // Color (columna B) → imagen del cordón (Hoja 2, columnas C y D)
+    const CORDONES = {
+      'blanco': 'cordon-blanco.png',
+      'verde y blanco': 'cordon-verde-y-blanco.png',
+      'azul y blanco': 'cordon-azul-y-blanco.png',
+      'rojo y amarillo': 'cordon-rojo-y-amarillo.png',
+      'plata': 'cordon-plata.png',
+      'dorado': 'cordon-dorado.png'
+    };
+    // Por si no hay conexión la primera vez
+    const MONAG_RESPALDO = [
+      ['MONAGUILLO 1', 'Blanco'], ['MONAGUILLO 2', 'Verde y blanco'], ['MONAGUILLO 3', 'Azul y blanco'],
+      ['MONAGUILLO 1', 'Rojo y amarillo'], ['MONAGUILLO 2', 'Plata'], ['MONAGUILLO 3', 'Dorado'],
+      ['MONAGUILLO 1', 'Blanco'], ['MONAGUILLO 2', 'Verde y blanco'], ['MONAGUILLO 3', 'Azul y blanco'],
+      ['MONAGUILLO 1', 'Rojo y amarillo'], ['MONAGUILLO 2', 'Plata'], ['MONAGUILLO 3', 'Dorado']
+    ];
+    const normColor = c => String(c || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+    function leerHoja() {
+      return new Promise((resolve, reject) => {
+        const cb = '__hoja' + Date.now();
+        const sc = document.createElement('script');
+        const t = setTimeout(() => { cleanup(); reject(new Error('tiempo agotado')); }, 8000);
+        function cleanup() { clearTimeout(t); delete window[cb]; sc.remove(); }
+        window[cb] = resp => {
+          cleanup();
+          try {
+            const rows = (resp.table.rows || []).map(r => (r.c || []).map(c => c ? (c.f ?? c.v ?? '') : ''));
+            resolve(rows.map(r => [String(r[0] || '').trim(), String(r[1] || '').trim()]).filter(r => r[0]));
+          } catch (e) { reject(e); }
+        };
+        sc.onerror = () => { cleanup(); reject(new Error('sin conexión')); };
+        sc.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?headers=0&sheet=' +
+          encodeURIComponent(SHEET_TAB) + '&tq=' + encodeURIComponent('select A, B') + '&tqx=responseHandler:' + cb;
+        document.head.appendChild(sc);
+      });
+    }
+    function pintarMonaguillos(filas) {
+      const lista = $('monagLista');
+      if (!filas.length) { lista.innerHTML = '<div class="vacio">No hay nombres en la lista.</div>'; return; }
+      lista.replaceChildren(...filas.map(([nombre, color]) => {
+        const fila = document.createElement('div'); fila.className = 'fila';
+        const n = document.createElement('span'); n.className = 'nombre'; n.textContent = nombre;
+        fila.append(n);
+        const img = CORDONES[normColor(color)];
+        if (img) {
+          const i = document.createElement('img'); i.className = 'cordon'; i.src = 'monaguillos/' + img; i.alt = 'Cordón ' + color; i.title = color;
+          fila.append(i);
+        } else {
+          const t = document.createElement('span'); t.className = 'sin'; t.textContent = color;
+          fila.append(t);
+        }
+        return fila;
+      }));
+    }
+    function guardadas() { try { return JSON.parse(localStorage.getItem('monaguillos') || 'null'); } catch (_) { return null; } }
+    async function cargarMonaguillos() {
+      pintarMonaguillos(guardadas() || MONAG_RESPALDO);
+      try {
+        const filas = await leerHoja();
+        pintarMonaguillos(filas);
+        try { localStorage.setItem('monaguillos', JSON.stringify(filas)); } catch (_) {}
+      } catch (_) { /* se queda la última lista conocida */ }
+    }
+    const monag = $('monag');
+    let monagT = null;
+    function abrirMonag() {
+      cargarMonaguillos();
+      monag.classList.add('open'); monag.setAttribute('aria-hidden', 'false');
+      clearTimeout(monagT); monagT = setTimeout(cerrarMonag, MONAG_MS);
+    }
+    function cerrarMonag() {
+      clearTimeout(monagT); monagT = null;
+      monag.classList.remove('open'); monag.setAttribute('aria-hidden', 'true');
+    }
+    btnMonag.addEventListener('click', () => monag.classList.contains('open') ? cerrarMonag() : abrirMonag());
+    $('btnMonagClose').addEventListener('click', cerrarMonag);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && monag.classList.contains('open')) cerrarMonag(); });
+    // Si la app estuvo en segundo plano más de un minuto, al volver ya está cerrado
+    let monagAbiertoEn = 0;
+    monag.addEventListener('transitionend', () => { if (monag.classList.contains('open')) monagAbiertoEn = Date.now(); });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && monag.classList.contains('open') && Date.now() - monagAbiertoEn >= MONAG_MS) cerrarMonag();
+    });
+    pintarMonaguillos(guardadas() || MONAG_RESPALDO);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) tickClock(); });
 
     /* ---------- PWA ---------- */
