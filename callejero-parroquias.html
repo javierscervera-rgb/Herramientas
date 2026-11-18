@@ -57,6 +57,12 @@ main{max-width:900px;margin:0 auto;padding:18px 14px 60px}
 input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
 #qx{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--btn2);color:var(--text2);cursor:pointer}
 #qx:hover{color:var(--text);background:var(--border)}
+#sug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;list-style:none;margin:0;padding:4px;background:var(--panel);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.55);max-height:60vh;overflow:auto}
+#sug li{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:8px 10px;border-radius:8px;cursor:pointer}
+#sug li:hover,#sug li.on{background:var(--btn2)}
+#sug li .sl{color:var(--text)}
+#sug li .sl b{color:var(--title);font-weight:600}
+#sug li .ss{color:var(--text2);font-size:.78rem;white-space:nowrap}
 .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .row2 label{color:var(--text2);font-size:.85rem}
 select{background:var(--btn2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:.9rem;max-width:100%}
@@ -110,8 +116,9 @@ tr.hit td{color:var(--title)}
   <div class="form">
     <div class="search">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: c/ Alcalá 120, Madrid" aria-label="Dirección" disabled>
+      <input id="q" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-controls="sug" aria-expanded="false" spellcheck="false" placeholder="Escribe calle y número (p. ej. Alcalá 120)" aria-label="Dirección" disabled>
       <button id="qx" type="button" aria-label="Borrar" hidden>✕</button>
+      <ul id="sug" role="listbox" aria-label="Sugerencias" hidden></ul>
     </div>
     <div class="row2">
       <label for="mun">Municipio</label>
@@ -128,7 +135,7 @@ tr.hit td{color:var(--title)}
 'use strict';
 var DATA=null, STREETS=[], MUNIS=[], PAR={}, TOWNS={};
 var $q=document.getElementById('q'), $x=document.getElementById('qx'), $mun=document.getElementById('mun'),
-    $out=document.getElementById('out'), $status=document.getElementById('status');
+    $out=document.getElementById('out'), $status=document.getElementById('status'), $sug=document.getElementById('sug');
 
 /* ---------- utilidades ---------- */
 function norm(s){
@@ -222,10 +229,119 @@ fetch('callejero-parroquias.json').then(function(r){ if(!r.ok) throw new Error(r
 });
 
 var tmr=null;
-$q.addEventListener('input',function(){ clearTimeout(tmr); tmr=setTimeout(run,140); });
-$q.addEventListener('keydown',function(e){ if(e.key==='Enter'){ clearTimeout(tmr); run(); } });
-$mun.addEventListener('change',run);
-$x.addEventListener('click',function(){ $q.value=''; run(); $q.focus(); });
+$q.addEventListener('input',function(){ clearTimeout(tmr); tmr=setTimeout(run,120); suggest(); });
+$q.addEventListener('keydown',function(e){
+  var open=!$sug.hidden, lis=$sug.children;
+  if(open && (e.key==='ArrowDown' || e.key==='ArrowUp')){
+    e.preventDefault();
+    if(e.key==='ArrowDown') sel=sel+1>=lis.length?-1:sel+1;
+    else sel=sel-1<-1?lis.length-1:sel-1;
+    for(var i=0;i<lis.length;i++) lis[i].classList.toggle('on',i===sel);
+    if(sel>=0) lis[sel].scrollIntoView({block:'nearest'});
+    return;
+  }
+  if(e.key==='Escape' && open){ e.preventDefault(); hideSug(); return; }
+  if((e.key==='Enter' || (e.key==='Tab' && open && !e.shiftKey)) && open && (sel>=0 || e.key==='Tab')){
+    e.preventDefault(); pick(SUG[sel>=0?sel:0]); return;
+  }
+  if(e.key==='Enter'){ clearTimeout(tmr); hideSug(); run(); }
+});
+$q.addEventListener('blur',function(){ setTimeout(hideSug,120); });
+$q.addEventListener('focus',suggest);
+$sug.addEventListener('mousedown',function(e){ e.preventDefault(); });
+$sug.addEventListener('click',function(e){ var li=e.target.closest('li'); if(li) pick(SUG[+li.dataset.i]); });
+
+/* ---------- autocompletado (desde la 4.ª letra) ---------- */
+var SUG=[], sel=-1;
+function hideSug(){ $sug.hidden=true; $sug.innerHTML=''; SUG=[]; sel=-1; $q.setAttribute('aria-expanded','false'); }
+function hl(label, toks){
+  /* resalta los comienzos de palabra que coinciden con lo escrito */
+  return label.split(/(\s+)/).map(function(w){
+    var nw=norm(w), t=null;
+    toks.forEach(function(x){ if(x && nw.indexOf(x)===0 && (!t || x.length>t.length)) t=x; });
+    if(!t) return esc(w);
+    var cut=0, acc=''; while(cut<w.length && norm(acc).length<t.length){ acc+=w[cut]; cut++; }
+    return '<b>'+esc(w.slice(0,cut))+'</b>'+esc(w.slice(cut));
+  }).join('');
+}
+function suggest(){
+  if(!DATA || document.activeElement!==$q){ return hideSug(); }
+  var raw=$q.value, n=norm(raw);
+  if(n.replace(/[^a-zñ]/g,'').length<4){ return hideSug(); }
+  var q=parse(raw);
+  if(q.num!=null){ return hideSug(); }
+  var out=[], seen={};
+  /* municipios (con callejero y sin él) */
+  var nt=n.split(' '), last=nt[nt.length-1], last2=nt.slice(-2).join(' '), last3=nt.slice(-3).join(' ');
+  function muniMatch(name){
+    var nm=norm(name);
+    if((' '+n+' ').indexOf(' '+nm+' ')>=0) return false;           /* ya está escrito entero */
+    if(last.length<3 && nt.length>1) return false;
+    return [n,last3,last2,last].some(function(f){ return f.replace(/ /g,'').length>=4 && (nm.indexOf(f)===0 || (' '+nm).indexOf(' '+f)>=0); });
+  }
+  var muniSel=$mun.value;
+  if(muniSel===''){
+    MUNIS.forEach(function(m,i){ if(i!==q.muni && muniMatch(m)) out.push({k:'m', i:i, label:m, sub:'municipio'}); });
+    Object.keys(TOWNS).forEach(function(t){ if(muniMatch(TOWNS[t].name)) out.push({k:'t', label:TOWNS[t].name.trim(), sub:'municipio sin callejero'}); });
+  }
+  /* calles: cada palabra escrita debe ser comienzo de una palabra del nombre (la última puede estar a medias) */
+  var w=q.w;
+  if(w.length && w.join('').length>=3){
+    var mf=muniSel!==''?parseInt(muniSel,10):(q.muni!=null?q.muni:null), cand=[];
+    for(var i=0;i<STREETS.length;i++){
+      var st=STREETS[i]; if(mf!=null && st.m!==mf) continue;
+      var ok=true, firstPos=99;
+      for(var k=0;k<w.length && ok;k++){
+        var hit=-1;
+        for(var j=0;j<st.w.length;j++){ if(st.w[j].indexOf(w[k])===0){ hit=j; break; } }
+        if(hit<0) ok=false; else if(k===0) firstPos=hit;
+      }
+      if(!ok) continue;
+      if(q.g && st.g!==q.g) continue;
+      var sc=(st.j===w.join(' ')?0:1)*10+firstPos*3+(st.j.indexOf(w.join(' '))===0?0:2)+(st.m===3?0:1)+st.w.length*.1;
+      cand.push({st:st, sc:sc});
+    }
+    cand.sort(function(a,b){ return a.sc-b.sc || a.st.name.localeCompare(b.st.name,'es'); });
+    for(var c=0;c<cand.length && out.length<9;c++){
+      var st2=cand[c].st, key=stName(st2)+'|'+st2.m;
+      if(seen[key]) continue; seen[key]=1;
+      out.push({k:'s', st:st2, label:stName(st2), sub:MUNIS[st2.m]});
+    }
+  }
+  /* si lo escrito ya es exactamente la única sugerencia, no se muestra */
+  if(out.length===1 && out[0].k==='s' && norm(raw).indexOf(norm(out[0].label))===0){ return hideSug(); }
+  SUG=out.slice(0,9); sel=-1;
+  if(!SUG.length){ return hideSug(); }
+  var toks=n.split(' ').filter(function(t){return t.length>=1 && !STOP[t];});
+  $sug.innerHTML=SUG.map(function(o,i){
+    return '<li role="option" data-i="'+i+'"><span class="sl">'+hl(o.label,toks)+'</span><span class="ss">'+esc(o.sub)+'</span></li>';
+  }).join('');
+  $sug.hidden=false; $q.setAttribute('aria-expanded','true');
+}
+function pick(o){
+  if(!o) return;
+  var raw=$q.value;
+  if(o.k==='s'){
+    var name=stName(o.st);
+    if($mun.value===''){ $q.value=name+' , '+MUNIS[o.st.m]; $q.setSelectionRange(name.length+1,name.length+1); }
+    else { $q.value=name+' '; }
+  }else if(o.k==='m'){
+    /* se quita el trozo de municipio escrito y se fija el municipio en el desplegable */
+    var nm=norm(o.label), parts=raw.trim().split(/\s+/), keep=parts.length;
+    for(var k=parts.length;k>=1;k--){
+      var frag=norm(parts.slice(k-1).join(' '));
+      if(frag && (nm.indexOf(frag)===0 || (' '+nm).indexOf(' '+frag)>=0)) keep=k-1;
+    }
+    $mun.value=String(o.i);
+    $q.value=parts.slice(0,keep).join(' ').replace(/[,\s]+$/,'')+(keep?' ':'');
+  }else{
+    $q.value=o.label;
+  }
+  hideSug(); clearTimeout(tmr); run(); $q.focus();
+  if(o.k==='s' && $mun.value===''){ var p=stName(o.st).length+1; $q.setSelectionRange(p,p); }
+}
+$mun.addEventListener('change',function(){ run(); });
+$x.addEventListener('click',function(){ $q.value=''; hideSug(); run(); $q.focus(); });
 
 /* ---------- análisis de la consulta ---------- */
 function parse(raw){
@@ -236,16 +352,17 @@ function parse(raw){
   s=s.replace(/\b28\d{3}\b/g,' ');                                         /* código postal */
   var n=norm(s), q={raw:raw, muni:null, muniFromText:false, num:null, numTxt:'', g:'', w:[]};
   /* municipio: el alias más largo; se prefiere el que aparece más al final */
-  var best=null;
+  var found=[], best=null;
   Object.keys(MUNI_ALIAS).forEach(function(m){
     MUNI_ALIAS[m].forEach(function(a){
-      var re=new RegExp('(^| )'+a+'( |$)','g'), mt, last=-1;
-      while((mt=re.exec(n))){ last=mt.index; re.lastIndex=mt.index+1; }
-      if(last<0) return;
-      var score=last*10+a.length;
-      if(!best || score>best.score) best={m:m,a:a,pos:last,score:score};
+      var re=new RegExp('(^| )'+a+'(?= |$)','g'), mt;
+      while((mt=re.exec(n))){ var pos=mt.index+(mt[1]?1:0); found.push({m:m,a:a,pos:pos,end:pos+a.length}); re.lastIndex=pos+1; }
     });
   });
+  /* se descartan los alias contenidos en otro más largo («madrid» dentro de «las rozas de madrid») */
+  found=found.filter(function(f){ return !found.some(function(g){ return g!==f && g.pos<=f.pos && g.end>=f.end && (g.end-g.pos)>(f.end-f.pos); }); });
+  found.forEach(function(f){ if(!best || f.end>best.end || (f.end===best.end && f.a.length>best.a.length)) best=f; });
+  if(best) best.pos=best.pos-(best.pos>0?1:0);
   var n2=n;
   if(best){
     var rest=(n.slice(0,best.pos)+' '+n.slice(best.pos+best.a.length+1)).trim();
