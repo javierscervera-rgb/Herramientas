@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Callejero de parroquias · Herramientas</title>
+<meta name="description" content="Busca una dirección de la Archidiócesis de Madrid y encuentra la parroquia a la que pertenece.">
+<meta name="theme-color" content="#171310">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bg:#171310;            /* fondo principal */
+  --panel:#201D18;         /* tarjetas y paneles */
+  --accent:#CD8B75;        /* acento */
+  --btn2:#292420;          /* botones secundarios */
+  --text:#F0E8DC;          /* texto principal */
+  --text2:#AA9D8F;         /* texto secundario */
+  --border:#37312B;        /* bordes */
+  --title:#D88972;         /* títulos y botones activos */
+  --serif:"EB Garamond",Garamond,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--ui);line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+
+/* ---------- cabecera ---------- */
+.top{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-in{display:flex;align-items:center;gap:12px;padding:8px 14px;max-width:900px;margin:0 auto}
+.logo-btn{display:flex;align-items:center;background:var(--btn2);border:1px solid var(--border);border-radius:12px;padding:6px 10px;flex:none}
+.logo-btn:hover{border-color:var(--accent);text-decoration:none}
+.logo { display: block; height: clamp(32px, 5vw, 48px); width: auto; max-width: 200px; }
+.brand{font-family:var(--serif);font-size:1.45rem;color:var(--title);font-weight:600;line-height:1.15}
+.brand small{display:block;font-family:var(--ui);font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:.08em;text-transform:uppercase}
+
+/* brillo del logo (una vez por carga) */
+a:has(> .logo) { position: relative; }
+a > .logo { position: relative; z-index: 1; }
+a:has(> .logo)::before { content: ""; position: absolute; inset: -16px; border-radius: 50%; background: radial-gradient(circle, rgba(216,137,114,.75) 0%, rgba(216,137,114,.3) 42%, rgba(216,137,114,0) 70%); opacity: 0; pointer-events: none; animation: brillo-logo 1.8s ease-in-out .5s 1 both; }
+@keyframes brillo-logo { 0% { opacity: 0; transform: scale(.6); } 45% { opacity: 1; transform: scale(1.1); } 100% { opacity: 0; transform: scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { a:has(> .logo)::before { animation: none; } }
+
+/* ---------- buscador ---------- */
+main{max-width:900px;margin:0 auto;padding:18px 14px 60px}
+.intro{color:var(--text2);font-size:.92rem;margin:0 0 14px}
+.form{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+.search{position:relative}
+.search input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:13px 42px 13px 40px;font-size:1.05rem}
+.search input::placeholder{color:var(--text2)}
+.search input:focus,select:focus{outline:none;border-color:var(--accent)}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:var(--text2);fill:none;stroke-width:2}
+input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+#qx{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--btn2);color:var(--text2);cursor:pointer}
+#qx:hover{color:var(--text);background:var(--border)}
+.row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.row2 label{color:var(--text2);font-size:.85rem}
+select{background:var(--btn2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:.9rem;max-width:100%}
+.ej{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{background:var(--btn2);border:1px solid var(--border);border-radius:999px;padding:4px 11px;font-size:.8rem;color:var(--text2);cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+
+/* ---------- resultados ---------- */
+#status{color:var(--text2);font-size:.9rem;margin:16px 2px 8px}
+.hint{background:rgba(205,139,117,.09);border:1px solid rgba(205,139,117,.35);border-radius:10px;padding:9px 12px;margin:10px 0;font-size:.9rem}
+.hint b{color:var(--title)}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin:10px 0}
+.card.best{border-color:var(--accent)}
+.st{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.st h3{margin:0;font-size:1.05rem;font-weight:600}
+.st .num{color:var(--title)}
+.muni{font-size:.75rem;color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:1px 9px}
+.tag{font-size:.75rem;color:#171310;background:var(--title);border-radius:999px;padding:1px 9px;font-weight:600}
+.tag.soft{background:var(--btn2);color:var(--text2);border:1px solid var(--border);font-weight:400}
+.par{border-left:3px solid var(--accent);padding:6px 0 6px 12px;margin:8px 0}
+.par .pn{font-family:var(--serif);font-size:1.3rem;color:var(--title);line-height:1.2}
+.par .pn small{font-family:var(--ui);font-size:.78rem;color:var(--text2);margin-left:6px}
+.par .pd{font-size:.88rem;color:var(--text2)}
+.par .pd a{white-space:nowrap}
+.par .tr{font-size:.82rem;color:var(--text);margin-top:2px}
+.par.alt{border-left-color:var(--border)}
+.par.alt .pn{font-size:1.1rem}
+details.tramos{margin-top:8px}
+details.tramos summary{cursor:pointer;color:var(--text2);font-size:.84rem}
+details.tramos summary:hover{color:var(--text)}
+table{border-collapse:collapse;width:100%;margin-top:6px;font-size:.85rem}
+td,th{text-align:left;padding:4px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+th{color:var(--text2);font-weight:500}
+tr.hit td{color:var(--title)}
+.more-btn{background:var(--btn2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-size:.88rem;margin-top:6px}
+.more-btn:hover{border-color:var(--accent)}
+.foot{color:var(--text2);font-size:.78rem;margin-top:30px;border-top:1px solid var(--border);padding-top:12px}
+@media (max-width:560px){ .ej{margin-left:0} .brand{font-size:1.2rem} }
+</style>
+<script data-goatcounter="https://herramientasacerdotal.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="logo-btn" href="https://javierscervera-rgb.github.io/Herramientas/index.html" target="_self" title="Ir a Herramientas" aria-label="Ir a Herramientas"><img class="logo" src="logo.svg" alt="Herramientas"></a>
+    <div class="brand">Callejero de parroquias<small>Archidiócesis de Madrid</small></div>
+  </div>
+</header>
+<main>
+  <p class="intro">Escribe la dirección como la tengas (calle, número y, si lo sabes, municipio) y te digo a qué parroquia pertenece.</p>
+  <div class="form">
+    <div class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Ej.: c/ Alcalá 120, Madrid" aria-label="Dirección" disabled>
+      <button id="qx" type="button" aria-label="Borrar" hidden>✕</button>
+    </div>
+    <div class="row2">
+      <label for="mun">Municipio</label>
+      <select id="mun"><option value="">Todos</option></select>
+      <div class="ej" id="ej"></div>
+    </div>
+  </div>
+  <div id="status">Cargando callejero…</div>
+  <div id="out"></div>
+  <p class="foot" id="foot"></p>
+</main>
+<script>
+(function(){
+'use strict';
+var DATA=null, STREETS=[], MUNIS=[], PAR={}, TOWNS={};
+var $q=document.getElementById('q'), $x=document.getElementById('qx'), $mun=document.getElementById('mun'),
+    $out=document.getElementById('out'), $status=document.getElementById('status');
+
+/* ---------- utilidades ---------- */
+function norm(s){
+  return String(s||'').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g,'')
+    .replace(/ç/g,'c').replace(/[^a-z0-9ñ]+/g,' ').trim();
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+var STOP={de:1,del:1,la:1,las:1,el:1,los:1,y:1,a:1,al:1,e:1,lo:1};
+function words(s){return norm(s).split(' ').filter(function(w){return w && !STOP[w];});}
+function lev(a,b,max){
+  var la=a.length, lb=b.length; if(Math.abs(la-lb)>max) return max+1;
+  var prev=new Array(lb+1), cur=new Array(lb+1), i, j;
+  for(j=0;j<=lb;j++) prev[j]=j;
+  for(i=1;i<=la;i++){
+    cur[0]=i; var mn=i;
+    for(j=1;j<=lb;j++){
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a.charCodeAt(i-1)===b.charCodeAt(j-1)?0:1));
+      if(cur[j]<mn) mn=cur[j];
+    }
+    if(mn>max) return max+1;
+    var t=prev; prev=cur; cur=t;
+  }
+  return prev[lb];
+}
+
+/* ---------- tipos de vía ---------- */
+var TIPO_GRUPO={ 'C.':'C','Avda.':'AV','Pza.':'PZ','Pzo.':'PZ','Trv.':'TR','Cº.':'CM','Cmno.':'CM','Camino':'CM','Pº.':'PS',
+  'Gta.':'GT','Pje.':'PJ','Cª.':'CR','Ctra.':'CR','Cra.':'CR','Cjón.':'CJ','Calleja':'CJ','Urb.':'UR','Rda.':'RD','Col.':'CO',
+  'Autov.':'AU','Cost.':'CS','Cta.':'CT','Vereda':'VE','Parque':'PQ','Bulevar':'BU','Cañada':'CA','Pista':'PI','Puente':'PU','Vía':'VI' };
+var TIPO_PAL={calle:'C',c:'C',cl:'C',cll:'C',avenida:'AV',avda:'AV',av:'AV',avd:'AV',plaza:'PZ',pza:'PZ',pl:'PZ',plz:'PZ',plazuela:'PZ',
+  travesia:'TR',trv:'TR',trav:'TR',tr:'TR',camino:'CM',cno:'CM',cmno:'CM',cmo:'CM',co:'CM',paseo:'PS',po:'PS',ps:'PS',pso:'PS',
+  glorieta:'GT',gta:'GT',pasaje:'PJ',pje:'PJ',psje:'PJ',carretera:'CR',ctra:'CR',cra:'CR',ca:'CR',callejon:'CJ',cjon:'CJ',calleja:'CJ',
+  urbanizacion:'UR',urb:'UR',ronda:'RD',rda:'RD',colonia:'CO',col:'CO',autovia:'AU',autov:'AU',costanilla:'CS',cost:'CS',
+  cuesta:'CT',cta:'CT',vereda:'VE',parque:'PQ',bulevar:'BU',boulevard:'BU',canada:'CA',cañada:'CA',pista:'PI',puente:'PU',via:'VI'};
+var TIPO_LARGO={C:'calle',AV:'avenida',PZ:'plaza',TR:'travesía',CM:'camino',PS:'paseo',GT:'glorieta',PJ:'pasaje',CR:'carretera',CJ:'callejón',
+  UR:'urbanización',RD:'ronda',CO:'colonia',AU:'autovía',CS:'costanilla',CT:'cuesta',VE:'vereda',PQ:'parque',BU:'bulevar',CA:'cañada',PI:'pista',PU:'puente',VI:'vía'};
+
+/* ---------- municipios (alias) ---------- */
+var MUNI_ALIAS={
+  'Madrid':['madrid','madrid capital'],
+  'Las Rozas de Madrid':['las rozas de madrid','rozas de madrid','las rozas','rozas'],
+  'Pozuelo de Alarcón':['pozuelo de alarcon','pozuelo'],
+  'San Sebastián de los Reyes':['san sebastian de los reyes','san sebastian reyes','sanse','s s reyes','ss reyes'],
+  'Collado Villalba':['collado villalba','villalba','collado'],
+  'Colmenar Viejo':['colmenar viejo','colmenar'],
+  'Tres Cantos':['tres cantos'],
+  'Alcobendas':['alcobendas'],'Majadahonda':['majadahonda','majadaonda'],'Galapagar':['galapagar'],
+  'Torrelodones':['torrelodones'],'Alpedrete':['alpedrete'],'Cerceda':['cerceda']
+};
+
+/* ---------- carga ---------- */
+fetch('callejero-parroquias.json').then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+  DATA=d; MUNIS=d.m; PAR=d.p;
+  /* se agrupan las variantes de una misma vía (p. ej. «C. Real» y «C. de Real», «Rios Rosas» y «Ríos Rosas») */
+  var byKey={};
+  d.s.forEach(function(s){
+    var w=words(s[3]), g=TIPO_GRUPO[s[1]]||s[1], key=s[0]+'|'+g+'|'+w.join(' ');
+    var st=byKey[key];
+    if(!st){ st=byKey[key]={m:s[0], tipo:s[1], parte:s[2], name:s[3], g:g, segs:[], w:w, j:w.join(' '), _n:0}; STREETS.push(st); }
+    var n=s[4].length, accented=/[áéíóúñ]/i.test(s[3]);
+    if(n>st._n || (accented && !/[áéíóúñ]/i.test(st.name))){ st.tipo=s[1]; st.parte=s[2]; st.name=s[3]; st._n=Math.max(n,st._n); }
+    s[4].forEach(function(z){
+      if(!st.segs.some(function(y){return y[0]===z[0]&&y[1]===z[1]&&y[2]===z[2]&&y[3]===z[3];})) st.segs.push(z);
+    });
+  });
+  /* poblaciones con parroquias pero sin callejero */
+  var cubiertas={}; MUNIS.forEach(function(m){cubiertas[norm(m)]=1;});
+  Object.keys(PAR).forEach(function(k){
+    var pob=PAR[k][2]; if(!pob) return; var n=norm(pob);
+    if(cubiertas[n] || n==='madrid') return;
+    (TOWNS[n]=TOWNS[n]||{name:pob,codes:[]}).codes.push(k);
+  });
+  MUNIS.slice().sort(function(a,b){return a==='Madrid'?-1:b==='Madrid'?1:a.localeCompare(b,'es');}).forEach(function(m){
+    var o=document.createElement('option'); o.value=String(MUNIS.indexOf(m)); o.textContent=m; $mun.appendChild(o);
+  });
+  document.getElementById('foot').textContent='Datos: callejero parroquial de la Archidiócesis de Madrid ('+
+    STREETS.length.toLocaleString('es')+' vías y '+Object.keys(PAR).length+' parroquias). Cubre Madrid capital y '+
+    MUNIS.filter(function(m){return m!=='Madrid';}).join(', ')+'. Ante cualquier duda, confirmar con la parroquia o la vicaría.';
+  ['Alcalá 120','Pº Castellana 100, Madrid','Plaza Mayor','Real 20, Las Rozas'].forEach(function(t){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=t;
+    b.onclick=function(){ $q.value=t; run(); $q.focus(); }; document.getElementById('ej').appendChild(b);
+  });
+  $q.disabled=false;
+  var p=new URLSearchParams(location.search);
+  if(p.get('m')!=null && $mun.querySelector('option[value="'+p.get('m')+'"]')) $mun.value=p.get('m');
+  if(p.get('q')){ $q.value=p.get('q'); }
+  run();
+  if(!p.get('q')) $q.focus();
+}).catch(function(e){
+  $status.textContent='No se ha podido cargar el callejero ('+e.message+'). Recarga la página.';
+});
+
+var tmr=null;
+$q.addEventListener('input',function(){ clearTimeout(tmr); tmr=setTimeout(run,140); });
+$q.addEventListener('keydown',function(e){ if(e.key==='Enter'){ clearTimeout(tmr); run(); } });
+$mun.addEventListener('change',run);
+$x.addEventListener('click',function(){ $q.value=''; run(); $q.focus(); });
+
+/* ---------- análisis de la consulta ---------- */
+function parse(raw){
+  var s=' '+raw+' ';
+  s=s.replace(/\bc\s*\/\s*/gi,' calle ').replace(/\bn\.?\s*[ºo°]\.?\s*(?=\d)/gi,' ').replace(/\bn[uú]m(ero)?\.?\s*(?=\d)/gi,' ');
+  s=s.replace(/\b\d+\s*[ºª°]\s*[a-z]?\b/gi,' ');                          /* 3º B, 2ª */
+  s=s.replace(/\b(piso|planta|esc(alera)?|puerta|pta|bajo|izq(da|uierda)?|dcha|derecha|portal|bloque|blq)\b.*$/i,' ');
+  s=s.replace(/\b28\d{3}\b/g,' ');                                         /* código postal */
+  var n=norm(s), q={raw:raw, muni:null, muniFromText:false, num:null, numTxt:'', g:'', w:[]};
+  /* municipio: el alias más largo; se prefiere el que aparece más al final */
+  var best=null;
+  Object.keys(MUNI_ALIAS).forEach(function(m){
+    MUNI_ALIAS[m].forEach(function(a){
+      var re=new RegExp('(^| )'+a+'( |$)','g'), mt, last=-1;
+      while((mt=re.exec(n))){ last=mt.index; re.lastIndex=mt.index+1; }
+      if(last<0) return;
+      var score=last*10+a.length;
+      if(!best || score>best.score) best={m:m,a:a,pos:last,score:score};
+    });
+  });
+  var n2=n;
+  if(best){
+    var rest=(n.slice(0,best.pos)+' '+n.slice(best.pos+best.a.length+1)).trim();
+    if(words(rest.replace(/\d+/g,'')).length){ q.muni=MUNIS.indexOf(best.m); q.muniFromText=true; n2=rest; }
+  }
+  var toks=n2.split(' ').filter(Boolean);
+  /* número: último número suelto (admite letra, p. ej. 45b) */
+  for(var i=toks.length-1;i>=1;i--){
+    var mt=toks[i].match(/^(\d+)([a-z])?$/);
+    if(mt){ q.num=parseInt(mt[1],10); q.numTxt=toks[i].toUpperCase(); q.numIdx=i;
+      if(i+1<toks.length && /^(bis|[a-d])$/.test(toks[i+1])) toks.splice(i+1,1);
+      break; }
+    if(/^(km|kilometro)$/.test(toks[i])) break;
+  }
+  if(q.numIdx!=null){
+    q.tokAll=toks.slice(); toks.splice(q.numIdx,1);
+    /* rangos tipo 45-47: se toma el primero */
+    var pi=q.numIdx-1;
+    if(pi>=1 && /^\d+$/.test(toks[pi])){ q.num=parseInt(toks[pi],10); q.numTxt=toks[pi]; toks.splice(pi,1); }
+  }
+  /* tipo de vía al principio */
+  if(toks.length>1 && TIPO_PAL[toks[0]]){ q.g=TIPO_PAL[toks[0]]; toks.shift(); }
+  q.w=toks.filter(function(t){return !STOP[t];});
+  return q;
+}
+
+/* ---------- puntuación de calles ---------- */
+function tokScore(t, w){
+  var bestv=0;
+  for(var k=0;k<w.length;k++){
+    var x=w[k], v=0;
+    if(x===t) v=1;
+    else if(t.length>=2 && x.indexOf(t)===0) v=.86;
+    else if(t.length>=4){
+      var mx=t.length>=8?2:1, d=lev(t,x,mx);
+      if(d<=mx) v=.72-(d-1)*.1;
+      else if(x.length>t.length){ var d2=lev(t,x.slice(0,t.length),1); if(d2<=1) v=.6; }
+    }
+    if(v>bestv){ bestv=v; if(v===1) break; }
+  }
+  return bestv;
+}
+function scoreStreet(st, q){
+  var qw=q.w; if(!qw.length) return 0;
+  var qj=qw.join(' ');
+  var base;
+  if(qj===st.j) base=100;
+  else{
+    var sum=0, miss=0;
+    for(var i=0;i<qw.length;i++){ var v=tokScore(qw[i],st.w); sum+=v; if(!v) miss++; }
+    if(miss && (miss>1 || qw.length<3)) return 0;
+    var avg=sum/qw.length, cover=Math.min(1,(qw.length-miss)/Math.max(1,st.w.length));
+    base=avg*70+cover*22;
+    if(st.j.indexOf(qj)===0) base+=4;
+    if(miss) base*=.6;
+  }
+  if(q.g){ base+= (st.g===q.g)?8:-6; }
+  return base;
+}
+function search(q){
+  var muniSel=$mun.value!==''?parseInt($mun.value,10):(q.muni!=null?q.muni:null);
+  var res=[];
+  for(var i=0;i<STREETS.length;i++){
+    var st=STREETS[i];
+    if(muniSel!=null && st.m!==muniSel) continue;
+    var sc=scoreStreet(st,q);
+    if(sc>=45) res.push({st:st,sc:sc});
+  }
+  res.sort(function(a,b){ return b.sc-a.sc || (a.st.m===3?-1:0)-(b.st.m===3?-1:0) || a.st.name.localeCompare(b.st.name,'es'); });
+  if(res.length){ var top=res[0].sc; res=res.filter(function(r){return r.sc>=top-14;}); }
+  return {list:res, muni:muniSel};
+}
+
+/* ---------- parroquia según número ---------- */
+function resolve(st, num){
+  var segs=st.segs, codes=[], hits=[], approx=false, ranged=[], whole=[];
+  if(num==null){
+    segs.forEach(function(s){ if(codes.indexOf(s[3])<0) codes.push(s[3]); });
+    var kn=codes.filter(function(c){return PAR[c];}); if(kn.length) codes=kn;
+    return {codes:codes, hits:segs.slice(), approx:false};
+  }
+  var odd=num%2===1;
+  segs.forEach(function(s){
+    var pOk=s[0]===0 || (s[0]===1)===odd;
+    if(!pOk) return;
+    if(s[1]===0 && s[2]===0) whole.push(s);
+    else if(num>=s[1] && num<=s[2]) ranged.push(s);
+  });
+  hits=ranged.length?ranged:whole;
+  if(!hits.length){
+    /* fuera de los tramos registrados: el tramo más cercano del mismo lado */
+    var bestd=1e9;
+    segs.forEach(function(s){
+      if(s[1]===0 && s[2]===0) return;
+      if(!(s[0]===0 || (s[0]===1)===odd)) return;
+      var d=num<s[1]?s[1]-num:num-s[2];
+      if(d<bestd){ bestd=d; hits=[s]; } else if(d===bestd) hits.push(s);
+    });
+    if(!hits.length) hits=segs.slice();
+    approx=true;
+  }
+  hits.forEach(function(s){ if(codes.indexOf(s[3])<0) codes.push(s[3]); });
+  var known=codes.filter(function(c){return PAR[c];});
+  if(known.length && known.length<codes.length){ codes=known; hits=hits.filter(function(s){return PAR[s[3]];}); }
+  return {codes:codes, hits:hits, approx:approx};
+}
+
+/* ---------- presentación ---------- */
+function stName(st){
+  var t=st.tipo?st.tipo+' ':'';
+  return t+(st.parte?st.parte+' ':'')+st.name;
+}
+function tramo(s){
+  var lado=s[0]===1?'impares':s[0]===2?'pares':'ambos lados';
+  if(s[1]===0 && s[2]===0) return s[0]?lado+' (sin tramo)':'sin número concreto';
+  if(s[1]===s[2]) return lado==='ambos lados'?'nº '+s[1]:lado+': nº '+s[1];
+  return lado+' '+s[1]+'–'+s[2];
+}
+function parInfo(code){
+  var p=PAR[code];
+  if(!p) return {name: code?'Código «'+code+'» (no figura en la lista de parroquias)':'Sin parroquia asignada en el callejero', html:'', unknown:true};
+  var nm=p[0], dir=p[1], pob=p[2], cp=p[3], tel=p[4], vic=p[5], arc=p[6], aeq=p[7];
+  var bits=[];
+  var dirTxt=[dir, [cp,pob].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  if(dirTxt) bits.push(esc(dirTxt)+' · <a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query='+
+    encodeURIComponent('Parroquia '+nm+', '+dir+', '+pob)+'">mapa</a>');
+  if(tel) bits.push('<a href="tel:'+esc(tel.replace(/\s+/g,''))+'">'+esc(tel)+'</a>');
+  var meta=[]; if(vic) meta.push('Vicaría '+esc(vic)); if(arc) meta.push('Arciprestazgo '+esc(arc));
+  if(aeq && PAR[aeq]) meta.push('unida <i>aeque principaliter</i> a '+esc(PAR[aeq][0])+' (nº '+esc(aeq)+')');
+  return {name:nm, html:bits.join(' · ')+(meta.length?'<br>'+meta.join(' · '):'')};
+}
+function parBlock(code, segs, alt){
+  var info=parInfo(code);
+  var tr=segs?segs.filter(function(s){return s[3]===code;}).map(tramo).join(' · '):'';
+  return '<div class="par'+(alt?' alt':'')+'"><div class="pn">'+esc(info.name)+(PAR[code]?'<small>nº '+esc(code)+'</small>':'')+'</div>'+
+    (info.html?'<div class="pd">'+info.html+'</div>':'')+(tr?'<div class="tr">Tramo: '+esc(tr)+'</div>':'')+'</div>';
+}
+function tramosTable(st, hits, open){
+  var rows=st.segs.slice().sort(function(a,b){return a[0]-b[0]||a[1]-b[1];}).map(function(s){
+    var p=PAR[s[3]], hit=hits && hits.indexOf(s)>=0;
+    return '<tr'+(hit?' class="hit"':'')+'><td>'+esc(tramo(s))+'</td><td>'+esc(p?p[0]:(s[3]||'—'))+(p?' <span style="color:var(--text2)">('+esc(s[3])+')</span>':'')+'</td></tr>';
+  }).join('');
+  return '<details class="tramos"'+(open?' open':'')+'><summary>Ver todos los tramos de esta vía ('+st.segs.length+')</summary><table><tr><th>Números</th><th>Parroquia</th></tr>'+rows+'</table></details>';
+}
+function card(st, q, isBest){
+  var r=resolve(st,q.num), h='';
+  h+='<div class="card'+(isBest?' best':'')+'"><div class="st"><h3>'+esc(stName(st))+(q.num!=null?' <span class="num">'+esc(q.numTxt)+'</span>':'')+'</h3>'+
+     '<span class="muni">'+esc(MUNIS[st.m])+'</span>';
+  if(r.codes.length===1 && !r.approx) h+='<span class="tag">'+(q.num!=null||st.segs.every(function(s){return s[3]===r.codes[0];})?'Parroquia':'Parroquia probable')+'</span>';
+  h+='</div>';
+  if(q.num==null && r.codes.length>1){
+    h+='<div class="hint">Esta vía se reparte entre <b>'+r.codes.length+' parroquias</b> según el número. Escribe el número del portal para saber cuál es.</div>';
+    if(r.codes.length<=4) r.codes.forEach(function(c){ h+=parBlock(c, st.segs, true); });
+    else return h+tramosTable(st, null, true)+'</div>';
+  }else if(r.approx){
+    h+='<div class="hint">El nº '+esc(q.numTxt)+' no está en los tramos registrados de esta vía. Lo más probable, por el tramo más cercano'+(r.codes.length>1?', es una de estas':'')+':</div>';
+    r.codes.forEach(function(c){ h+=parBlock(c, r.hits, r.codes.length>1); });
+  }else if(r.codes.length>1){
+    h+='<div class="hint">Este número aparece en tramos de <b>varias parroquias</b>. Comprueba los tramos o confirma con la parroquia.</div>';
+    r.codes.forEach(function(c){ h+=parBlock(c, r.hits, true); });
+  }else{
+    h+=parBlock(r.codes[0], q.num!=null?r.hits:st.segs, false);
+  }
+  if(st.segs.length>1) h+=tramosTable(st, q.num!=null?r.hits:null);
+  return h+'</div>';
+}
+var shown=12;
+function run(){
+  if(!DATA) return;
+  var raw=$q.value.trim();
+  $x.hidden=!raw;
+  var url=new URL(location.href);
+  if(raw) url.searchParams.set('q',raw); else url.searchParams.delete('q');
+  if($mun.value!=='') url.searchParams.set('m',$mun.value); else url.searchParams.delete('m');
+  try{ history.replaceState(null,'',url); }catch(e){}
+  shown=12;
+  if(!raw){ $status.textContent='Callejero cargado. Escribe una dirección.'; $out.innerHTML=''; return; }
+  var q=parse(raw), r=search(q), alt=null;
+  /* si el número parece formar parte del nombre ("Doce de Octubre", "calle 3"), probar sin separarlo */
+  if(q.num!=null && (!r.list.length || r.list[0].sc<70)){
+    var q2=Object.assign({},q,{num:null,numTxt:''}); q2.w=q.tokAll.filter(function(t,i){return !STOP[t] && !(i===0 && TIPO_PAL[t] && q.g);});
+    var r2=search(q2);
+    if(r2.list.length && (!r.list.length || r2.list[0].sc>r.list[0].sc+5)){ q=q2; r=r2; }
+  }
+  /* si el municipio escrito no da resultados, buscar en todos */
+  if(!r.list.length && q.muniFromText && $mun.value===''){
+    var q3=Object.assign({},q,{muni:null}); var r3=search(q3);
+    if(r3.list.length){ alt='No encuentro esa vía en '+MUNIS[q.muni]+'; muestro coincidencias en otros municipios.'; q=q3; r=r3; }
+  }
+  render(q,r,alt);
+}
+function render(q,r,alt){
+  var list=r.list, h='';
+  if(!q.w.length && q.muni!=null){
+    $status.textContent=''; $out.innerHTML='<div class="hint">Escribe también el nombre de la calle.</div>'; return;
+  }
+  if(!list.length){
+    var n=norm(q.raw), towns=Object.keys(TOWNS).filter(function(t){return (' '+n+' ').indexOf(' '+t+' ')>=0;});
+    if(towns.length){
+      $status.textContent='';
+      towns.forEach(function(t){
+        var T=TOWNS[t];
+        h+='<div class="card best"><div class="st"><h3>'+esc(T.name)+'</h3><span class="tag soft">sin callejero</span></div>'+
+           '<div class="hint">Este municipio no tiene callejero detallado; '+(T.codes.length>1?'estas son sus parroquias':'esta es su parroquia')+':</div>';
+        T.codes.forEach(function(c){ h+=parBlock(c,null,T.codes.length>1); });
+        h+='</div>';
+      });
+      $out.innerHTML=h; return;
+    }
+    $status.textContent='';
+    $out.innerHTML='<div class="hint">No encuentro ninguna vía con «'+esc(q.raw)+'»'+(r.muni!=null?' en '+esc(MUNIS[r.muni]):'')+
+      '. Prueba con el nombre principal de la calle (p. ej. «Alcalá» en vez de «Calle de Alcalá»), sin abreviaturas raras'+
+      (r.muni!=null?', o cambia el municipio a «Todos»':'')+'.</div>';
+    return;
+  }
+  /* pistas para afinar */
+  var munis={}, tipos={}, names={};
+  list.forEach(function(x){ munis[x.st.m]=1; tipos[x.st.g]=1; names[x.st.j]=1; });
+  var nM=Object.keys(munis).length, nT=Object.keys(tipos).length, nN=Object.keys(names).length;
+  var exact=list[0].sc>=100 && (list.length===1 || list[1].sc<100);
+  $status.textContent=list.length===1?'1 vía encontrada':list.length+' vías posibles';
+  if(alt) h+='<div class="hint">'+esc(alt)+'</div>';
+  if(list.length>1){
+    var tips=[];
+    if(nM>1 && r.muni==null) tips.push('el <b>municipio</b> ('+Object.keys(munis).slice(0,4).map(function(m){return esc(MUNIS[m]);}).join(', ')+(nM>4?'…':'')+')');
+    if(nT>1 && !q.g) tips.push('el <b>tipo de vía</b> ('+Object.keys(tipos).filter(Boolean).slice(0,4).map(function(g){return TIPO_LARGO[g]||g;}).join(', ')+')');
+    if(nN>1 && !exact) tips.push('el <b>nombre completo</b> de la vía');
+    if(q.num==null && list.some(function(x){ return resolve(x.st,null).codes.length>1; })) tips.push('el <b>número</b> del portal');
+    if(tips.length) h+='<div class="hint">Hay varias vías que encajan. Para afinar, indica '+(tips.length>1?tips.slice(0,-1).join('; ')+' y '+tips[tips.length-1]:tips[0])+'.</div>';
+  }
+  list.slice(0,shown).forEach(function(x,i){ h+=card(x.st,q,i===0 && (list.length===1 || x.sc>list[1].sc+6)); });
+  if(list.length>shown) h+='<button class="more-btn" type="button" id="more">Ver '+(list.length-shown)+' más</button>';
+  $out.innerHTML=h;
+  var mb=document.getElementById('more');
+  if(mb) mb.onclick=function(){ shown=list.length; render(q,r,alt); };
+}
+})();
+</script>
+</body>
+</html>
