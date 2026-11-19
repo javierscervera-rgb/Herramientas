@@ -106,6 +106,7 @@
   #toolbar input[type=range] { flex: none; width: 100px; }
   #toolbar label { flex: none; font-size: .8rem; color: var(--tx2); }
   #toolbar .tip { flex: none; font-size: .75rem; color: var(--tx2); }
+  #toolbar #fingerBtn.on { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
 
   #pencilMenu {
     position: fixed; z-index: 40; display: flex; gap: 6px; padding: 8px;
@@ -154,6 +155,9 @@
   body.mode-erase #overlay .ann { pointer-events: stroke; }
   body.mode-erase #overlay rect.ann { pointer-events: all; }
   body.mode-erase #overlay .ann:hover { opacity: .35; }
+  /* Dedo para anotar: un dedo anota, dos dedos desplazan (lo gestiona el script) */
+  body.finger #content { touch-action: none; }
+  body.finger .tbox .tx { touch-action: none; }
 
   /* ---------- Brillo del logo al cargar ---------- */
   a:has(> .logo) { position: relative; }
@@ -207,7 +211,7 @@
 <!-- ===================== PÁGINA 1 ===================== -->
 <section id="setup">
   <h1>Prepara tu texto</h1>
-  <p class="hint">En la lectura: el dedo hace scroll (y, con la herramienta Texto, un toque suyo crea una caja); el Apple Pencil subraya, resalta, dibuja o borra. Si mantienes el Pencil quieto sobre el texto, aparece un menú para cambiar de herramienta.</p>
+  <p class="hint">En la lectura: el dedo hace scroll (y, con la herramienta Texto, un toque suyo crea una caja); el Apple Pencil subraya, resalta, dibuja o borra. Si activas «☝️ Dedo» en la barra, el dedo también anota y se desplaza con dos dedos. Si mantienes el Pencil (o el dedo, con «Dedo» activo) quieto sobre el texto, aparece un menú para cambiar de herramienta.</p>
 
   <div class="field">
     <label for="inputText">Texto</label>
@@ -270,6 +274,8 @@
     <button data-tool="text">🔤 Texto</button>
     <button data-tool="erase">🧽 Borrar</button>
     <span class="sep"></span>
+    <button id="fingerBtn" aria-pressed="false" title="Usar también el dedo para anotar (dos dedos para desplazar)">☝️ Dedo: no</button>
+    <span class="sep"></span>
     <input type="color" id="toolColor" title="Color de la herramienta">
     <label for="toolWidth">Grosor</label>
     <input type="range" id="toolWidth" min="1" max="20" value="3">
@@ -285,7 +291,7 @@
     <button id="undoBtn">↶ Deshacer</button>
     <button id="redoBtn">↷ Rehacer</button>
     <button id="clearBtn">Borrar todo</button>
-    <span class="tip">Dedo: scroll · Pencil: anotar · Pencil quieto: menú</span>
+    <span class="tip" id="tipTxt">Dedo: scroll · Pencil: anotar · Pencil quieto: menú</span>
   </div>
 
   <div id="pencilMenu" class="hidden" role="menu">
@@ -321,6 +327,8 @@
   let tabs = [], cur = null, nextId = 1;
   let annotations = [];       // referencia a las anotaciones de la pestaña activa
   let tool = 'underline';
+  let fingerDraw = false;     // true: el dedo también anota (dos dedos desplazan)
+  try { fingerDraw = localStorage.getItem('lector.fingerDraw') === '1'; } catch (_) {}
   const toolStyle = {
     underline: { color: '#D88972', width: 3 },
     highlight: { color: '#CD8B75', width: 3 },
@@ -451,7 +459,7 @@
   /* ---------- Herramientas ---------- */
   function setTool(t) {
     tool = t;
-    document.body.className = 'mode-' + t;
+    document.body.className = 'mode-' + t + (fingerDraw ? ' finger' : '');
     document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
     const st = toolStyle[t];
     if (st) { toolColor.value = st.color; toolWidth.value = st.width; }
@@ -482,15 +490,56 @@
     if (annotations.length && confirm('¿Borrar todas las anotaciones?')) { annotations.length = 0; getRedo().length = 0; render(); }
   });
 
-  /* ---------- Entrada: dedo = scroll, Pencil (y ratón) = anotar ---------- */
-  // En iOS el Pencil también desplazaría la página: lo evitamos solo para toques de lápiz.
+  /* ---------- Entrada: dedo = scroll (o anotar, si «Dedo» está activo), Pencil (y ratón) = anotar ---------- */
+  const fingerBtn = $('fingerBtn'), tipTxt = $('tipTxt');
+  function applyFinger() {
+    document.body.classList.toggle('finger', fingerDraw);
+    fingerBtn.classList.toggle('on', fingerDraw);
+    fingerBtn.setAttribute('aria-pressed', fingerDraw);
+    fingerBtn.textContent = fingerDraw ? '☝️ Dedo: sí' : '☝️ Dedo: no';
+    tipTxt.textContent = fingerDraw
+      ? 'Dedo o Pencil: anotar · Dos dedos: desplazar · Quieto: menú'
+      : 'Dedo: scroll · Pencil: anotar · Pencil quieto: menú';
+  }
+  fingerBtn.addEventListener('click', () => {
+    fingerDraw = !fingerDraw;
+    try { localStorage.setItem('lector.fingerDraw', fingerDraw ? '1' : '0'); } catch (_) {}
+    applyFinger();
+  });
+  applyFinger();
+
+  // En iOS el Pencil (y el dedo, si anota) desplazaría la página: lo evitamos.
   const isStylus = t => t && t.touchType === 'stylus';
+  let twoY = null;                       // desplazamiento manual con dos dedos
+  const fingers = e => Array.from(e.touches).filter(t => !isStylus(t));
+  const avgY = ts => ts.reduce((s, t) => s + t.clientY, 0) / ts.length;
   function blockStylusScroll(e) {
+    if (fingerDraw) {
+      const f = fingers(e);
+      if (f.length >= 2) {
+        cancelStroke();
+        if (e.type === 'touchmove' && twoY !== null) window.scrollBy(0, twoY - avgY(f));
+        twoY = avgY(f);
+        e.preventDefault(); return;
+      }
+      twoY = null;
+    }
     if (e.target.closest && e.target.closest('.tbox')) return;   // las cajas de texto se editan con normalidad
+    if (fingerDraw && e.type === 'touchmove') { e.preventDefault(); return; }
     for (const t of e.changedTouches) if (isStylus(t)) { e.preventDefault(); return; }
   }
   content.addEventListener('touchstart', blockStylusScroll, { passive: false });
   content.addEventListener('touchmove', blockStylusScroll, { passive: false });
+  content.addEventListener('touchend', e => { if (fingers(e).length < 2) twoY = null; });
+  content.addEventListener('touchcancel', () => { twoY = null; });
+
+  // Un segundo dedo anula el trazo en curso (el gesto pasa a ser desplazamiento)
+  const touchIds = new Set();
+  function cancelStroke() {
+    clearHold(); pendingText = null;
+    if (active) { const i = annotations.indexOf(active); if (i >= 0) annotations.splice(i, 1); active = null; render(); }
+    activePointer = null;
+  }
 
   function caretOffset(x, y) {
     let node, off;
@@ -557,7 +606,9 @@
   }, true);
 
   content.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch') {                // el dedo hace scroll; con la herramienta Texto, un toque crea una caja
+    if (e.pointerType === 'touch') touchIds.add(e.pointerId);
+    if (e.pointerType === 'touch' && fingerDraw && touchIds.size > 1) { cancelStroke(); return; }
+    if (e.pointerType === 'touch' && !fingerDraw) {   // el dedo hace scroll; con la herramienta Texto, un toque crea una caja
       if (tool === 'text' && !(e.target.closest && e.target.closest('.tbox'))) {
         activePointer = e.pointerId;
         pendingText = { x: e.clientX, y: e.clientY, had: !!selected };
@@ -566,7 +617,7 @@
     }
     if (e.button !== undefined && e.button > 0) return;
     if (tool !== 'erase' && e.target.closest && e.target.closest('.tbox')) return;   // lo gestiona la propia caja
-    if (e.pointerType === 'pen') startHold(e);
+    if (e.pointerType === 'pen' || e.pointerType === 'touch') startHold(e);
     activePointer = e.pointerId;
     try { content.setPointerCapture(e.pointerId); } catch (_) {}
     if (tool === 'erase') { eraseAt(e.clientX, e.clientY); e.preventDefault(); return; }
@@ -608,6 +659,7 @@
   });
 
   function endStroke(e) {
+    touchIds.delete(e.pointerId);
     clearHold();
     if (e.pointerId !== activePointer) return;
     activePointer = null;
@@ -622,6 +674,7 @@
     active = null;
     render();
   }
+  ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, e => touchIds.delete(e.pointerId), true));
   content.addEventListener('pointerup', endStroke);
   content.addEventListener('pointercancel', endStroke);
   content.addEventListener('contextmenu', e => e.preventDefault());
