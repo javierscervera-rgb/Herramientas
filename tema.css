@@ -1,0 +1,30 @@
+/* Modo día de HerramientaSacerdotal: misma paleta, en claro.
+   Cada página usa sus propios nombres de variable; aquí se cambian todos. */
+html[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #F6F0E7; --paper: #F6F0E7;
+  --surface: #FFFBF5; --panel: #FFFBF5; --card: #FFFBF5;
+  --chip: #EFE6DA; --btn2: #EFE6DA; --btn: #EFE6DA; --panel2: #EFE6DA; --hover: #EFE6DA;
+  --text: #2A241D; --tx: #2A241D; --fg: #2A241D; --ink: #2A241D;
+  --muted: #7A6E60; --text2: #7A6E60; --tx2: #7A6E60; --fg2: #7A6E60; --faint: #9A8E80;
+  --line: #DDD2C3; --border: #DDD2C3; --bd: #DDD2C3;
+  --accent: #B5604A; --acc: #B5604A; --rub: #B5604A;
+  --accent2: #A4533F; --acc2: #A4533F; --accent-alt: #A4533F; --title: #A4533F; --salmon: #A4533F;
+  --accent-ink: #FFFFFF; --on-accent: #FFFFFF; --on-accent2: #FFFFFF;
+  --active: rgba(181, 96, 74, .14);
+  --danger: #B5483A; --ok: #4F7A3A; --warn: #9A6B12;
+  --shadow: #2a241d22;
+}
+html[data-tema="claro"] body { background-color: var(--bg); color: var(--text, var(--ink)); }
+html[data-tema="claro"] dialog::backdrop { background: rgba(42, 36, 29, .45); }
+
+/* Colores fijos de algunas páginas que también cambian */
+html[data-tema="claro"] details.lpart { background: rgba(255, 251, 245, .75); }
+html[data-tema="claro"] .bottom-nav { background: rgba(255, 251, 245, .97); }
+html[data-tema="claro"] .zoom-ctl { background: rgba(239, 230, 218, .95); box-shadow: 0 4px 16px rgba(42, 36, 29, .2); }
+html[data-tema="claro"] .cal-op { background: var(--btn); }
+html[data-tema="claro"] #calModal .cal-win { background: var(--bg); border-color: var(--line); }
+html[data-tema="claro"] #calModal .cal-x { background: var(--btn); border-color: var(--line); color: var(--fg); }
+html[data-tema="claro"] .btn.on, html[data-tema="claro"] .btn[aria-pressed="true"],
+html[data-tema="claro"] .btn.primary, html[data-tema="claro"] .dock button[aria-pressed="true"],
+html[data-tema="claro"] .toast, html[data-tema="claro"] .lb-ic[aria-pressed="true"] { color: #fff; }
