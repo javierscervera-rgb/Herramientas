@@ -1091,7 +1091,7 @@
               firma: 'Benedicto XVI · <em>El año litúrgico predicado</em>' }
     };
     function setByline(autor) {
-      homilyByline.innerHTML = autor ? AUTORES[autor].firma : 'José-Fernando Rey Ballesteros · Benedicto XVI';
+      homilyByline.innerHTML = autor ? AUTORES[autor].firma : 'Benedicto XVI · José-Fernando Rey Ballesteros';
     }
 
     function loadHomilias() {
@@ -1146,7 +1146,7 @@
       setByline(items.every(h => h.autor === items[0].autor) ? items[0].autor : null);
       homilyTitle.textContent = items.length + ' homilías';
       let html = '<p class="homily-intro">Homilías para este día:</p>';
-      for (const autor of ['frey', 'bxvi']) {
+      for (const autor of ['bxvi', 'frey']) {          // primero Benedicto XVI
         const grupo = items.map((h, i) => [h, i]).filter(([h]) => h.autor === autor);
         if (!grupo.length) continue;
         html += '<div class="homily-author">' + esc(AUTORES[autor].nombre) + ' (' + grupo.length + ')</div><ul class="homily-list">' +
