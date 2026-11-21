@@ -142,6 +142,11 @@ select:disabled{opacity:.55}
 #lectura .r{font-weight:700}
 #lectura p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.45}
 #lectura p.s.secreta{font-size:calc(var(--fs) - 2px);font-style:italic}
+p.s .ln{display:block;padding-left:1.3em;text-indent:-1.3em}
+p.s.capital .ln,p.s.consagra .ln{padding-left:0;text-indent:0}
+p.s .ln:has(> .rub-in){padding-left:0;text-indent:0}
+p.s.pet{position:relative;padding-left:calc(9px + 1.1em)!important}
+p.s.pet::before{content:"•";position:absolute;left:9px;top:2px;color:var(--rub);font-weight:700}
 #lectura p.s.capital::first-letter{float:left;font-size:3.2em;line-height:.82;margin:.07em .1em 0 0;color:var(--rub);font-weight:500;font-style:normal}
 #lectura .cruz{color:var(--rub)}
 #lectura p.s.consagra::first-letter{float:left;font-size:3.2em;line-height:.82;margin:.07em .1em 0 0;color:var(--rub);font-weight:500}
@@ -185,7 +190,7 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 
 /* Opciones deslizables */
 .car{min-width:0;background:var(--bg);border:1px solid var(--acc);border-radius:12px;padding:12px 0 10px;overflow:hidden}
-.car-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.car-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain}
 .car-track::-webkit-scrollbar,.alt-track::-webkit-scrollbar{display:none}
 .car-card{flex:0 0 100%;min-width:0;scroll-snap-align:start;scroll-snap-stop:always;text-align:left;background:none;border:0;border-radius:0;padding:0 16px;display:flex;flex-direction:column;gap:6px;color:var(--fg);cursor:grab;height:calc(16px * 1.4 * 3 + 24px)}
 .car-card:focus-visible{outline-offset:-2px}
@@ -197,8 +202,8 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .dot-b{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);transition:background .2s,transform .2s}
 .dot-b.on{background:var(--acc);transform:scale(1.25)}
 #lectura .alt{margin:.2em 0 .9em}
-#lectura .alt-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;transition:height .25s;overscroll-behavior-x:contain}
-#lectura .alt-slide{flex:0 0 100%;scroll-snap-align:start;padding-right:4px;min-width:0}
+#lectura .alt-track{display:flex;align-items:flex-start;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;transition:height .35s ease;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#lectura .alt-slide{flex:0 0 100%;scroll-snap-align:center;scroll-snap-stop:always;padding-right:4px;min-width:0}
 #lectura .alt-t{font-family:var(--f-ui);font-size:0.8125rem;color:var(--fg2);margin-bottom:.2em}
 #lectura .dots{margin-top:4px}
 
@@ -270,6 +275,8 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .lb-flow p.s{margin:.2em 0 .5em;padding:1px 5px 1px 9px;margin-left:0;border-left:3px solid transparent;transition:border-color .3s}
 .lb-flow p.s.now{border-left-color:#a3281f}
 .lb-flow p.s.consagra{font-size:calc(var(--fs) + 2px);line-height:1.42;margin:.4em 0 .7em}
+.lb-flow p.s.pet::before{color:#a3281f}
+.lb-flow p.s.consagra{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid}
 .lb-flow p.s.secreta{font-size:calc(var(--fs) - 2px);font-style:italic}
 .lb-flow p.s.capital::first-letter{float:left;font-size:3.3em;line-height:.8;margin:.06em .09em 0 0;color:#a3281f;font-weight:500;font-style:normal}
 .lb-flow .cruz{color:#a3281f}
@@ -518,7 +525,7 @@ const ORD = [
  ["ord.ap_inv","Invitación al acto penitencial"],["ord.ap1","Acto penitencial, forma 1 (Yo confieso)"],["ord.ap2","Acto penitencial, forma 2"],
  ["ord.ap3","Acto penitencial, forma 3 (invocaciones)"],["ord.absol","Absolución del acto penitencial"],["ord.kyrie","Señor, ten piedad"],
  ["ord.gloria","Gloria"],["ord.palabra","Aclamación al final de la lectura"],["ord.ev_secreta","Oración secreta antes del evangelio"],
- ["ord.ev_dialogo","Diálogo antes del evangelio"],["ord.ev_final","Aclamación al final del evangelio"],["ord.credo","Credo niceno-constantinopolitano"],
+ ["ord.ev_dialogo","Diálogo antes del evangelio"],["ord.ev_final","Aclamación al final del evangelio"],["ord.ev_final2","Aclamación al final del evangelio (cantada) 2"],["ord.ev_final3","Aclamación al final del evangelio (cantada) 3"],["ord.ev_final4","Aclamación al final del evangelio (cantada) 4"],["ord.ev_beso","Beso del evangeliario"],["ord.credo","Credo niceno-constantinopolitano"],
  ["ord.apostoles","Símbolo de los Apóstoles"],["ord.ofr_pan","Bendición sobre el pan"],["ord.ofr_agua","Oración al mezclar el agua con el vino"],
  ["ord.ofr_vino","Bendición sobre el vino"],["ord.ofr_humilde","Oración del sacerdote inclinado"],["ord.lavabo","Lavabo"],
  ["ord.orad","Orad, hermanos (con la respuesta)"],["ord.pref_dialogo","Diálogo del prefacio"],["ord.santo","Santo"],
@@ -1066,6 +1073,8 @@ const OPC = {
     opts:() => rango(Math.max(nVar("ord.pn_mon"), 1)).map(i => ({val:String(i), title:`Monición ${i+1}`, k:"ord.pn_mon", v:i}))},
   paz_inv:{label:"Invitación a darse la paz", get:() => String(S.var.paz_inv || 0), set:v => S.var.paz_inv = +v,
     opts:() => rango(Math.max(nVar("ord.paz_inv"), 1)).map(i => ({val:String(i), title:`Invitación ${i+1}`, k:"ord.paz_inv", v:i}))},
+  ev_resp:{label:"Respuesta al Evangelio", get:() => S.evResp || "1", set:v => S.evResp = v,
+    opts:() => ["1","2","3","4"].map(n => ({val:n, title: n === "1" ? "Gloria a ti, Señor Jesús" : `Respuesta cantada ${+n - 1}`, k: n === "1" ? "ord.ev_final" : `ord.ev_final${n}`, dis: n !== "1" && !(LIB[`ord.ev_final${n}`] || "").trim()}))},
   priv:{label:"Oración privada antes de comulgar", get:() => S.priv, set:v => S.priv = v, opts:() => ["1","2"].map(n => ({val:n, title:`Oración ${n}`, k:`ord.priv${n}`}))},
   bend:{label:"Bendición", get:() => S.bend, set:v => { S.bend = v; if(v === "pueblo" && FM[S.fid].x.some(x => x[0] === "pueblo")) S.puebloN = "propia"; },
     opts:() => [{val:"simple", title:"Bendición simple", k:"ord.bendicion"}, {val:"solemne", title:"Bendición solemne", k: ritoBend(FM[S.fid]) || `bend.sol.${S.bendN}`},
@@ -1107,17 +1116,22 @@ function iniciarCarruseles(root, alElegir){
     if(on > 0) track.scrollLeft = kids[on].offsetLeft - (track.clientWidth - kids[on].offsetWidth) / 2 - kids[0].offsetLeft;
     if(track.classList.contains("alt-track") && on >= 0) track.style.height = kids[on].offsetHeight + "px";
     const dots = track.parentElement.querySelectorAll(".dot-b");
-    let tmo;
+    let tmo, tocando = false;
+    // se elige solo cuando el desplazamiento ha terminado del todo (dedo levantado y sin inercia), para no cortar el movimiento
+    const asentar = () => {
+      if(tocando) return;
+      const i = centrada(track), k = kids[i];
+      if(track.classList.contains("alt-track")) track.style.height = Math.max(k.offsetHeight, 40) + "px";
+      if(k && !k.classList.contains("on") && !k.disabled) alElegir(track.parentElement.dataset.car, k.dataset.val);
+    };
+    track.addEventListener("touchstart", () => { tocando = true; clearTimeout(tmo); }, {passive: true});
+    track.addEventListener("touchend", () => { tocando = false; clearTimeout(tmo); tmo = setTimeout(asentar, 260); }, {passive: true});
     track.addEventListener("scroll", () => {
       const i = centrada(track);
       dots.forEach((d, j) => d.classList.toggle("on", j === i));
-      if(track.classList.contains("alt-track")) track.style.height = Math.max(kids[i].offsetHeight, 40) + "px";
-      clearTimeout(tmo);
-      tmo = setTimeout(() => {
-        const k = kids[centrada(track)];
-        if(k && !k.classList.contains("on") && !k.disabled) alElegir(track.parentElement.dataset.car, k.dataset.val);
-      }, 180);
+      clearTimeout(tmo); tmo = setTimeout(asentar, 260);
     }, {passive: true});
+    if("onscrollend" in window) track.addEventListener("scrollend", () => { clearTimeout(tmo); asentar(); });
     dots.forEach((d, j) => d.addEventListener("click", () => kids[j].scrollIntoView({behavior:"smooth", block:"nearest", inline:"center"})));
   });
 }
@@ -1416,7 +1430,7 @@ function palabra(f, R, rub, txt, prop, lect0){
         rub("Mientras se pone incienso, si se usa, el diácono pide la bendición; si no hay diácono, el sacerdote, inclinado ante el altar, dice en secreto:");
         txt("ord.ev_secreta"); txt("ord.ev_dialogo", null, {sub: anuncioEv(L)});
         lect(L, "evangelio");
-        txt("ord.ev_final");
+        altTxt(txt, "ev_resp"); txt("ord.ev_beso");
       }
     }
     // oración tras las lecturas de la Vigilia (después del salmo correspondiente)
@@ -1438,7 +1452,7 @@ function palabra(f, R, rub, txt, prop, lect0){
 function eucaristia(f, R, B, sec, rub, txt, prop){
   sec("Liturgia eucarística");
   rub("Comienza el canto del ofertorio. Los ministros preparan el altar; los fieles pueden presentar el pan y el vino.");
-  rub("El sacerdote, de pie ante el altar, toma la patena con el pan y, sosteniéndola un poco elevada, dice en voz baja (o en voz alta si no hay canto):");
+  rub("El sacerdote, de pie ante el altar, toma la patena con el pan y, sosteniéndola un poco elevada, dice:");
   txt("ord.ofr_pan");
   rub("El diácono, o el sacerdote, echa vino y un poco de agua en el cáliz, diciendo en secreto:");
   txt("ord.ofr_agua");
@@ -1461,7 +1475,8 @@ function eucaristia(f, R, B, sec, rub, txt, prop){
     txt("ord.santo");
   }
   txt(`pe.${S.pe}.a`, pe.n);
-  const ck = commKey(f);
+  let ck = commKey(f);
+  if(ck === "domingo" && fechaSel().getDay() !== 0) ck = "";
   if(S.pe === "pe1" && ck){
     rub(ck === "domingo" ? "En los domingos, cuando no hay otro propio, el Communicantes puede decirse así:" : "En lugar del Communicantes ordinario se dice el propio del día:");
     txt("emb.comm." + ck);
@@ -1516,7 +1531,7 @@ function comunion(f, R, rub, txt, prop, completo){
   } else txt("ord.embolismo");
   if(completo){
     txt("ord.paz"); altTxt(txt, "paz_inv");
-    rub("Todos se dan la paz. El sacerdote parte el pan sobre la patena y deja caer una partícula en el cáliz, diciendo en secreto:");
+    rub("Todos se dan la paz. El sacerdote parte el Pan sobre la patena y deja caer una partícula en el cáliz, diciendo en secreto:");
     txt("ord.conmixtion");
     rub("Mientras tanto, se canta o se dice:"); txt("ord.cordero");
     txt("ord.priv1", "Oración privada antes de comulgar"); txt("ord.priv2", "O bien:");
@@ -1576,26 +1591,53 @@ const FIN_PNSJ = "Por nuestro Señor Jesucristo, tu Hijo, que vive y reina conti
 const conclusionLarga = t => t.replace(/Por nuestro [Ss]eñor Jesucristo(?!,)\.?/g, FIN_PNSJ)
   .replace(/^(Él|El|Que), que vive y reina contigo\.?\s*$/gm, "Él, que vive y reina contigo en la unidad del Espíritu Santo y es Dios por los siglos de los siglos.")
   .replace(/^Que vive y reina contigo\.?\s*$/gm, "Que vive y reina contigo en la unidad del Espíritu Santo y es Dios por los siglos de los siglos.");
-function parseTexto(s){
+// una línea entre corchetes es texto opcional que se dice («[Por Cristo nuestro Señor. Amén.]»), salvo los avisos («[Si se celebra…:»)
+const esRub = l => /^\s*\*/.test(l) || (/^\s*\[/.test(l) && (/:\]?\s*$/.test(l) || /^\s*\[\s*(O bien|Si |san N\.)/i.test(l)));
+function parseTexto(s, lineas){
   return s.trim().split(/\n\s*\n/).map(par => {
     const lines = par.split("\n").map(l => l.trimEnd()).filter(l => l.trim());
-    let rubOnly = lines.every(l => /^\s*(\*|\[)/.test(l));
+    let rubOnly = lines.every(esRub);
     const html = lines.map(l => {
       let m;
-      if((m = l.match(/^\s*(?:\*|\[)(.*?)\]?\s*$/))) return `<span class="rub-in">${esc(m[1].trim())}</span>`;
+      if(esRub(l) && (m = l.match(/^\s*(?:\*|\[)(.*?)\]?\s*$/))) return `<span class="rub-in">${esc(m[1].trim())}</span>`;
       if((m = l.match(/^\s*(?:℟\.?|R\/\.?|R\.)\s*(.*)$/))) return `<span class="vr">℟.</span><span class="r">${esc(m[1])}</span>`;
       if((m = l.match(/^\s*(?:℣\.?|V\/\.?|V\.)\s*(.*)$/))) return `<span class="vr">℣.</span>${esc(m[1])}`;
       return esc(l);
-    }).join("<br>").replace(/✠/g, '<span class="cruz">✠</span>');
+    }).map(x => lineas ? `<span class="ln">${x}</span>` : x).join(lineas ? "" : "<br>").replace(/✠/g, '<span class="cruz">✠</span>');
     return {html, plain: rubOnly ? "" : lines.join(" ")};
   });
 }
 // párrafos de un texto; con cap, el primero que se dice lleva letra capitular (inicio del prefacio)
-function parrafosHTML(tx, cap){
+// lineas: el prefacio, las plegarias y sus embolismos guardan los saltos de línea del Misal (sangría francesa si una línea no cabe)
+// ou: la oración universal lleva viñetas en las peticiones
+function parrafosHTML(tx, cap, {lineas = false, ou = false} = {}){
   let hecho = !cap;
-  return parseTexto(tx).map(p => { const c = !hecho && p.plain.trim() ? (hecho = true, " capital") : "";
-    return `<p class="s${c}" data-plain="${esc(p.plain)}">${p.html}</p>`; }).join("");
+  const P = parseTexto(tx, lineas);
+  const dichos = P.map((p, i) => i).filter(i => P[i].plain.trim() && !/^\s*(℟|℣|R\.|V\.)/.test(P[i].plain));
+  const fin = P.length && /Amén/.test(P[P.length - 1].plain) ? dichos[dichos.length - 1] : -1;   // la oración conclusiva
+  return P.map((p, i) => { const c = !hecho && p.plain.trim() ? (hecho = true, " capital") : "";
+    const pet = ou && dichos.indexOf(i) > 0 && i !== fin ? " pet" : "";
+    return `<p class="s${c}${pet}${lineas ? " lineas" : ""}" data-plain="${esc(p.plain)}">${p.html}</p>`; }).join("");
 }
+const conLineas = k => /^(pref|pe|emb)\./.test(k || "") || ["ord.santo", "ord.doxologia"].includes(k);
+// Jueves Santo: el texto propio de la Misa vespertina solo se ve ese día (sustituye al ordinario si empieza igual, si no se añade)
+function soloJueves(v, jueves){
+  const P = v.split(/\n\s*\n/), out = [];
+  for(let i = 0; i < P.length; i++){
+    if(/^\*\s*En la Misa vespertina del Jueves Santo:?\s*$/i.test(P[i].trim()) && P[i + 1] && !/^\s*\*/.test(P[i + 1])){
+      if(jueves){
+        const prev = out.length - 1, ini = t => t.trim().split(/\s+/).slice(0, 2).join(" ").toLowerCase();
+        if(prev >= 0 && !/^\s*\*/.test(out[prev]) && ini(out[prev]) === ini(P[i + 1])) out.pop();
+        out.push(P[i + 1]);
+      }
+      i++; continue;
+    }
+    out.push(P[i]);
+  }
+  return out.join("\n\n");
+}
+// opciones que solo cambian su propio texto: al elegirlas no hace falta redibujar la misa
+const LIGERO = ["saludo", "ap_inv", "ev_resp", "orad", "pref", "aclam", "pn_mon", "paz_inv", "priv", "desp"];
 let SEGS = [];
 function renderCelebrar(){
   const f = FM[S.fid], B = buildOrder();
@@ -1614,7 +1656,7 @@ function renderCelebrar(){
       let v = b.t === "free" ? b.x : LIB[b.k];
       if(v && b.v !== undefined) v = elegirVariante(v, b.v);
       if(v && b.amen && !/Amén\.?\s*$/.test(v.trim())) v = v.trim() + "\n\nR. Amén.";
-      if(v && /^pe\./.test(b.k || "")) v = conNombres(v);
+      if(v && /^pe\./.test(b.k || "")) v = soloJueves(conNombres(v), f.e === "jueves");
       if(v && /\.colecta$/.test(b.k || "")) v = conclusionLarga(v);
       if(v && b.sub) v = v.replace(/Lectura del santo Evangelio según san N\.?/, b.sub);
       if(b.l) h += `<span class="lbl-t">${esc(b.l)}</span>`;
@@ -1623,13 +1665,13 @@ function renderCelebrar(){
         h += `<div class="alt" data-car="${b.alt}"><div class="alt-track">${L.map((x, i) => {
           let tx = LIB[x.k]; if(tx && x.v !== undefined) tx = elegirVariante(tx, x.v);
           if(tx && b.amen && !/Amén\.?\s*$/.test(tx.trim())) tx = tx.trim() + "\n\nR. Amén.";
-          const cuerpo = tx && tx.trim() ? parrafosHTML(tx, b.alt === "pref")
+          const cuerpo = tx && tx.trim() ? parrafosHTML(tx, b.alt === "pref", {lineas: conLineas(x.k)})
             : `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(x.k)}">Añadir texto</button></div>`;
           return `<div class="alt-slide${String(x.val) === sel ? " on" : ""}" data-val="${esc(x.val)}"><div class="alt-t">${esc(x.title)} · ${i+1} de ${L.length}</div>${cuerpo}</div>`;
         }).join("")}</div><div class="dots">${L.map((x, i) => `<button type="button" class="dot-b${String(x.val) === sel ? " on" : ""}" data-dot="${i}" aria-label="Opción ${i+1}"></button>`).join("")}</div></div>`;
         continue;
       }
-      if(v && v.trim()) h += parrafosHTML(v, /^pref\./.test(b.k || ""));
+      if(v && v.trim()) h += parrafosHTML(v, /^pref\./.test(b.k || ""), {lineas: conLineas(b.k), ou: b.t === "free" && b.l === "Oración universal"});
       else h += `<div class="missing">Falta este texto en tu biblioteca. <button class="btn small" data-edit="${esc(b.k)}">Añadir texto</button></div>`;
     } else if(b.t === "lec"){
       const L = b.L, nom = L.n || TL[L.t], idx = S.lect.indexOf(L);
@@ -1657,6 +1699,13 @@ function renderCelebrar(){
   $("#v-celebrar").innerHTML = h;
   iniciarCarruseles($("#v-celebrar"), (id, val) => {
     const el = document.querySelector(`#lectura .alt[data-car="${id}"]`), top = el ? el.getBoundingClientRect().top : 0;
+    if(el && (LIGERO.includes(id) || id.startsWith("lec:"))){
+      elegirOpcion(id, val);
+      el.querySelectorAll(".alt-slide").forEach(sl => sl.classList.toggle("on", sl.dataset.val === String(val)));
+      SEGS = hacerSegs($("#lectura"));
+      if(vozOn){ const i = SEGS.findIndex(s => el.contains(s.el)); if(i >= 0){ vozIdx = i; marcarAhora(i); } }
+      return;
+    }
     elegirOpcion(id, val); renderCelebrar();
     const el2 = document.querySelector(`#lectura .alt[data-car="${id}"]`);
     if(el2) window.scrollBy(0, el2.getBoundingClientRect().top - top);
@@ -2300,7 +2349,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 // Libro abierto (dos páginas) en tableta u ordenador apaisados
 const quiereDoble = () => innerWidth >= 900 && innerWidth > innerHeight * 1.15;
 // textos que se pueden cambiar tocándolos en la vista Libro
-const CAMBIA_LIBRO = ["saludo", "ap_inv", "ap", "orad", "aclam", "pn_mon", "paz_inv", "bend", "desp"];
+const CAMBIA_LIBRO = ["saludo", "ap_inv", "ap", "ev_resp", "orad", "pref", "aclam", "pn_mon", "paz_inv", "bend", "desp"];
 // opciones entre las que se pasa al tocar: las que tienen texto (y siempre la elegida)
 const opcionesLibro = id => { const o = OPC[id]; return o ? o.opts().filter(x => !x.dis && (String(x.val) === String(o.get()) || (LIB[x.k] || "").trim())) : []; };
 function cambiarEnLibro(id){
