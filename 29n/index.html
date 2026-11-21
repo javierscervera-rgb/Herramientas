@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>La elección de las elecciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Caveat:wght@500;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,500;1,6..72,300;1,6..72,500&family=Public+Sans:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f3f5;--fg:#14171c;--mut:#5b6270;--line:rgba(20,23,28,.16);--gold:#e3b04b;
+--sans:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--serif:"Newsreader",Georgia,serif;--blk:"Archivo Black","Arial Black",Impact,sans-serif;--mono:"Space Mono",ui-monospace,Menlo,monospace;--hand:"Caveat","Comic Sans MS",cursive}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+nav{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;justify-content:space-between;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 18px 10px;font-size:13px;background:linear-gradient(var(--bg) 40%,transparent)}
+nav b{font-family:var(--blk);font-weight:400}
+#navr{color:var(--mut);font-family:var(--mono);font-size:12px}
+#pg{position:fixed;left:0;top:0;height:3px;width:0;background:var(--gold);z-index:30}
+.s{min-height:100vh;min-height:100svh;padding:96px 20px 80px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+.w{max-width:720px;margin:0 auto;width:100%}
+.mv,.sc .l{will-change:transform}
+.l{display:inline-block}.wd{display:inline-block;white-space:nowrap}
+p{font-size:18px;max-width:32em;margin:0 0 16px}
+.mut{color:var(--mut)}.sm{font-size:13px}
+.blk{font-family:var(--blk);line-height:.95;letter-spacing:-.02em}
+.mono{font-family:var(--mono)}.hand{font-family:var(--hand);font-weight:700}
+.ser{font-family:var(--serif);font-weight:300}
+.r{opacity:0;transition:opacity 1s}.r.in{opacity:1}
+.huge{font-size:clamp(54px,19vw,150px)}
+.h2{font-size:clamp(40px,12vw,92px)}
+/* ticker */
+.tk{position:absolute;top:56px;left:0;right:0;overflow:hidden;white-space:nowrap;font-family:var(--mono);font-size:12px;border-block:1px solid var(--line);padding:5px 0}
+.tk div{display:inline-block;animation:tk 38s linear infinite}
+@keyframes tk{to{transform:translateX(-50%)}}
+.btn{display:inline-block;font-family:var(--blk);font-size:15px;padding:14px 22px;border:2px solid var(--fg);color:var(--fg);background:none;border-radius:40px;text-decoration:none;cursor:pointer}
+/* bars */
+.row{margin:0 0 20px}.row .t{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;margin-bottom:5px}
+.trk{position:relative;height:22px;background:var(--line);border-radius:3px}
+.bar{height:100%;width:0;border-radius:3px;transition:width 1.5s cubic-bezier(.2,.7,.2,1)}
+.tick{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--fg);opacity:.6}
+.num{font-family:var(--blk);font-size:clamp(46px,13vw,84px);line-height:1}
+/* hemicycle */
+svg.hm circle{opacity:0;transition:opacity .4s}
+.in svg.hm circle,svg.hm.in circle{opacity:1}
+.lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--mono);font-size:12px;margin-top:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+/* cards */
+.tic{border:2px solid var(--fg);border-radius:10px;padding:18px 20px;margin-bottom:16px;position:relative}
+.tic::after{content:"";position:absolute;right:-9px;top:50%;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--fg);transform:translateY(-50%)}
+.tic b{font-family:var(--blk);font-weight:400;font-size:26px;display:block;line-height:1}
+/* poll */
+.pl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.pl button{font-family:var(--blk);font-size:18px;padding:18px 8px;border:2px solid var(--fg);background:none;color:var(--fg);border-radius:8px;cursor:pointer}
+.pl button.on{background:var(--fg);color:var(--bg)}
+#pr{min-height:3.2em;font-family:var(--serif);font-size:20px;font-style:italic}
+/* noise rows */
+.nz{white-space:nowrap;line-height:1.05;margin:2px 0}
+/* blur */
+#bl{filter:blur(7px);transition:filter 1.6s;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#bl.ok{filter:none}
+/* toggle */
+#tg{font-size:clamp(32px,8.5vw,58px);line-height:1.1;min-height:4.4em;transition:opacity .5s}
+/* papeletas */
+.pp{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;align-items:center;margin:14px 0}
+.big{border:2px solid var(--fg);padding:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;transform:rotate(-2deg)}
+.big i{aspect-ratio:1;border-radius:50%;background:var(--line)}
+.one{border:2px solid var(--gold);padding:18px 10px;text-align:center;font-family:var(--serif);font-size:14px;cursor:pointer;transform:rotate(2deg)}
+.one u{display:block;width:34px;height:34px;border:2px solid var(--gold);margin:10px auto 0;text-decoration:none;font-size:26px;line-height:30px;color:var(--gold)}
+/* end */
+.end{background:radial-gradient(ellipse at 50% 60%,rgba(227,176,75,.3),transparent 65%)}
+.gold{color:var(--gold)}
+#cnt{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:18px;font-family:var(--mono);font-size:11px;color:var(--mut);z-index:20}
+#gr{position:fixed;inset:-30%;z-index:35;pointer-events:none;opacity:var(--gr,.07);background:var(--fg);animation:grm .7s steps(1) infinite;
+-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.8 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 1.8 0 0 0 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@keyframes grm{0%{transform:translate(0,0)}25%{transform:translate(-4%,3%)}50%{transform:translate(3%,-4%)}75%{transform:translate(-2%,-2%)}}
+#vg{position:fixed;inset:0;z-index:34;pointer-events:none;opacity:var(--vg,0);background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.9))}
+.art{fill:currentColor;color:var(--fg);display:block;margin:14px auto}
+.art line{stroke:currentColor;stroke-width:3;stroke-linecap:round}
+.art .ln{stroke:currentColor;stroke-width:2.5;fill:none}
+.mir .refl{opacity:0;transition:opacity 2.5s}.mir.on .refl{opacity:.55}
+.mir .me{animation:sw 5s ease-in-out infinite;transform-origin:60px 185px}
+@keyframes sw{50%{transform:translateX(5px)}}
+#endfig .lt{animation:pl 4s ease-in-out infinite}
+@keyframes pl{50%{opacity:.5}}
+#cr{min-height:430vh;display:block;padding:0;overflow:visible}
+#cr .pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;padding:0 20px;max-width:720px;margin:0 auto}
+#cn{font-size:clamp(44px,15vw,112px);line-height:1.1;word-break:break-word}
+#cx{position:relative;display:inline-block;color:var(--gold)}
+#cx.pol{color:var(--fg)}
+#cx::before{content:"";position:absolute;left:50%;top:-.16em;width:.8em;height:.18em;margin-left:-.4em;border:3px solid var(--gold);border-radius:50%;transform:rotate(-4deg);box-shadow:0 0 18px var(--gold)}
+#cx.sh{animation:shk .22s}
+@keyframes shk{20%{transform:translate(-6px,2px) skewX(6deg)}50%{transform:translate(5px,-3px) skewX(-6deg)}80%{transform:translate(-3px,1px)}}
+#cf{opacity:0;transition:opacity 1.2s}
+.nt{white-space:nowrap;line-height:.85;margin-bottom:-.1em}
+#snd{position:fixed;right:14px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:50;font-family:var(--mono);font-size:12px;padding:8px 12px;border-radius:30px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+/* una sola silla */
+#silla{min-height:330vh;display:block;padding:0;overflow:visible}
+#silla .pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:70px 20px 40px;max-width:720px;margin:0 auto;text-align:center}
+#silsvg{width:100%;max-width:560px;overflow:visible}
+.caps{display:grid;margin-top:22px;width:100%}
+.caps p{grid-area:1/1;opacity:0;transition:opacity .6s;margin:0 auto;font-size:clamp(24px,6.4vw,38px);line-height:1.15}
+.caps p.on{opacity:1}
+.ig{display:inline-flex;align-items:center;gap:8px;margin-top:16px;color:var(--mut);text-decoration:none;font-family:var(--mono);font-size:13px}
+.ig svg{width:18px;height:18px}
+@media (prefers-reduced-motion:reduce){#gr{animation:none}.mir .me,#endfig .lt{animation:none}.tk div{animation:none}.r{opacity:1;transition:none}html{scroll-behavior:auto}}
+</style>
+<script data-goatcounter="https://herramientasacerdotal.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div id="pg"></div><div id="gr"></div><div id="vg"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.5"/></filter></svg>
+<button id="snd" type="button" aria-pressed="false">Sonido: no</button>
+<nav><b>Elecciones 29N</b><span id="navr"></span></nav>
+
+<!-- 0 -->
+<section class="s" id="top">
+  <div class="tk"><div id="tkt"></div></div>
+  <div class="w">
+    <div class="blk huge sc" data-s="1">¿Quién gana?</div>
+    <p class="mono mut" style="margin-top:24px">Faltan <span id="dias">8</span> días.</p>
+    <a class="btn" href="#n">Ver pronóstico</a>
+    <p class="mono sm mut" style="margin-top:18px">Mejor con sonido: botón abajo a la derecha.</p>
+  </div>
+</section>
+
+<!-- 1 -->
+<section class="s" id="n">
+  <div class="w">
+    <div class="blk h2 mv" data-d="-1" data-a="14">Números</div>
+    <p class="mut r" style="margin-top:18px">Media de 17 encuestas. La marca negra es el resultado de 2023.</p>
+    <div class="row r" data-v="30.9" data-p="33.1"><div class="t"><span>PP</span><span>~130 escaños</span></div><div class="trk"><div class="bar" style="background:#2f6fb5"></div><i class="tick"></i></div><div class="num mv" data-d="1" data-a="6"><span class="cu" data-n="30.9">0</span>%</div></div>
+    <div class="row r" data-v="27.3" data-p="31.7"><div class="t"><span>PSOE</span><span>~110 escaños</span></div><div class="trk"><div class="bar" style="background:#c8353a"></div><i class="tick"></i></div><div class="num mv" data-d="-1" data-a="6"><span class="cu" data-n="27.3">0</span>%</div></div>
+    <div class="row r" data-v="19.1" data-p="12.4"><div class="t"><span>Vox</span><span>~66 escaños</span></div><div class="trk"><div class="bar" style="background:#5c9a3c"></div><i class="tick"></i></div><div class="num mv" data-d="1" data-a="6"><span class="cu" data-n="19.1">0</span>%</div></div>
+    <p class="mut sm r">Frente Amplio, ~6 %. El CIS (12 nov.) pone al PSOE primero: 33,3 % frente a 25,5 %. El tracking de 40dB del día 20 los deja en 31,9 % y 31,2 %.</p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="s">
+  <div class="w">
+    <div class="blk h2 mv" data-d="1" data-a="14">350 sillas</div>
+    <svg class="hm r" id="hm" viewBox="0 0 400 215" width="100%" role="img" aria-label="Hemiciclo estimado"></svg>
+    <div class="lg r"><span><i style="background:#9aa0ab"></i>Resto 44</span><span><i style="background:#c8353a"></i>PSOE 110</span><span><i style="background:#2f6fb5"></i>PP 130</span><span><i style="background:#5c9a3c"></i>Vox 66</span></div>
+    <p class="r" style="margin-top:18px">La mayoría está en 176. Muchos sondeos suman PP y Vox por encima de 185. Algunos no. Hay <b>una sola silla</b> de la que ninguna encuesta habla.</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="s">
+  <div class="w">
+    <div class="blk h2 mv" data-d="-1" data-a="16">Dos noches</div>
+    <div class="tic mv" data-d="1" data-a="10" style="margin-top:24px"><b>19 nov</b><span class="mono sm">Cara a cara · Sánchez y Feijóo · Academia de Televisión · ya pasó</span></div>
+    <div class="tic mv" data-d="-1" data-a="10"><b>26 nov</b><span class="mono sm">A cuatro · Sánchez, Feijóo, Abascal y Colau (Frente Amplio) · tres días antes de votar</span></div>
+    <p class="ser r" style="font-size:24px;font-style:italic">Dos horas de fuego. El viernes, otro tema.</p>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="s">
+  <div class="w">
+    <div class="blk h2 mv" data-d="1" data-a="12">Tu turno</div>
+    <p style="margin-top:14px">¿Quién va a ganar?</p>
+    <div class="pl" id="pl"><button>PP</button><button>PSOE</button><button>Vox</button><button>Otros</button></div>
+    <div id="pr"></div>
+  </div>
+</section>
+
+<!-- 4b -->
+<section class="s" id="nt" style="padding-left:0;padding-right:0">
+  <div class="w" style="padding:0 20px"><div class="blk h2 mv" data-d="-1" data-a="14">20:00</div></div>
+  <div id="nl" style="margin:24px 0"></div>
+  <div class="w" style="padding:0 20px"><p class="ser r" style="font-size:24px;font-style:italic">Ya está. Se acabó el ruido.</p></div>
+</section>
+
+<!-- 5 -->
+<section class="s">
+  <div class="w">
+    <div class="hand mv" data-d="-1" data-a="30" style="font-size:clamp(60px,22vw,160px);line-height:.9">Lunes 30</div>
+    <p class="ser mv mono" data-d="1" data-a="12" style="font-size:22px;margin-top:22px">Suena el despertador.</p>
+    <p class="ser mv" data-d="-1" data-a="12" style="font-size:22px">Las mismas cuentas a fin de mes.</p>
+    <p class="ser mv" data-d="1" data-a="12" style="font-size:22px">Las mismas caras que quieres.</p>
+    <p class="ser mv" data-d="-1" data-a="12" style="font-size:22px">Las mismas preguntas, sin contestar.</p>
+    <p class="blk r" style="font-size:clamp(24px,6vw,36px);line-height:1.05;margin-top:16px">Casi nada de lo que importa dependía del domingo.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="s" id="rz" style="padding-left:0;padding-right:0">
+  <div id="nz"></div>
+  <div class="w" style="padding:0 20px;margin-top:30px">
+    <p class="ser r" style="font-size:clamp(26px,6.5vw,38px);line-height:1.2">Cuánto ruido fuera. Y a ti, ¿quién te pregunta por el ruido de dentro?</p>
+  </div>
+</section>
+
+<!-- 6b -->
+<section class="s" id="aplausos">
+  <div class="w">
+    <div class="blk h2 mv" data-d="1" data-a="14">Aplausos</div>
+    <svg class="art" id="crowd" viewBox="0 0 400 270" width="100%" role="img" aria-label="Una multitud con los brazos en alto ante una figura sobre un pedestal. Una persona se funde entre la gente."></svg>
+    <p class="ser mv" data-d="-1" data-a="10" style="font-size:22px">Los miramos desde abajo.</p>
+    <p class="ser mv" data-d="1" data-a="10" style="font-size:22px">Les prestamos una aureola.</p>
+    <p class="ser mv" data-d="-1" data-a="10" style="font-size:22px">Les pedimos lo que solo se le pide a un dios: que todo irá bien.</p>
+    <p class="blk r" style="font-size:clamp(26px,7vw,42px);line-height:1.05;margin-top:10px">Y alguno acaba creyéndoselo.</p>
+    <p class="ser r" style="font-size:21px;font-style:italic">Cuando Dios no ocupa su sitio, alguien lo ocupa. Y yo, entre la multitud, aplaudo para no tener que mirar adentro.</p>
+    <p class="mono sm mut r">No va de ningún partido. Vale para todos los que aplaudimos.</p>
+  </div>
+</section>
+
+<!-- 6c -->
+<section class="s" id="cr">
+  <div class="pin">
+    <div id="cn" class="blk"><span id="cw">Creo en</span> <span id="cx" class="ser">Dios</span></div>
+    <p id="cs" class="mono sm mut" style="margin-top:22px;min-height:1.5em"></p>
+    <div id="cf"><p class="ser" style="font-size:24px;font-style:italic;max-width:24em">Mientras yo busco a quién aplaudir, el sitio de Dios nunca queda vacío.</p><p class="mono sm mut">No va de ellos. Va de nosotros.</p></div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="s" id="mi">
+  <div class="w">
+    <div class="hand h2 sc" data-s="1" style="font-size:clamp(46px,14vw,100px)">Mírate</div>
+    <p class="mut sm mono" style="margin:10px 0 18px">Toca el texto.</p>
+    <div id="bl">
+      <p class="ser jt" style="font-size:clamp(22px,5vw,28px);line-height:1.35">No quiero. Muchas veces no me gusta lo que veo. El vacío cuando se apaga el ruido. La incoherencia entre lo que digo y lo que hago. Lo que prometí y dejé a medias.</p>
+      <p class="ser" style="font-size:clamp(22px,5vw,28px);font-style:italic">Es más fácil analizar a un candidato que examinar mi vida.</p>
+    </div>
+    <svg class="art mir" id="mir" viewBox="0 0 260 200" width="72%" aria-hidden="true"></svg>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="s">
+  <div class="w">
+    <div class="ser fd" style="font-size:clamp(34px,9vw,68px);line-height:1.1"><span class="gn">Creo</span> en <span class="gn">Cristo</span>. Es el <span class="gn">Señor</span> de mi vida y está <span class="gn">presente</span> en <span class="gn">todo</span> lo que hago.</div>
+    <p class="mono mut" style="margin-top:28px;font-size:14px">Tantas veces mi fe es un conjunto de ideas, de costumbres, de domingos. Dice poco sobre cómo trato a los míos, en qué gasto el tiempo, qué hago con mi rencor.</p>
+    <p class="blk r" style="font-size:clamp(28px,7vw,48px);margin-top:14px">Cristo, en la práctica, no está.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="s" id="id" style="padding-left:0;padding-right:0">
+  <div id="idl"></div>
+  <div class="w" style="padding:0 20px"><p class="ser r" style="font-size:22px;font-style:italic;margin-top:20px">Nadie los llama ídolos. Se llaman tranquilidad, imagen, razón. Y les damos lo que solo se le debe a Dios.</p></div>
+</section>
+
+<!-- 10 -->
+<section class="s">
+  <div class="w">
+    <p class="mono mut sm">Toca para cambiar.</p>
+    <div id="tg" role="button" tabindex="0"></div>
+    <p class="mut sm mono" id="tgs">lo que digo</p>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="s" id="pap">
+  <div class="w">
+    <div class="blk h2 mv" data-d="-1" data-a="14">Papeleta</div>
+    <div class="pp">
+      <div class="big mv" data-d="-1" data-a="8"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="one" id="one">Mi vida<br>¿de quién?<u></u></div>
+    </div>
+    <p class="ser" style="font-size:22px">El domingo elegiré entre muchas. Es legítimo y serio. Pero llevo años esquivando la otra: la que no se delega, no se vota por correo y no se aplaza a otra convocatoria.</p>
+  </div>
+</section>
+
+<!-- 11b -->
+<section class="s" id="silla">
+  <div class="pin">
+    <svg id="silsvg" viewBox="0 0 400 215" role="img" aria-label="Los 350 escaños se juntan en una sola silla"></svg>
+    <div class="caps ser">
+      <p>350 escaños.</p>
+      <p>Todos quieren sentarse en tu vida.</p>
+      <p>Pero hay una silla de la que ninguna encuesta habla.</p>
+      <p>La tuya. Y ahí solo cabe uno.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 -->
+<section class="s end">
+  <div class="w" style="text-align:center">
+    <svg width="64" height="48" viewBox="0 0 64 48" aria-hidden="true" style="margin:0 auto 10px;display:block"><path d="M4 40 L10 12 L22 26 L32 6 L42 26 L54 12 L60 40 Z" fill="none" stroke="#e3b04b" stroke-width="3" stroke-linejoin="round"/><circle cx="10" cy="10" r="3" fill="#e3b04b"/><circle cx="32" cy="4" r="3" fill="#e3b04b"/><circle cx="54" cy="10" r="3" fill="#e3b04b"/></svg>
+    <p class="mono sm mut" style="margin:0 auto 20px">El 22 de noviembre es Cristo Rey.</p>
+    <div class="ser" style="font-size:clamp(28px,7vw,44px);line-height:1.15;margin-bottom:10px">Jesús debería ser rey.</div>
+    <div class="blk huge gold sc" data-s="1" style="font-size:clamp(60px,22vw,170px)">Suyo</div>
+    <svg class="art" id="endfig" viewBox="0 0 200 130" width="170" aria-hidden="true"></svg>
+    <p class="ser" style="font-size:22px;margin:22px auto 6px">Cristo Rey espera de mí que yo sea suyo.</p>
+    <p class="ser mut" style="font-style:italic;margin:0 auto;font-size:20px">¿Quién es hoy el señor de mi vida?</p>
+    <a class="mono sm mut" style="display:inline-block;margin-top:34px" href="#top">Volver al principio</a>
+    <div><a class="ig" href="https://www.instagram.com/javiersanchezcervera/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>@javiersanchezcervera</a></div>
+  </div>
+</section>
+<div id="cnt"></div>
+
+<script>
+(function(){
+var $=function(s,c){return(c||document).querySelector(s)},$$=function(s,c){return[].slice.call((c||document).querySelectorAll(s))};
+var RM=matchMedia('(prefers-reduced-motion:reduce)').matches,VH=innerHeight;
+/* ticker */
+var tt="PP 30,9 · PSOE 27,3 · Vox 19,1 · Frente Amplio 6 · mayoría: 176 · debate a cuatro: 26 nov · ";$('#tkt').textContent=tt+tt+tt+tt;
+/* split letters */
+function split(el){var out=[];(function walk(n){[].slice.call(n.childNodes).forEach(function(c){if(c.nodeType==3){var f=document.createDocumentFragment();c.textContent.split(/(\s+)/).forEach(function(w){if(/^\s+$/.test(w)||!w){f.appendChild(document.createTextNode(w))}else{var s=document.createElement('span');s.className='wd';w.split('').forEach(function(ch){var l=document.createElement('span');l.className='l';l.textContent=ch;l.dataset.r=Math.random()*2-1;l.dataset.q=Math.random()*2-1;s.appendChild(l);out.push(l)});f.appendChild(s)}});c.parentNode.replaceChild(f,c)}else if(c.nodeType==1&&c.tagName!='BR')walk(c)})})(el);return out}
+$$('.sc').forEach(function(e){e._l=split(e)});$$('.fd').forEach(function(e){e._l=split(e)});$$('.fd').forEach(function(e){e._l.forEach(function(l){l._g=!!l.closest('.gn')})});$$('.jt').forEach(function(e){e._l=split(e)});
+/* hemicycle */
+(function(){var n=350,rows=9,cx=200,cy=205,R0=80,R1=190,pts=[],tot=0,rs=[];for(var i=0;i<rows;i++){rs.push(R0+(R1-R0)*i/(rows-1));tot+=rs[i]}
+rs.forEach(function(r,i){var k=Math.round(n*r/tot);if(i==rows-1)k=n-pts.length;for(var j=0;j<k;j++){var a=Math.PI*(1-(k>1?j/(k-1):.5));pts.push([cx+r*Math.cos(a),cy-r*Math.sin(a),a])}});
+pts.sort(function(a,b){return b[2]-a[2]});var cl=[[44,'#9aa0ab'],[110,'#c8353a'],[130,'#2f6fb5'],[66,'#5c9a3c']],ix=0,h='';
+cl.forEach(function(c){for(var k=0;k<c[0]&&ix<pts.length;k++,ix++){var p=pts[ix];h+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.4" fill="'+c[1]+'" style="transition-delay:'+(ix*4)+'ms"/>'}});
+$('#hm').innerHTML=h})();
+/* noise rows */
+(function(){var W="sondeo escaños bloque techo pacto ventaja tracking voto útil debate cara a cara mayoría titular encuesta ruido".split(" "),F=['blk','ser','mono','hand','blk'],h='';
+for(var r=0;r<9;r++){var s='';for(var i=0;i<6;i++){s+=W[(r*3+i*2)%W.length]+' '}var sz=16+((r*37)%5)*10;h+='<div class="nz mv '+F[r%5]+'" data-d="'+(r%2?1:-1)+'" data-a="'+(10+r*4)+'" style="font-size:'+sz+'px;opacity:'+(.25+(r%3)*.2)+'">'+s+s+'</div>'}
+$('#nz').innerHTML=h})();
+/* idols */
+(function(){var I=[["tranquilidad",'ser',54],["imagen",'blk',36],["éxito",'hand',70],["razón",'mono',30],["seguridad",'blk',46],["aplausos",'ser',60],["control",'mono',34],["comodidad",'hand',58],["yo",'blk',110]],h='';
+I.forEach(function(x,i){h+='<div class="mv '+x[1]+'" data-d="'+(i%2?1:-1)+'" data-a="'+(14+i*5)+'" style="font-size:'+x[2]+'px;line-height:1.05;margin:3px 0 3px '+(i*3)+'%'+(i==8?';color:var(--gold)':'')+'">'+x[0]+'</div>'});$('#idl').innerHTML=h})();
+/* poll */
+var msgs={0:"Registrado.",1:"Registrado.",2:"Registrado.",3:"Registrado."};
+$$('#pl button').forEach(function(b){b.onclick=function(){$$('#pl button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');pollSound();$('#pr').textContent="Anotado. Ahora sí: ¿cuál de tus decisiones cambia el lunes por esto?"}});
+/* blur */
+$('#bl').onclick=function(){this.classList.toggle('ok');$('#mir').classList.toggle('on',this.classList.contains('ok'))};
+/* toggle */
+var T=[["Jesús es el Señor.",'ser',"lo que digo"],["El señor de mis días es mi agenda, mi miedo, mi móvil.",'mono',"lo que vivo"]],ti=0,tg=$('#tg');
+function setT(){var t=T[ti];tg.style.opacity=0;setTimeout(function(){tg.textContent=t[0];tg.className=t[1];$('#tgs').textContent=t[2];tg.style.opacity=1},300)}
+tg.onclick=function(){ti=1-ti;setT()};setT();var vis=false;setInterval(function(){if(vis){ti=1-ti;setT()}},3800);
+new IntersectionObserver(function(e){vis=e[0].isIntersecting},{threshold:.5}).observe(tg);
+/* ballot */
+$('#one').onclick=function(){var u=$('u',this);u.textContent=u.textContent?'':'✓'};
+/* reveal + count */
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;var t=e.target;t.classList.add('in');var r=t.classList.contains('row')?t:null;if(r){var b=$('.bar',r);b.style.width=(r.dataset.v/35*100)+'%';$('.tick',r).style.left=(r.dataset.p/35*100)+'%';var c=$('.cu',r),n=+c.dataset.n,t0=performance.now();(function f(now){var k=Math.min(1,(now-t0)/1400);c.textContent=(n*k).toFixed(1).replace('.',',');if(k<1)requestAnimationFrame(f)})(t0)}io.unobserve(t)})},{threshold:.2});
+$$('.r').forEach(function(e){io.observe(e)});
+/* ---------- arte stencil ---------- */
+function ss(a,b,x){x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)}
+function fig(x,y,s,th,at){th=th||[15,-15];return '<g transform="translate('+x+','+y+') scale('+s+')" '+(at||'')+'><circle cx="0" cy="-22" r="6"/><path d="M-8 0L-6-14Q0-17 6-14L8 0Z"/><line class="al" x1="0" y1="0" x2="0" y2="13" transform="translate(-6,-13) rotate('+th[0]+')"/><line class="ar" x1="0" y1="0" x2="0" y2="13" transform="translate(6,-13) rotate('+th[1]+')"/></g>'}
+var CR=[],cK=0,cvis=false,halo,rays=[],meG,meT,crowd=$('#crowd');
+(function(){var h='<g style="filter:url(#rough)">',rows=[[178,9,.8],[208,11,1],[245,13,1.2]],i,ri;
+for(i=0;i<70;i++)h+='<circle cx="'+(Math.random()*400).toFixed(0)+'" cy="'+(130+Math.random()*140).toFixed(0)+'" r="'+(Math.random()*1.3+.3).toFixed(1)+'" opacity=".35"/>';
+h+='<rect x="168" y="96" width="64" height="26" rx="2" opacity=".85"/><circle id="halo" cx="200" cy="50" r="22" fill="none" stroke="#e3b04b" stroke-width="3"/>';
+for(i=0;i<14;i++)h+='<line class="ry" x1="200" y1="50" x2="200" y2="50" style="stroke:#e3b04b;stroke-width:2"/>';
+h+=fig(200,98,2.2,[125,-125]);
+rows.forEach(function(r,ri){for(i=0;i<r[1];i++){var x=30+i*340/(r[1]-1),me=(ri==1&&i==5);h+=fig(x,r[0],r[2],[15,-15],'class="cf'+(me?' me':'')+'" data-x="'+x+'" data-y="'+r[0]+'" data-s="'+r[2]+'" data-r="'+Math.random().toFixed(2)+'"')}});
+h+='<text id="meT" x="200" y="172" text-anchor="middle" style="font-family:var(--hand);font-size:22px;fill:#e3b04b">tú</text></g>';
+crowd.innerHTML=h;halo=$('#halo');rays=$$('.ry',crowd);meT=$('#meT');
+$$('.cf',crowd).forEach(function(g){g._x=+g.dataset.x;g._y=+g.dataset.y;g._s=+g.dataset.s;g._r=+g.dataset.r;g._l=$('.al',g);g._rr=$('.ar',g);g._me=g.classList.contains('me');if(g._me)meG=g;CR.push(g)})})();
+function crowdFrame(t){if(!cvis)return;
+ CR.forEach(function(g,i){var u=Math.min(1,Math.max(0,cK*1.8-g._r*.8)),b=Math.sin(t/500+i)*1.3*(.3+u),a=15+u*135+Math.sin(t/300+i*2)*8*u;
+  g.setAttribute('transform','translate('+g._x+','+(g._y+b).toFixed(1)+') scale('+g._s+')');g._l.setAttribute('transform','translate(-6,-13) rotate('+a.toFixed(0)+')');g._rr.setAttribute('transform','translate(6,-13) rotate('+(-a).toFixed(0)+')')});
+ var m=ss(.5,.85,cK),hr=22+cK*14+Math.sin(t/400)*2;halo.setAttribute('r',hr.toFixed(1));halo.style.opacity=.4+cK*.6;
+ rays.forEach(function(l,i){var a=i/14*Math.PI*2+t/9000,r0=hr+6,r1=hr+6+cK*(18+10*Math.sin(t/300+i));l.setAttribute('x1',(200+r0*Math.cos(a)).toFixed(1));l.setAttribute('y1',(50+r0*Math.sin(a)).toFixed(1));l.setAttribute('x2',(200+r1*Math.cos(a)).toFixed(1));l.setAttribute('y2',(50+r1*Math.sin(a)).toFixed(1))});
+ meG.style.color='rgb('+[Math.round(227+14*m),Math.round(176+60*m),Math.round(75+151*m)]+')';meT.style.opacity=1-m;
+ requestAnimationFrame(crowdFrame)}
+new IntersectionObserver(function(e){var v=e[0].isIntersecting;if(v&&!cvis){cvis=true;requestAnimationFrame(crowdFrame);applauseCue()}else if(!v)cvis=false},{threshold:.05}).observe(crowd);
+if(RM){cK=.6;cvis=true;crowdFrame(0);cvis=false}
+$('#mir').innerHTML='<g style="filter:url(#rough)"><g class="me">'+fig(60,185,2.2)+'</g><rect class="ln" x="112" y="26" width="116" height="156" rx="6"/><path class="ln" d="M130 60L150 90L138 112M205 44L190 80" opacity=".5"/><g class="refl">'+fig(170,185,2.2,[22,-22])+'<text x="170" y="52" text-anchor="middle" style="font-family:var(--hand);font-size:24px;fill:#e3b04b">¿yo?</text></g></g>';
+$('#endfig').innerHTML='<polygon class="lt" points="100,0 55,126 145,126" fill="#e3b04b" opacity=".2" style="stroke:none"/><g style="filter:url(#rough)">'+fig(100,126,1.7,[150,-150],'style="color:#e3b04b"')+'</g>';
+/* ---------- sonido generativo ---------- */
+var AC,MG,LP,PG,PM,NB,DG,NG,HG,lastG=0,lastAp=0,snd=false,SIL,lastP=0,A={t0:.3,t1:.6,n0:.45,n1:.59,h0:.82};
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+function bell(f,v){if(!AC)return;var t=AC.currentTime;[[f,v],[f*2,v*.3]].forEach(function(x){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=x[0];g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(x[1],t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+2.6);o.connect(g);g.connect(MG);o.start(t);o.stop(t+2.7)})}
+function blip(i){if(!snd||!AC||AC.state!='running')return;var o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=i?'square':'sine';o.frequency.value=i?180+i*25:440;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(i?.05:.12,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.09);o.connect(g);g.connect(MG);o.start(t);o.stop(t+.1)}
+
+function gear(i){if(!snd||!AC||AC.state!='running'||!i)return;var now=performance.now(),dt=now-lastG;if(dt<45)return;lastG=now;var n=dt>600?4:dt>320?3:dt>160?2:1,t=AC.currentTime,j;
+ for(j=0;j<n;j++){var tt=t+j*.03,s=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain(),o=AC.createOscillator(),g2=AC.createGain();
+  s.buffer=NB;bp.type='bandpass';bp.frequency.value=3200;bp.Q.value=1.6;g.gain.setValueAtTime(.0001,tt);g.gain.exponentialRampToValueAtTime(.16,tt+.002);g.gain.exponentialRampToValueAtTime(.0001,tt+.02);s.connect(bp);bp.connect(g);g.connect(MG);s.start(tt,Math.random(),.05);
+  o.type='square';o.frequency.value=520+j*70+i*14;g2.gain.setValueAtTime(.0001,tt);g2.gain.exponentialRampToValueAtTime(.05,tt+.003);g2.gain.exponentialRampToValueAtTime(.0001,tt+.03);o.connect(g2);g2.connect(MG);o.start(tt);o.stop(tt+.04)}
+ var k=AC.createOscillator(),g3=AC.createGain();k.type='triangle';k.frequency.setValueAtTime(110,t);k.frequency.exponentialRampToValueAtTime(70,t+.12);g3.gain.setValueAtTime(.0001,t);g3.gain.exponentialRampToValueAtTime(.18,t+.01);g3.gain.exponentialRampToValueAtTime(.0001,t+.14);k.connect(g3);g3.connect(MG);k.start(t);k.stop(t+.16)}
+function applause(){if(!AC||!NB)return;var t0=AC.currentTime,n=380,i;
+ for(i=0;i<n;i++){var u=i/n,env=Math.sin(Math.PI*Math.pow(u,.7));if(Math.random()>env*1.1)continue;var tt=t0+.1+u*5.2,s=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();
+  s.buffer=NB;bp.type='bandpass';bp.frequency.value=1200+Math.random()*2600;bp.Q.value=.8+Math.random();g.gain.setValueAtTime(.0001,tt);g.gain.exponentialRampToValueAtTime(.05+Math.random()*.12*env,tt+.004);g.gain.exponentialRampToValueAtTime(.0001,tt+.03+Math.random()*.03);s.connect(bp);bp.connect(g);g.connect(MG);s.start(tt,Math.random()*1.5,.08)}}
+function applauseCue(){setTimeout(function(){if(snd&&AC&&AC.state=='running'&&Date.now()-lastAp>12000){lastAp=Date.now();applause()}},450)}
+function pollSound(){if(!snd||!AC||AC.state!='running')return;var t=AC.currentTime,k=AC.createOscillator(),g=AC.createGain(),s=AC.createBufferSource(),bp=AC.createBiquadFilter(),g2=AC.createGain();
+ k.type='sine';k.frequency.setValueAtTime(180,t);k.frequency.exponentialRampToValueAtTime(55,t+.16);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+.2);k.connect(g);g.connect(MG);k.start(t);k.stop(t+.22);
+ s.buffer=NB;bp.type='bandpass';bp.frequency.value=5000;bp.Q.value=.7;g2.gain.setValueAtTime(.0001,t);g2.gain.exponentialRampToValueAtTime(.12,t+.004);g2.gain.exponentialRampToValueAtTime(.0001,t+.08);s.connect(bp);bp.connect(g2);g2.connect(MG);s.start(t,Math.random(),.1);
+ setTimeout(function(){bell(783.99,.14)},130);setTimeout(function(){bell(1174.66,.1)},280)}
+function initAudio(){
+ SIL=document.createElement('audio');SIL.loop=true;SIL.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+ AC=new(window.AudioContext||window.webkitAudioContext)();var CP=AC.createDynamicsCompressor();CP.connect(AC.destination);MG=AC.createGain();MG.gain.value=0;MG.connect(CP);
+ LP=AC.createBiquadFilter();LP.type='lowpass';LP.frequency.value=1900;LP.connect(MG);
+ PG=AC.createGain();PG.gain.value=1;PM=AC.createGain();PM.gain.value=1;PG.connect(PM);PM.connect(LP);
+ [[146.83,.1],[293.66,.22],[369.99,.18],[440,.18],[659.25,.08]].forEach(function(x,i){var o=AC.createOscillator(),g=AC.createGain();o.type=i%2?'sine':'triangle';o.frequency.value=x[0];o.detune.value=(i-2)*5;g.gain.value=x[1];o.connect(g);g.connect(PG);o.start()});
+ var lf=AC.createOscillator(),lg=AC.createGain();lf.frequency.value=.12;lg.gain.value=.15;lf.connect(lg);lg.connect(PG.gain);lf.start();
+ DG=AC.createGain();DG.gain.value=0;DG.connect(LP);
+ [233.08,311.13,415.3,466.16].forEach(function(f){var o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.value=f;o.detune.value=Math.random()*30-15;g.gain.value=.07;o.connect(g);g.connect(DG);o.start()});
+ var buf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=buf.getChannelData(0),i;for(i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+ var src=AC.createBufferSource();src.buffer=buf;NB=buf;src.loop=true;var bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=.6;NG=AC.createGain();NG.gain.value=0;src.connect(bp);bp.connect(NG);NG.connect(MG);src.start();
+ HG=AC.createGain();HG.gain.value=0;HG.connect(MG);
+ [293.66,369.99,440,587.33,659.25].forEach(function(f){var o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.value=.13;o.connect(g);g.connect(HG);o.start()});
+ setInterval(function(){if(!snd||AC.state!='running')return;var n=NG._v||0;NG.gain.setTargetAtTime(n>.02?n*(Math.random()<.3?.9:.2):0,AC.currentTime,.02)},110);
+ setInterval(function(){if(!snd||AC.state!='running'||!HG._v||HG._v<.4)return;var N=[587.33,659.25,739.99,880,987.77];bell(N[Math.floor(Math.random()*N.length)],.16)},2300)}
+function audio(p){if(!AC)return;var T=AC.currentTime,t=ss(A.t0,A.t1,p),cut=1-ss(A.t1,A.t1+.03,p),hp=ss(A.h0,A.h0+.07,p);
+ PM.gain.setTargetAtTime((1-t*.85)*cut,T,.5);DG.gain.setTargetAtTime(t*cut,T,.5);NG._v=p>.97?0:ss(A.n0,A.n1,p)*cut*.5;if(p>.97)NG.gain.setTargetAtTime(0,T,.05);HG._v=hp;HG.gain.setTargetAtTime(hp,T,.8);LP.frequency.setTargetAtTime(1900-t*1500+hp*2500,T,.5)}
+$('#snd').onclick=function(){var b=this;if(!AC)initAudio();snd=!snd;
+ if(snd){var pr=SIL.play();if(pr&&pr.catch)pr.catch(function(){})}else SIL.pause();
+ AC.resume().then(function(){if(snd&&AC.state!='running')b.textContent='Sonido: bloqueado'});
+ MG.gain.setTargetAtTime(snd?.9:0,AC.currentTime,.2);b.setAttribute('aria-pressed',snd);b.textContent='Sonido: '+(snd?'sí':'no');
+ if(snd){bell(659.25,.2);setTimeout(function(){bell(880,.16)},220);audio(lastP)}};
+document.addEventListener('visibilitychange',function(){if(AC){if(document.hidden)AC.suspend();else if(snd)AC.resume()}});
+/* ---------- noche electoral ---------- */
+(function(){var L=[["encuestas",'blk',14],["porcentajes",'ser',13],["boca de urna",'hand',15],["participación 68 %",'mono',7],["entrevistas",'blk',10],["escrutado 12 %",'mono',8],["primeras proyecciones",'ser',9],["más encuestas",'hand',14],["voto útil",'blk',13],["declaraciones",'ser',12],["aplausos",'ser',18],["mayoría absoluta",'blk',8],["escrutado 37 %",'mono',8],["pactos",'hand',20],["empate técnico",'mono',8],["tertulia",'blk',14],["más aplausos",'hand',15],["rueda de prensa",'ser',10],["escaños",'blk',16],["escrutado 68 %",'mono',8],["¡hemos ganado!",'ser',10],["ha perdido",'hand',14],["titulares",'blk',12],["desde el balcón",'ser',11],["análisis",'mono',10],["más encuestas",'mono',8],["felicitaciones",'hand',12],["gracias a todos",'hand',13],["escrutado 99 %",'mono',8],["directo",'blk',15],["escrutado 100 %",'mono',8]],h='';
+L.forEach(function(x,i){x[3]=i%2?1:-1;h+='<div class="nt mv sc '+x[1]+'" data-d="'+x[3]+'" data-a="'+(18+i%4*6)+'" style="font-size:min('+x[2]+'vw,110px);opacity:'+(.45+(i%3)*.27)+'">'+x[0]+'</div>'});
+var nl=$('#nl');nl.innerHTML=h;$$('.sc',nl).forEach(function(e){e._l=split(e)})})();
+/* ---------- creo en ... ---------- */
+var NM=["Dios","Feijóo","Sánchez","Colau","Abascal","Montero","Alvise","Rufián","Tellado","Puente","Ayuso","Garriga","Belarra","Díaz"],
+SB=["","todo irá bien","él sí sabe","solo él puede","nos salvará","tiene la solución","no falla","hay que defenderlo","ya viene","no nos fallará","él lo arregla","con él, seguros","confío","sin él, el caos"],
+FN=['ser','blk','hand','mono'],CE=[.14],ci=-1,cxe=$('#cx'),cse=$('#cs'),cwe=$('#cw'),cfe=$('#cf');
+(function(){var d=[],t=0,i;for(i=1;i<NM.length;i++){d.push(Math.pow(.78,i-1));t+=d[i-1]}d.forEach(function(x){CE.push(CE[CE.length-1]+x/t*.72)})})();
+function updCreo(){var r=$('#cr').getBoundingClientRect(),m=r.height-VH,t=Math.min(1,Math.max(0,-r.top/m)),idx=NM.length-1,i,fin=t>.93,fl=t>.86&&!fin;
+ for(i=0;i<CE.length;i++){if(t<CE[i]){idx=i;break}}
+ if(fl)idx=1+Math.floor(t*900)%(NM.length-1);
+ var key=fin?-2:idx;if(key===ci)return;ci=key;
+ if(fin){cxe.textContent='…';cxe.className='ser pol';cse.textContent='';cfe.style.opacity=1;return}
+ cfe.style.opacity=0;cxe.textContent=NM[idx];cxe.className=(idx?'pol ':'')+FN[idx%4];cse.textContent=SB[idx]?'«'+SB[idx]+'»':'';
+ if(!RM){cxe.classList.add('sh');setTimeout(function(){cxe.classList.remove('sh')},230)}gear(idx)}
+/* ---------- una sola silla ---------- */
+var sil=$('#silla'),silS=$('#silsvg'),SD=[],thr,caps=$$('#silla .caps p'),silK=-1;
+(function(){var n=350,rows=9,cx=200,cy=200,R0=70,R1=188,pts=[],tot=0,rs=[],i;for(i=0;i<rows;i++){rs.push(R0+(R1-R0)*i/(rows-1));tot+=rs[i]}
+ rs.forEach(function(r,i){var k=Math.round(n*r/tot);if(i==rows-1)k=n-pts.length;for(var j=0;j<k&&pts.length<n;j++){var a=Math.PI*(1-(k>1?j/(k-1):.5));pts.push([cx+r*Math.cos(a),cy-r*Math.sin(a),a])}});
+ pts.sort(function(a,b){return b[2]-a[2]});
+ var cl=[[44,'#9aa0ab'],[110,'#c8353a'],[130,'#2f6fb5'],[66,'#5c9a3c']],ix=0,h='';
+ cl.forEach(function(c){for(var k=0;k<c[0]&&ix<pts.length;k++,ix++){var p=pts[ix];h+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.6" fill="'+c[1]+'"/>';SD.push({x:p[0],y:p[1],d:Math.random()*.5})}});
+ h+='<defs><radialGradient id="glw"><stop offset="0" stop-color="#e3b04b" stop-opacity=".55"/><stop offset="1" stop-color="#e3b04b" stop-opacity="0"/></radialGradient></defs><g id="thr" style="opacity:0"><circle cx="200" cy="168" r="60" fill="url(#glw)"/><path d="M190 142a10 10 0 0 1 20 0v32h-20z" fill="#e3b04b"/><rect x="182" y="172" width="36" height="8" rx="2" fill="#e3b04b"/><path d="M186 180v22M214 180v22" stroke="#e3b04b" stroke-width="4" stroke-linecap="round"/><path d="M187 128l4-12 5 7 4-11 4 11 5-7 4 12z" fill="#e3b04b"/></g>';
+ silS.innerHTML=h;SD.forEach(function(d,i){d.el=silS.children[i]});thr=$('#thr')})();
+function updSilla(){var r=sil.getBoundingClientRect();if(r.bottom<0||r.top>VH)return;var m=r.height-VH,k=Math.min(1,Math.max(0,-r.top/m));if(Math.abs(k-silK)<.001)return;silK=k;
+ var cv=ss(.16,.72,k);SD.forEach(function(d){var u=ss(d.d,d.d+.5,cv),e=d.el;e.setAttribute('cx',(d.x+(200-d.x)*u).toFixed(1));e.setAttribute('cy',(d.y+(172-d.y)*u).toFixed(1));e.style.opacity=(1-ss(.75,1,u)).toFixed(2)});
+ var tk=ss(.68,.9,k);thr.style.opacity=tk.toFixed(2);thr.setAttribute('transform','translate(200 168) scale('+(.6+.4*tk).toFixed(3)+') translate(-200 -168)');
+ var c=k<.2?0:k<.48?1:k<.74?2:3;caps.forEach(function(p,i){p.classList.toggle('on',i==c)})}
+/* ---------- anclas de la historia (sonido y textura) ---------- */
+function pos(sel){var e=$(sel),m=document.body.scrollHeight-innerHeight;return m>0?Math.min(1,Math.max(0,(e.offsetTop-innerHeight*.5)/m)):0}
+function anchors(){var c=$('#cr'),m=document.body.scrollHeight-innerHeight;if(m<=0)return;A.t0=pos('#nt');A.n0=pos('#aplausos');A.t1=Math.min(1,(c.offsetTop+c.offsetHeight-innerHeight)/m);A.n1=A.t1-.005;A.h0=pos('#pap')}
+addEventListener('load',anchors);addEventListener('resize',anchors);anchors();
+function extra(p,dark){lastP=p;
+ root.style.setProperty('--gr',(.05+.17*ss(A.t0,A.t1,p)*(1-.6*ss(A.h0,1,p))*(1-.75*ss(.9,1,p))).toFixed(3));
+ root.style.setProperty('--vg',(.8*ss(A.t0,A.t1,p)*(1-ss(A.t1,A.t1+.08,p))).toFixed(3));
+ var sec=$('#aplausos').getBoundingClientRect();cK=Math.min(1,Math.max(0,(VH*.85-sec.top)/(sec.height*.75)));
+ updCreo();updSilla();if(snd)audio(p)}
+/* background by progress */
+var stops=[[0,[242,243,245]],[.187,[226,228,234]],[.341,[52,52,62]],[.511,[22,18,28]],[.724,[11,10,15]],[1,[18,13,8]]];
+function lerp(a,b,t){return a+(b-a)*t}
+function col(p){for(var i=1;i<stops.length;i++){if(p<=stops[i][0]){var a=stops[i-1],b=stops[i],t=(p-a[0])/(b[0]-a[0]);return[0,1,2].map(function(k){return Math.round(lerp(a[1][k],b[1][k],t))})}}return stops[5][1]}
+var root=document.documentElement,navr=$('#navr'),cnt=$('#cnt'),pg=$('#pg'),LB=[[0,"encuestas · debates · resultados"],[.256,"encuestas · debates"],[.383,"debates"],[.477,"…"],[.596,"¿y tú?"],[.767,""]],t0=Date.now(),mvs=$$('.mv'),scs=$$('.sc'),fds=$$('.fd'),jts=$$('.jt');
+function ease(x){return x*x*(3-2*x)}
+function frame(){
+ VH=innerHeight;var max=document.body.scrollHeight-VH,p=max>0?Math.min(1,Math.max(0,scrollY/max)):0;
+ var c=col(p),dark=(.299*c[0]+.587*c[1]+.114*c[2])<110;
+ root.style.setProperty('--bg','rgb('+c+')');root.style.setProperty('--fg',dark?'#f1ece2':'#14171c');root.style.setProperty('--mut',dark?'rgba(241,236,226,.62)':'#5b6270');root.style.setProperty('--line',dark?'rgba(241,236,226,.2)':'rgba(20,23,28,.16)');
+ var l='';LB.forEach(function(x){if(p>=x[0])l=x[1]});navr.textContent=l;pg.style.width=(p*100)+'%';extra(p,dark);
+ if(RM)return;
+ mvs.forEach(function(e){var r=e.getBoundingClientRect();if(r.bottom<-50||r.top>VH+50)return;var k=((r.top+r.height/2)-VH/2)/(VH/2);e.style.transform='translateX('+(k*e.dataset.d*e.dataset.a).toFixed(1)+'vw)'});
+ scs.forEach(function(e){var r=e.getBoundingClientRect();if(r.bottom<-50||r.top>VH+50)return;var k=Math.min(1,Math.abs(((r.top+r.height/2)-VH*.55)/(VH*.45)));k=ease(Math.max(0,k-.15)/.85);e._l.forEach(function(s){s.style.transform='translate('+(s.dataset.r*k*60).toFixed(1)+'px,'+(s.dataset.q*k*80).toFixed(1)+'px) rotate('+(s.dataset.r*k*70).toFixed(0)+'deg)'})});
+ fds.forEach(function(e){var r=e.getBoundingClientRect(),k=Math.min(1,Math.max(0,(VH*.85-r.top)/(VH*.75)));e._l.forEach(function(l){if(l._g){l.style.opacity=(1-Math.min(1,Math.max(0,k*1.8-(+l.dataset.r+1)/2*.8))).toFixed(2)}})});
+ jts.forEach(function(e){var r=e.getBoundingClientRect();if(r.bottom<0||r.top>VH)return;var k=1-Math.min(1,Math.abs(((r.top+r.height/2)-VH/2)/(VH/2)));e._l.forEach(function(s){s.style.transform='translateY('+(s.dataset.q*k*4).toFixed(1)+'px) rotate('+(s.dataset.r*k*3).toFixed(1)+'deg)'})});
+}
+var tk=false;addEventListener('scroll',function(){if(!tk){tk=true;requestAnimationFrame(function(){tk=false;frame()})}},{passive:true});addEventListener('resize',frame);frame();
+setInterval(function(){var s=Math.round((Date.now()-t0)/1000),m=document.body.scrollHeight-innerHeight,p=m>0?scrollY/m:0;cnt.textContent=p<.341?"llevas "+s+" s leyendo":(p<.596?"llevas "+s+" s mirando fuera":"llevas "+s+" s sin votar en lo importante")},1000);
+var d=Math.ceil((new Date(2026,10,29)-new Date())/864e5);if(d>0)$('#dias').textContent=d;
+})();
+</script>
+</body>
+</html>
